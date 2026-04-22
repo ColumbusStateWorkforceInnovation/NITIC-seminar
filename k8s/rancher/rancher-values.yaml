@@ -1,0 +1,11 @@
+# Values for Rancher Helm Chart
+# Targeted for k3s local cluster
+
+hostname: rancher.admin.local
+replicas: 1
+bootstrapPassword: "AdmiralBashIsAwesome"
+
+ingress:
+  tls:
+    source: rancher # auto-generate certs for local
+  ingressClassName: traefik

@@ -1,0 +1,38 @@
+# Minimal Harbor values.yaml for Admiral Bash cluster
+# Optimized for k3s/k3d running locally or tightly constrained VMs
+
+expose:
+  type: ingress
+  tls:
+    enabled: false
+  ingress:
+    hosts:
+      core: harbor.admin.local
+    annotations:
+      kubernetes.io/ingress.class: traefik
+
+externalURL: http://harbor.admin.local
+
+trivy:
+  enabled: false # disable scanning to save heavy RAM usage
+
+notary:
+  enabled: false
+
+persistence:
+  persistentVolumeClaim:
+    registry:
+      size: 5Gi
+    chartmuseum:
+      size: 1Gi
+    jobservice:
+      size: 1Gi
+    database:
+      size: 1Gi
+    redis:
+      size: 1Gi
+    trivy:
+      size: 1Gi
+
+# Default harbor admin password
+harborAdminPassword: "AdmiralBashIsAwesome"

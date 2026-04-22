@@ -1,0 +1,30 @@
+# Values for loki-stack helm chart (Grafana + Loki + Promtail)
+# Optimized for local k3d
+
+loki:
+  enabled: true
+  isDefault: true
+  persistence:
+    enabled: true
+    size: 2Gi
+  config:
+    auth_enabled: false
+
+promtail:
+  enabled: true
+  config:
+    logLevel: info
+
+grafana:
+  enabled: true
+  adminPassword: "AdmiralBashIsAwesome"
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: traefik
+    hosts:
+      - grafana.admin.local
+    path: /
+  sidecar:
+    datasources:
+      enabled: true

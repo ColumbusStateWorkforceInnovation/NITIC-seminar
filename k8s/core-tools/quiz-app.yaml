@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flash-poll
+  namespace: admin-tools
+  labels:
+    app: flash-poll
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flash-poll
+  template:
+    metadata:
+      labels:
+        app: flash-poll
+    spec:
+      containers:
+      - name: flash-poll
+        # Using Quizler (A lightweight Kahoot clone) instead of the basic Docker Example Voting App
+        image: ghcr.io/jacobtread/quizler:latest
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flash-poll
+  namespace: admin-tools
+spec:
+  selector:
+    app: flash-poll
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flash-poll-ingress
+  namespace: admin-tools
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: poll.admin.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: flash-poll
+            port:
+              number: 80
