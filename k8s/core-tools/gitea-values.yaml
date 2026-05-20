@@ -1,0 +1,32 @@
+# Gitea Minimal Helm Values
+# Decision: Designed for a single-node classroom environment.
+# Provides the internal GitOps target so students don't need internet access to GitHub.
+
+gitea:
+  admin:
+    # Decision: Create a default admin user for the instructor.
+    username: "admiral"
+    password: "password123" # To be injected via secrets later in production
+    email: "admiral@bash.local"
+  
+  config:
+    server:
+      # Decision: Route via standard ingress
+      DOMAIN: "gitea.${LAB_DOMAIN}"
+      ROOT_URL: "https://gitea.${LAB_DOMAIN}/"
+
+redis-cluster:
+  # Decision: Disable HA Redis to save resources
+  enabled: false
+redis:
+  enabled: true
+  architecture: standalone
+
+postgresql:
+  # Decision: Disable HA PostgreSQL
+  architecture: standalone
+
+# Decision: Ingress generation is disabled. We manually define HTTPRoute objects
+# to demonstrate the Gateway API paradigm.
+ingress:
+  enabled: false

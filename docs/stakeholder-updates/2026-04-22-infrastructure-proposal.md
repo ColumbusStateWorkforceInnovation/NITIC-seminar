@@ -3,7 +3,7 @@
 **Focus:** Cloud Compute Capabilities & Cost Estimation for "Admiral Bash's Island Adventure"
 
 ## ⚓ Status Summary
-To provide 30 visiting faculty members with a world-class, cloud-native pedagogical experience, we have finalized the architecture to run atop **One Giant Shared Kubernetes Cluster**. This eliminates brittle local VM installations on student laptops, ensuring smooth onboarding and allowing us to demonstrate true "Instructor Superpowers" centrally.
+To provide up to 30 visiting faculty members with a world-class, cloud-native pedagogical experience, we have finalized the architecture to run atop **One Giant Shared Kubernetes Cluster**. This eliminates brittle local VM installations on student laptops, ensuring smooth onboarding and allowing us to demonstrate true "Instructor Superpowers" centrally.
 
 ---
 
@@ -49,6 +49,4 @@ The proposed Azure `NC24ads_A100_v4` is an absolute titan and perfectly aligns w
 | **Azure Spot Instance** | ~$1.00 / hr | **~$80.00** | High Risk. Azure can randomly reboot/evict the VM if server demand spikes elsewhere. |
 
 ### Procurement Recommendation
-For ~$320, we can provide 30 faculty members an enterprise-grade Kubernetes experience powered by an A100 GPU without the headache of managing local hypervisors. We **strongly recommend** budgeting $350 for On-Demand pricing to ensure zero disruption during the live May 20th seminar.
-
-*Prepared by The Architecture Team*
+For ~$320, we can provide 30 faculty members an enterprise-grade Kubernetes experience powered by an A100 GPU without the headache of managing local hypervisors. We **recommend** budgeting $350 for On-Demand pricing to ensure zero disruption during the live May 20th seminar.

@@ -1,11 +1,53 @@
 # Values for Rancher Helm Chart
-# Targeted for k3s local cluster
+# Admiral Bash's Island Adventure - INTERNAL LAB DEPLOYMENT
+#
+# Decision: This cluster runs on an internal (10.x.y.z) VM with no public
+# reachability. Let's Encrypt HTTP-01 cannot validate, and we already have a
+# self-signed wildcard cert (certs/tls.crt) loaded as the `wildcard-tls` secret
+# in the admin-tools namespace. We let the Gateway API HTTPRoute in
+# k8s/core-tools/gateway-routes.yaml (rancher-route) handle TLS termination at
+# the cluster edge and route HTTP-only traffic to the rancher Service.
+#
+# This keeps the TLS story portable: any institution that clones this repo and
+# runs `just init && just bootstrap-server && just deploy-core && just deploy-rancher`
+# gets a working Rancher under THEIR ${LAB_DOMAIN} without needing public DNS.
+#
+# Install command:
+#   helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+#   helm repo update
+#   helm upgrade --install rancher rancher-stable/rancher \
+#     --namespace cattle-system --create-namespace \
+#     --values k8s/rancher/rancher-values.yaml
+#
+# PREREQUISITES:
+#   1. wildcard-tls secret in admin-tools namespace (just push-cert)
+#   2. main-gateway + rancher-route applied (just deploy-core)
 
-hostname: rancher.admin.local
+hostname: rancher.${LAB_DOMAIN}
+
 replicas: 1
+
+# Change this before going live!
 bootstrapPassword: "AdmiralBashIsAwesome"
 
+# ── TLS termination handled by Gateway API ────────────────────
+# `tls: external` tells Rancher its public endpoint is HTTPS but the TLS layer
+# is owned by something outside the chart — in our case the main-gateway in
+# admin-tools. Disabling the chart's own Ingress prevents conflicts with the
+# HTTPRoute that already routes rancher.${LAB_DOMAIN} → rancher:80.
+tls: external
 ingress:
-  tls:
-    source: rancher # auto-generate certs for local
-  ingressClassName: traefik
+  enabled: false
+
+# ── Disable Rancher's internal CA management ──────────────────
+# With external TLS we don't want Rancher trying to manage its own CA bundle.
+additionalTrustedCAs: false
+
+# Single-node resource limits
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi

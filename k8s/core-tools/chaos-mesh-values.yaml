@@ -1,0 +1,28 @@
+# Chaos Mesh Minimal Helm Values
+# Decision: Optimized for localized cluster execution where full dashboard and DNS interception
+# are not required for simple pod/network failure injection during classroom labs.
+
+dashboard:
+  # Decision: We disable the built-in Chaos Dashboard since we interact with Chaos Mesh
+  # purely through CRDs (Custom Resource Definitions) and GitOps.
+  create: false
+
+chaosDaemon:
+  # Decision: Using containerd as the runtime since k3s/k3d standardizes on it.
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+
+dnsServer:
+  # Decision: Disabled because we do not intend to inject DNS-specific failures for this course.
+  create: false
+
+controllerManager:
+  replicaCount: 1
+  resources:
+    # Decision: Strict limits to ensure the controller doesn't starve student workloads.
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "100m"
+      memory: "256Mi"

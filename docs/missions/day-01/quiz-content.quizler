@@ -1,0 +1,99 @@
+{
+  "name": "Day 1: The Ship Has Sunk",
+  "text": "Flash Poll quiz testing the differences between VMs and Containers, Pod definitions, declarative generation, and diagnostic commands.",
+  "max_players": 50,
+  "filtering": "None",
+  "questions": [
+    {
+      "text": "What is the core philosophical difference between a traditional Virtual Machine and a Docker Container?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 1, "value": "Containers require their own dedicated Guest OS kernel.", "correct": false },
+        { "id": 2, "value": "Containers share the Host OS kernel and only package the app space.", "correct": true },
+        { "id": 3, "value": "VMs are faster to start up than Containers.", "correct": false },
+        { "id": 4, "value": "Containers cannot run on Windows or Mac.", "correct": false }
+      ]
+    },
+    {
+      "text": "You built a custom web server image and want to run it in Kubernetes. Why does Kubernetes wrap your container inside a 'Pod'?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 5, "value": "Because 'Pod' is a nautical term and Docker doesn't use it.", "correct": false },
+        { "id": 6, "value": "A Pod allows multiple tightly-coupled containers to share the network.", "correct": true },
+        { "id": 7, "value": "Pods automatically encrypt the container's traffic.", "correct": false },
+        { "id": 8, "value": "Containers are not allowed to have IP addresses, only Pods are.", "correct": false }
+      ]
+    },
+    {
+      "text": "You want to deploy an Nginx pod without typing 30 lines of YAML. What is the correct 'dry-run' command?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 9, "value": "kubectl generate pod nginx --image=nginx > pod.yaml", "correct": false },
+        { "id": 10, "value": "kubectl run nginx --image=nginx --dry-run=client -o yaml > pod.yaml", "correct": true },
+        { "id": 11, "value": "kubectl create pod nginx --dry-run=true > pod.yaml", "correct": false },
+        { "id": 12, "value": "docker run nginx --export-yaml > pod.yaml", "correct": false }
+      ]
+    },
+    {
+      "text": "You exec into a pod, install curl, delete the pod, and recreate it from YAML. What happens to curl?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 13, "value": "It is still installed because Kubernetes saves changes to disk.", "correct": false },
+        { "id": 14, "value": "It is gone. The container was recreated from the immutable image.", "correct": true },
+        { "id": 15, "value": "It triggers a CrashLoopBackOff error.", "correct": false },
+        { "id": 16, "value": "It throws an error asking you to commit the changes first.", "correct": false }
+      ]
+    },
+    {
+      "text": "Which command would you use to list all pods across every single namespace in the cluster to find a hidden treasure?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 17, "value": "kubectl get pods --all", "correct": false },
+        { "id": 18, "value": "kubectl get pods -A", "correct": true },
+        { "id": 19, "value": "kubectl describe pods *", "correct": false },
+        { "id": 20, "value": "kubectl get all-pods", "correct": false }
+      ]
+    }
+  ],
+  "images": []
+}

@@ -1,0 +1,130 @@
+# Local AI Engine Infrastructure
+# Decision: We deploy Ollama to host the model locally (free, secure) and LiteLLM to act 
+# as an API gateway. This provides an OpenAI-compatible endpoint that enforces authentication.
+# Both services run within the cluster to eliminate external internet dependency for AI labs.
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-config
+  namespace: admin-tools
+data:
+  config.yaml: |
+    model_list:
+      - model_name: ${AI_MODEL}
+        # Decision: Route traffic internally to the Ollama service
+        litellm_params:
+          model: ollama/${AI_MODEL}
+          api_base: http://ollama:11434
+    
+    general_settings:
+      # Decision: Require API keys for tracking usage and securing the endpoint.
+      master_key: "${AI_API_KEY}"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: admin-tools
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        # Decision: Use the official Ollama image to serve the local LLM
+        # (default: gemma3:4b — see lab.env / AI_MODEL). Any Ollama-supported
+        # tag works; just `just pull-model <tag>` after deploy.
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        # Decision: High memory limits since LLMs require significant RAM to load weights.
+        resources:
+          limits:
+            memory: "8Gi"
+            cpu: "2000m"
+          requests:
+            memory: "4Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: ollama-data
+          mountPath: /root/.ollama
+      volumes:
+      - name: ollama-data
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: admin-tools
+spec:
+  selector:
+    app: ollama
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litellm
+  namespace: admin-tools
+  labels:
+    app: litellm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: litellm
+  template:
+    metadata:
+      labels:
+        app: litellm
+    spec:
+      containers:
+      - name: litellm
+        # Decision: Use litellm to translate OpenAI API requests into Ollama requests.
+        image: ghcr.io/berriai/litellm:main-latest
+        args:
+        - "--config"
+        - "/app/config.yaml"
+        ports:
+        - containerPort: 4000
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config.yaml
+          subPath: config.yaml
+      volumes:
+      - name: config-volume
+        configMap:
+          name: litellm-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm
+  namespace: admin-tools
+spec:
+  selector:
+    app: litellm
+  ports:
+    - protocol: TCP
+      port: 4000
+      targetPort: 4000
+  type: ClusterIP

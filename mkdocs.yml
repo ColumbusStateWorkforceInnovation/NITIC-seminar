@@ -1,0 +1,81 @@
+site_name: Admiral Bash's Island Adventure
+# LAB_DOMAIN is injected at serve time via: just serve-docs  (or LAB_DOMAIN=... mkdocs serve)
+# Note: MkDocs !ENV uses list syntax for defaults — !ENV [VAR, fallback] — NOT
+# !ENV 'VAR:fallback'. The shell-style ${VAR:-default} form is not supported.
+site_url: !ENV [SITE_URL, 'http://docs.nitic2026cbus.voyage']
+site_description: DevOps Seminar Curriculum & Infrastructure
+site_author: Eric Wagner
+
+# Use the existing docs folder
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    # Toggle between dark and light modes
+    - scheme: default
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.indexes
+    - toc.integrate
+
+# Standard tech-writing extensions
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+
+plugins:
+  - search
+  # macros plugin: enables {{ lab_domain }} substitution in .md files.
+  # The value is pulled from `extra.lab_domain` below (which reads $LAB_DOMAIN
+  # at serve time via the !ENV tag, falling back to nitic2026cbus.voyage).
+  # We do NOT use `include_yaml: lab.env.example` — lab.env.example is shell
+  # format (KEY=value), not YAML, so the macros plugin can't parse it.
+  - macros
+
+extra:
+  # !ENV [VAR, default] — read $LAB_DOMAIN, fall back to nitic2026cbus.voyage.
+  # Available in mission docs as {{ lab_domain }} (see portability rule).
+  lab_domain: !ENV [LAB_DOMAIN, 'nitic2026cbus.voyage']
+
+nav:
+  - "Welcome Aboard": index.md
+  - "Agenda": course-agenda.md
+  - "The Syllabus": stakeholder-updates/2026-04-22-curriculum-deep-dive.md
+  - "Missions":
+    - "Day 1 - The Ship Has Sunk":
+      - "Briefing": missions/day-01-the-ship-has-sunk.md
+      - "Instructor Guide": missions/day-01/instructor-guide.md
+      - "Lab 01 - The First Raft": missions/day-01/lab-01-the-first-raft.md
+      - "Lab 02 - Paddling Out": missions/day-01/lab-02-paddling-out.md
+      - "One-Pager": missions/day-01/one-pager.md
+      - "Quiz Content": missions/day-01/quiz-content.md
+    - "Day 2 - Meet the Crew":
+      - "Briefing": missions/day-02-meet-the-crew.md
+      - "Instructor Guide": missions/day-02/instructor-guide.md
+      - "Lab 01 - The Radar Room": missions/day-02/lab-01-the-radar-room.md
+      - "Lab 02 - Deploying the Fleet": missions/day-02/lab-02-deploying-the-fleet.md
+      - "Lab 03 - Fleet Logistics": missions/day-02/lab-03-fleet-logistics.md
+      - "One-Pager": missions/day-02/one-pager.md
+    - "Day 3 - Automated Shipyards":
+      - "Briefing": missions/day-03-automated-shipyards.md
+    - "Day 4 - The Admiral's Challenge":
+      - "Briefing": missions/day-04-admirals-challenge.md
+    - "Book Readings (Storytime)": missions/book-readings.md
+    - "Expanded Labs": missions/expanded-labs.md

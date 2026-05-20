@@ -1,0 +1,16 @@
+# Ignored temporary context files (including corporate certs)
+temp-context/
+.envrc
+
+# Institution-specific lab config (copy from lab.env.example and fill in)
+lab.env
+
+# Lab TLS Private Keys
+# DO NOT commit private keys — distribute to server via scp (see certs/README.md)
+# Public certs (ca.crt, tls.crt) ARE committed — students need them to trust the CA.
+certs/*.key
+certs/*.srl
+
+# macOS artifacts
+.DS_Store
+**/.DS_Store

@@ -1,0 +1,111 @@
+# MkDocs Hub with Git-Sync Sidecar
+# Decision: Uses MkDocs Material for beautiful, standard tech docs. 
+# The git-sync sidecar polls the internal Gitea repository on the 'maindeck' branch
+# so the live docs site updates immediately when faculty push Markdown changes.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs-hub
+  namespace: admin-tools
+  labels:
+    app: docs-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docs-hub
+  template:
+    metadata:
+      labels:
+        app: docs-hub
+    spec:
+      volumes:
+      - name: docs-volume
+        emptyDir: {}
+      
+      containers:
+      # Sidecar: Continuously syncs the 'maindeck' branch from the internal Gitea server
+      - name: git-sync
+        image: registry.k8s.io/git-sync/git-sync:v4.1.0
+        env:
+        - name: GITSYNC_REPO
+          # Route traffic directly to the Gitea service in the cluster
+          value: "http://gitea-http.admin-tools.svc.cluster.local:3000/admiral/nitic-seminar.git"
+        - name: GITSYNC_BRANCH
+          # Nautical Trunk-Based Development!
+          value: "maindeck"
+        - name: GITSYNC_ROOT
+          value: "/tmp/git"
+        - name: GITSYNC_DEST
+          value: "repo"
+        # Since it's a closed cluster, we can disable SSL verification and sync frequently
+        - name: GITSYNC_WAIT
+          value: "10" 
+        - name: GITSYNC_ADD_USER
+          value: "true"
+        volumeMounts:
+        - name: docs-volume
+          mountPath: /tmp/git
+
+      # Main Server: Serves MkDocs dynamically
+      # Installs plugin dependencies from requirements.txt (synced from Gitea)
+      # before starting the dev server, so no custom image is needed.
+      - name: mkdocs
+        image: squidfunk/mkdocs-material:latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            echo "📦 Installing MkDocs plugins from requirements.txt..."
+            pip install --quiet -r /docs/repo/requirements.txt
+            echo "📖 Starting MkDocs server..."
+            exec mkdocs serve -a 0.0.0.0:8000 -f /docs/repo/mkdocs.yml
+        workingDir: "/docs/repo"
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: docs-volume
+          mountPath: /docs
+        resources:
+          limits:
+            memory: "384Mi"
+            cpu: "250m"
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: docs-hub
+  namespace: admin-tools
+spec:
+  selector:
+    app: docs-hub
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: docs-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+  hostnames:
+  - "docs.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: docs-hub
+      port: 80

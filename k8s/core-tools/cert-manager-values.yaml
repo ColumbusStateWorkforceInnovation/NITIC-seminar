@@ -1,0 +1,47 @@
+# [Boatswain] cert-manager Helm Values
+# Admiral Bash's Island Adventure - TLS Infrastructure
+#
+# Install command (run ONCE on the server):
+#   helm repo add jetstack https://charts.jetstack.io
+#   helm repo update
+#   helm upgrade --install cert-manager jetstack/cert-manager \
+#     --namespace cert-manager \
+#     --create-namespace \
+#     --values k8s/core-tools/cert-manager-values.yaml
+#
+# IMPORTANT: cert-manager must be installed BEFORE Rancher.
+
+installCRDs: true
+
+replicaCount: 1
+
+# Lean resource profile for single-node cluster
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+webhook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+cainjector:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+# Prometheus metrics (optional - enable if Loki stack is deployed)
+prometheus:
+  enabled: false

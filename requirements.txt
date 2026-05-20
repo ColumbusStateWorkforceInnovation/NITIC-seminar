@@ -1,0 +1,10 @@
+# MkDocs plugin dependencies
+# Installed by the docs-hub container at startup (see k8s/core-tools/mkdocs.yaml)
+# and by the local dev server via: pip install -r requirements.txt
+#
+# Usage locally:
+#   pip install -r requirements.txt
+#   just serve-docs
+
+mkdocs-material>=9.0
+mkdocs-macros-plugin>=1.0

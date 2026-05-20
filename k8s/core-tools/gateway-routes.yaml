@@ -1,0 +1,187 @@
+# [Boatswain] The App Team's Routing Definitions
+#
+# Decision: Since we disabled the built-in legacy Ingress objects in our Helm charts,
+# we manually define HTTPRoute objects here. This physically demonstrates the
+# separation of concerns: Infrastructure manages the Gateway, Apps manage the HTTPRoute.
+#
+# All routes attach to the main-gateway in admin-tools namespace.
+# The gateway handles both HTTP (80) and HTTPS (443) via the wildcard-tls cert.
+# Each route needs only one parentRef — the gateway listener selection is automatic.
+#
+# ⚠️  PORTABILITY: Do NOT apply this file directly with kubectl.
+# Use: just deploy-core   (which pipes through envsubst to inject LAB_DOMAIN)
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-route
+  namespace: argocd
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "argocd.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: argocd-server
+      port: 80
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: gitea-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "gitea.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: gitea-http
+      port: 3000
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "harbor.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: harbor-portal
+      port: 80
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "grafana.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: loki-stack-grafana
+      port: 80
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: litellm-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "ai.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: litellm
+      port: 4000
+
+---
+# [Boatswain] Rancher route — was missing from original file, now added.
+# Rancher runs with --no-cacerts so it doesn't conflict with edge TLS termination.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rancher-route
+  namespace: cattle-system
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "rancher.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: rancher
+      port: 80
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mailpit-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "mailpit.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: mailpit
+      port: 8025
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: docs-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "docs.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: mkdocs
+      port: 8000
+
+# NOTE: The Flash Poll HTTPRoute lives in k8s/core-tools/quiz-app.yaml at
+# poll.${LAB_DOMAIN} (Service: flash-poll). The legacy `quiz-route` that
+# previously pointed at a non-existent `quiz-app` Service has been removed —
+# do not re-add it. All docs and the credential card use poll.${LAB_DOMAIN}.

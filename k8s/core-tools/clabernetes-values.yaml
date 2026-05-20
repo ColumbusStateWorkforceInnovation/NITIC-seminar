@@ -1,0 +1,24 @@
+# Clabernetes Minimal Helm Values
+# Decision: Configured to support deploying Nokia SR Linux and Cisco emulators in a K3s cluster.
+# Because network emulators are fundamentally heavy VMs running inside containers, they require
+# elevated privileges. 
+
+global:
+  # Decision: Allow privileged containers so network routing daemons inside the emulators
+  # can manipulate network namespaces directly.
+  allowPrivileged: true
+
+manager:
+  replicaCount: 1
+  resources:
+    # Decision: Keep the operator footprint small. The heavy lifting is done by the router pods themselves.
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+
+crd:
+  # Decision: Ensure CRDs are created automatically during helm install.
+  create: true

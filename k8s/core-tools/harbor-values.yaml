@@ -2,16 +2,16 @@
 # Optimized for k3s/k3d running locally or tightly constrained VMs
 
 expose:
-  type: ingress
+  # Decision: Switched to clusterIP. We manually define HTTPRoute objects
+  # to demonstrate the Gateway API paradigm.
+  type: clusterIP
   tls:
     enabled: false
   ingress:
     hosts:
-      core: harbor.admin.local
-    annotations:
-      kubernetes.io/ingress.class: traefik
+      core: harbor.${LAB_DOMAIN}
 
-externalURL: http://harbor.admin.local
+externalURL: https://harbor.${LAB_DOMAIN}
 
 trivy:
   enabled: false # disable scanning to save heavy RAM usage

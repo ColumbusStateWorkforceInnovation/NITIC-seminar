@@ -1,0 +1,99 @@
+{
+  "name": "Day 2: Meet the Crew",
+  "text": "Flash Poll quiz testing Kubernetes architecture, Deployments vs Pods, and Internal DNS Service structures.",
+  "max_players": 50,
+  "filtering": "None",
+  "questions": [
+    {
+      "text": "Why is a Kubernetes 'Deployment' more resilient than a standalone 'Pod'?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 1, "value": "Deployments use less RAM.", "correct": false },
+        { "id": 2, "value": "A Deployment acts as a manager, automatically replacing Pods if they die.", "correct": true },
+        { "id": 3, "value": "Pods cannot connect to the internet, but Deployments can.", "correct": false },
+        { "id": 4, "value": "Deployments bypass the Docker engine entirely.", "correct": false }
+      ]
+    },
+    {
+      "text": "You want to dynamically pass a database password to your web server without hardcoding it in the Docker image. What Kubernetes object should you use?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 5, "value": "A Service", "correct": false },
+        { "id": 6, "value": "A PersistentVolume", "correct": false },
+        { "id": 7, "value": "A ConfigMap or Secret", "correct": true },
+        { "id": 8, "value": "A NetworkPolicy", "correct": false }
+      ]
+    },
+    {
+      "text": "What is the primary purpose of a Kubernetes 'Service'?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 9, "value": "To act as a stable anchor and DNS name for a shifting fleet of Pods.", "correct": true },
+        { "id": 10, "value": "To start and stop the cluster nodes.", "correct": false },
+        { "id": 11, "value": "To build Docker images automatically.", "correct": false },
+        { "id": 12, "value": "To format the hard drives of the underlying servers.", "correct": false }
+      ]
+    },
+    {
+      "text": "Student A creates a Service named 'database' in the 'storage' namespace. What is the correct internal DNS URL for Student B to connect to it?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 13, "value": "database.storage.com", "correct": false },
+        { "id": 14, "value": "http://storage.database.svc.cluster.local", "correct": false },
+        { "id": 15, "value": "http://database.storage.svc.cluster.local", "correct": true },
+        { "id": 16, "value": "http://database.cluster.local.storage", "correct": false }
+      ]
+    },
+    {
+      "text": "In the 'k9s' dashboard, what is the keyboard shortcut to view the live streaming logs of a selected Pod?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 17, "value": "Enter", "correct": false },
+        { "id": 18, "value": "s (for shell)", "correct": false },
+        { "id": 19, "value": "d (for describe)", "correct": false },
+        { "id": 20, "value": "l (lowercase L for logs)", "correct": true }
+      ]
+    }
+  ],
+  "images": []
+}

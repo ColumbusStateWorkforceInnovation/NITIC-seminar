@@ -1,0 +1,30 @@
+# ArgoCD Minimal Helm Values
+# Decision: Designed for a single-node k3s/k3d environment to minimize overhead.
+# By default, ArgoCD deploys in HA mode which consumes significant resources.
+# We are disabling HA and utilizing standard Traefik ingress for centralized access.
+
+global:
+  domain: argocd.${LAB_DOMAIN}
+
+redis:
+  # Decision: Disable HA Redis cluster to save memory
+  ha:
+    enabled: false
+
+server:
+  # Decision: Enable insecure mode because TLS termination is handled by Traefik at the edge
+  extraArgs:
+    - --insecure
+
+  # Decision: Ingress generation is disabled. We manually define HTTPRoute objects
+  # to demonstrate the Gateway API paradigm.
+  ingress:
+    enabled: false
+
+repoServer:
+  # Decision: Lower replica count to 1 since we don't need high availability for a classroom lab
+  replicas: 1
+
+applicationSet:
+  # Decision: Enable ApplicationSets to allow dynamic generation of student namespaces via GitOps
+  enabled: true

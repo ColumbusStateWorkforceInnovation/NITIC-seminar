@@ -18,12 +18,10 @@ promtail:
 grafana:
   enabled: true
   adminPassword: "AdmiralBashIsAwesome"
+  # Decision: Ingress generation is disabled. We manually define HTTPRoute objects
+  # to demonstrate the Gateway API paradigm.
   ingress:
-    enabled: true
-    annotations:
-      kubernetes.io/ingress.class: traefik
-    hosts:
-      - grafana.admin.local
+    enabled: false
     path: /
   sidecar:
     datasources:

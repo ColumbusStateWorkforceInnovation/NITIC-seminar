@@ -1,0 +1,11 @@
+# Admiral Bash's Island Adventure — Student Roster
+# ============================================================
+# FORMAT: username,display_name,email
+# - username: lowercase, no spaces. Used as: sailor-<username>
+# - Lines starting with # are ignored
+# ============================================================
+# tanaka,Hiroshi Tanaka,h.tanaka@nitic.ac.jp
+# yamamoto,Kenji Yamamoto,k.yamamoto@nitic.ac.jp
+# sato,Yuki Sato,y.sato@nitic.ac.jp
+# suzuki,Akiko Suzuki,a.suzuki@nitic.ac.jp
+# nakamura,Takeshi Nakamura,t.nakamura@nitic.ac.jp
