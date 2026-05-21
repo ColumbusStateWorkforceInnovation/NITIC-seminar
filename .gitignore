@@ -5,6 +5,13 @@ temp-context/
 # Institution-specific lab config (copy from lab.env.example and fill in)
 lab.env
 
+# Project-local kubeconfig — written by `just bootstrap-k3d`; holds k3d
+# cluster admin credentials. Never commit.
+.kube/
+
+# Pinned target marker — written by `just use-local` / `use-remote`.
+.just-target
+
 # Lab TLS Private Keys
 # DO NOT commit private keys — distribute to server via scp (see certs/README.md)
 # Public certs (ca.crt, tls.crt) ARE committed — students need them to trust the CA.
@@ -14,3 +21,13 @@ certs/*.srl
 # macOS artifacts
 .DS_Store
 **/.DS_Store
+
+# OpenTofu — terraform/ (uss-nitic Azure VM)
+# .terraform.lock.hcl IS committed (pins provider versions); state/keys are not.
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/*.tfplan
+terraform/crash.log
+terraform/terraform.tfvars
+terraform/.ssh/

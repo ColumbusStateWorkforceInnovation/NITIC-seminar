@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# =============================================================================
+#   ⚓  Admiral Bash's Island Adventure — uss-nitic provisioning station
+# -----------------------------------------------------------------------------
+#   direnv config for the Azure test VM.
+#   Setup:   cp .envrc.example .envrc   &&   direnv allow
+#   It will, every time you sail into this directory:
+#     • forge an ed25519 SSH keypair for the ship (once)
+#     • load that key into your ssh-agent
+#     • tell OpenTofu which public key to plant on the VM
+#     • borrow the active subscription from your `az` CLI session
+# =============================================================================
+
+set -euo pipefail
+
+echo ""
+echo "  ⚓ ════════════════════════════════════════════════════════ ⚓"
+echo "        boarding  uss-nitic  ·  rg: nitic-june2026"
+echo "  ⚓ ════════════════════════════════════════════════════════ ⚓"
+
+# --- the ship's key locker ---------------------------------------------------
+export NITIC_SSH_DIR="${PWD}/.ssh"
+export NITIC_SSH_KEY="${NITIC_SSH_DIR}/uss-nitic"
+mkdir -p "${NITIC_SSH_DIR}"
+chmod 700 "${NITIC_SSH_DIR}"
+
+# --- forge a keypair if the ship sails without one ---------------------------
+if [[ ! -f "${NITIC_SSH_KEY}" ]]; then
+  echo "  🔨 No key aboard — forging a fresh ed25519 keypair..."
+  ssh-keygen -t ed25519 -N "" -C "uss-nitic@nitic-june2026" -f "${NITIC_SSH_KEY}" >/dev/null
+  echo "  🔑 Keypair forged at .ssh/uss-nitic{,.pub}"
+else
+  echo "  🔑 Key already aboard: .ssh/uss-nitic"
+fi
+chmod 600 "${NITIC_SSH_KEY}"
+chmod 644 "${NITIC_SSH_KEY}.pub"
+
+# --- hand the key to the ssh-agent quartermaster -----------------------------
+if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
+  if ssh-add -q "${NITIC_SSH_KEY}" 2>/dev/null; then
+    echo "  🧭 Key loaded into ssh-agent."
+  fi
+else
+  echo "  🧭 No ssh-agent running — 'ssh -i .ssh/uss-nitic ...' still works."
+fi
+
+# --- tell OpenTofu which key to plant on the VM ------------------------------
+export TF_VAR_ssh_public_key_path="${NITIC_SSH_KEY}.pub"
+
+# --- borrow the subscription from the az CLI session -------------------------
+if command -v az >/dev/null 2>&1; then
+  _sub="$(az account show --query id -o tsv 2>/dev/null || true)"
+  if [[ -n "${_sub}" ]]; then
+    export ARM_SUBSCRIPTION_ID="${_sub}"
+    _subname="$(az account show --query name -o tsv 2>/dev/null || true)"
+    echo "  ☁️  Azure: ${_subname:-?}  (${ARM_SUBSCRIPTION_ID})"
+  else
+    echo "  ⚠️  Not logged into az — run 'az login', then 'direnv reload'."
+  fi
+else
+  echo "  ⚠️  az CLI not found on PATH — install it to auto-set the subscription."
+fi
+
+echo "  🚢 Ready. Next: tofu init → tofu plan → tofu apply"
+echo ""

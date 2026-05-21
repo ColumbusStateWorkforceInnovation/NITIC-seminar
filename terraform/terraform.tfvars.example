@@ -1,0 +1,66 @@
+# =============================================================================
+#  Copy this file to terraform.tfvars and adjust. terraform.tfvars is gitignored.
+#  Auth: run `az login` first; .envrc exports ARM_SUBSCRIPTION_ID for you.
+# =============================================================================
+
+# Leave commented to use ARM_SUBSCRIPTION_ID from `az` (set by .envrc).
+# subscription_id   = "00000000-0000-0000-0000-000000000000"
+
+resource_group_name = "nitic-june2026"
+location            = "eastus" # GPU SKU region — see note below
+vm_name             = "uss-nitic"
+vm_size             = "Standard_NV4as_v4"
+admin_username      = "azureuser"
+
+# ssh_public_key_path is managed by .envrc (./.ssh/uss-nitic.pub).
+# Uncomment ONLY to point at a different key — this overrides direnv.
+# ssh_public_key_path = "~/.ssh/uss-nitic.pub"
+
+# Ubuntu 26.04 LTS, Gen2. Verify the URN before applying:
+#   az vm image list --publisher Canonical --offer ubuntu-26_04-lts --all -o table
+# 24.04 fallback: offer = "ubuntu-24_04-lts"
+os_image = {
+  publisher = "Canonical"
+  offer     = "ubuntu-26_04-lts"
+  sku       = "server"
+  version   = "latest"
+}
+
+os_disk_size_gb = 64
+os_disk_type    = "Premium_LRS"
+
+# One 256 GB data disk by default. Add objects for more, or set to [] for none.
+data_disks = [
+  {
+    name         = "data01"
+    size_gb      = 256
+    lun          = 0
+    storage_type = "Premium_LRS"
+    caching      = "ReadWrite"
+  },
+]
+
+# Inbound firewall rules. To lock SSH to your IP, set source_address_prefix.
+nsg_rules = [
+  { name = "SSH", priority = 1001, destination_port_range = "22" },
+  # { name = "SSH", priority = 1001, destination_port_range = "22", source_address_prefix = "203.0.113.4" },
+  { name = "HTTP", priority = 1002, destination_port_range = "80" },
+  { name = "HTTPS", priority = 1003, destination_port_range = "443" },
+  { name = "k3s-API", priority = 1004, destination_port_range = "6443" },
+  { name = "NodePorts", priority = 1005, destination_port_range = "30000-32767" },
+]
+
+# NV4as_v4 is an AMD GPU — driver install on Linux is manual. Leave false
+# unless you switch vm_size to an NVIDIA SKU (e.g. Standard_NC4as_T4_v3).
+install_gpu_driver = false
+
+tags = {
+  project     = "NITIC-seminar"
+  seminar     = "Admiral Bash's Island Adventure"
+  environment = "test"
+}
+
+# -----------------------------------------------------------------------------
+# Region note: GPU SKUs are not in every region. Confirm NV4as_v4 is offered:
+#   az vm list-skus --location eastus --size Standard_NV --all -o table
+# -----------------------------------------------------------------------------

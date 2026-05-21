@@ -1,0 +1,162 @@
+# =============================================================================
+#  Variables — every value the lab might want to change lives here.
+#  Override any of these in terraform.tfvars (copy from terraform.tfvars.example).
+# =============================================================================
+
+variable "subscription_id" {
+  description = "Azure subscription ID. Leave empty to use ARM_SUBSCRIPTION_ID (exported by .envrc from `az account show`)."
+  type        = string
+  default     = ""
+}
+
+variable "resource_group_name" {
+  description = "Resource group to create the VM and its network into."
+  type        = string
+  default     = "nitic-june2026"
+}
+
+variable "location" {
+  description = <<-EOT
+    Azure region. NOTE: GPU SKUs are not in every region — verify the chosen
+    vm_size is offered here before applying:
+      az vm list-skus --location <region> --size Standard_NV --all -o table
+  EOT
+  type        = string
+  default     = "eastus"
+}
+
+variable "vm_name" {
+  description = "Name of the virtual machine (also used as the prefix for vnet/nsg/nic/disks)."
+  type        = string
+  default     = "uss-nitic"
+}
+
+variable "vm_size" {
+  description = "Azure VM SKU. Standard_NV4as_v4 is a GPU SKU (1/8 AMD Radeon Instinct MI25)."
+  type        = string
+  default     = "Standard_NV4as_v4"
+}
+
+variable "admin_username" {
+  description = "Admin (SSH) user created on the VM."
+  type        = string
+  default     = "azureuser"
+}
+
+variable "ssh_public_key_path" {
+  description = <<-EOT
+    Path to the SSH PUBLIC key planted on the VM. Normally set automatically by
+    .envrc (TF_VAR_ssh_public_key_path -> ./.ssh/uss-nitic.pub). Only set this
+    in terraform.tfvars if you want to override the direnv-managed key.
+  EOT
+  type        = string
+  default     = "~/.ssh/uss-nitic.pub"
+}
+
+variable "os_image" {
+  description = <<-EOT
+    Marketplace image (publisher:offer:sku:version). Default targets Ubuntu
+    26.04 LTS "Resolute Raccoon", Gen2 — the Gen2 SKU is plain "server"
+    (there is no "server-gen2"). List available SKUs with:
+      az vm image list-skus --location eastus --publisher Canonical --offer ubuntu-26_04-lts -o table
+    24.04 LTS fallback: offer = "ubuntu-24_04-lts" (sku stays "server").
+  EOT
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+    version   = string
+  })
+  default = {
+    publisher = "Canonical"
+    offer     = "ubuntu-26_04-lts"
+    sku       = "server"
+    version   = "latest"
+  }
+}
+
+variable "os_disk_size_gb" {
+  description = "Size of the OS disk in GB."
+  type        = number
+  default     = 64
+}
+
+variable "os_disk_type" {
+  description = "Storage account type for the OS disk (Standard_LRS, StandardSSD_LRS, Premium_LRS)."
+  type        = string
+  default     = "Premium_LRS"
+}
+
+variable "data_disks" {
+  description = "Extra managed data disks to create and attach. Empty list = no data disks."
+  type = list(object({
+    name         = string
+    size_gb      = number
+    lun          = number
+    storage_type = string
+    caching      = string
+  }))
+  default = [
+    {
+      name         = "data01"
+      size_gb      = 256
+      lun          = 0
+      storage_type = "Premium_LRS"
+      caching      = "ReadWrite"
+    },
+  ]
+}
+
+variable "nsg_rules" {
+  description = "Inbound NSG allow rules. Defaults cover SSH, HTTP/S, the k3s API, and the Kubernetes NodePort range."
+  type = list(object({
+    name                   = string
+    priority               = number
+    destination_port_range = string
+    source_address_prefix  = optional(string, "*")
+    protocol               = optional(string, "Tcp")
+  }))
+  default = [
+    { name = "SSH", priority = 1001, destination_port_range = "22" },
+    { name = "HTTP", priority = 1002, destination_port_range = "80" },
+    { name = "HTTPS", priority = 1003, destination_port_range = "443" },
+    { name = "k3s-API", priority = 1004, destination_port_range = "6443" },
+    { name = "NodePorts", priority = 1005, destination_port_range = "30000-32767" },
+  ]
+}
+
+variable "install_gpu_driver" {
+  description = <<-EOT
+    Whether to install the GPU driver via a VM extension. Default false.
+    NOTE: Standard_NV4as_v4 uses an AMD GPU — on Linux the AMD driver generally
+    needs a manual install in the guest. The extension below targets the NVIDIA
+    Linux driver, so flip this on only if you switch vm_size to an NVIDIA SKU
+    (e.g. Standard_NC4as_T4_v3).
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "gpu_driver_extension" {
+  description = "VM extension used when install_gpu_driver = true."
+  type = object({
+    publisher            = string
+    type                 = string
+    type_handler_version = string
+  })
+  default = {
+    publisher            = "Microsoft.HpcCompute"
+    type                 = "NvidiaGpuDriverLinux"
+    type_handler_version = "1.9"
+  }
+}
+
+variable "tags" {
+  description = "Tags applied to every resource."
+  type        = map(string)
+  default = {
+    project     = "NITIC-seminar"
+    seminar     = "Admiral Bash's Island Adventure"
+    environment = "test"
+  }
+}
