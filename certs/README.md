@@ -4,7 +4,7 @@
 **Program:** Working Connections — DevOps Intensive
 **Fleet:** ITIN Working Connections Fleet
 **Valid For:** 20 days (intentionally ephemeral — lab use only)
-**Expires:** Jun  9 09:58:50 2026 GMT
+**Expires:** Jun 10 03:33:31 2026 GMT
 **Covers:** `*.nitic2026cbus.voyage` and all lab subdomains
 
 ---
@@ -69,6 +69,7 @@ openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt certs/tls.crt
 | grafana.nitic2026cbus.voyage | Grafana Dashboards |
 | ai.nitic2026cbus.voyage | Ollama/LiteLLM AI Endpoint |
 | mailpit.nitic2026cbus.voyage | Mailpit Email Sandbox |
+| db.nitic2026cbus.voyage | Adminer Database UI |
 | docs.nitic2026cbus.voyage | MkDocs Curriculum |
-| quiz.nitic2026cbus.voyage | Flash Poll App |
+| poll.nitic2026cbus.voyage | Flash Poll App |
 

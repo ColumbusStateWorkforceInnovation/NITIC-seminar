@@ -63,6 +63,32 @@ fi
 
 echo "Detected OS: $OS"
 
+# ── CPU Architecture Detection ───────────────────────────────
+# Several tools below ship per-architecture release artifacts. A Multipass VM
+# on an Apple-Silicon Mac is arm64; most cloud x86 VMs are amd64. Hardcoding
+# amd64 installs non-working x86 binaries on arm64 ("exec format error").
+if command -v dpkg &> /dev/null; then
+    RAW_ARCH="$(dpkg --print-architecture)"
+else
+    RAW_ARCH="$(uname -m)"
+fi
+case "$RAW_ARCH" in
+    amd64|x86_64)
+        KARCH="amd64"      # kubectl / k9s
+        AICHAT_ARCH="x86_64"
+        ;;
+    arm64|aarch64)
+        KARCH="arm64"      # kubectl / k9s
+        AICHAT_ARCH="aarch64"
+        ;;
+    *)
+        echo "❌ Unsupported CPU architecture: ${RAW_ARCH}"
+        echo "   Supported: amd64/x86_64 and arm64/aarch64."
+        exit 1
+        ;;
+esac
+echo "Detected architecture: ${RAW_ARCH} (kubectl/k9s=${KARCH}, aichat=${AICHAT_ARCH})"
+
 # Install System Dependencies & Fish Shell
 echo "🐟 Installing System Dependencies and Fish Shell..."
 if [[ "$OS" == "ubuntu" || "$OS" == "debian" || "$OS_LIKE" == *"debian"* ]]; then
@@ -134,7 +160,7 @@ fi
 # Install Kubectl
 echo "⛵ Installing kubectl..."
 if ! command -v kubectl &> /dev/null; then
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${KARCH}/kubectl"
     sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
     rm kubectl
 else
@@ -156,7 +182,7 @@ fi
 echo "🐕 Installing K9s..."
 if ! command -v k9s &> /dev/null; then
     K9S_VERSION=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-    curl -Lo k9s.tar.gz "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_amd64.tar.gz"
+    curl -Lo k9s.tar.gz "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_${KARCH}.tar.gz"
     tar -xzf k9s.tar.gz k9s
     sudo install -o root -g root -m 0755 k9s /usr/local/bin/k9s
     rm k9s.tar.gz k9s
@@ -165,9 +191,34 @@ else
 fi
 
 # Install D2
+# Installed straight from the GitHub release tarball — the same pattern as
+# kubectl, k9s, and aichat above — so there is NO dependency on `make` or the
+# external d2lang.com install script (its installer runs `make install`).
+# Every step is guarded so a download/extract failure (e.g. a GitHub rate-limit
+# when a whole class installs at once) can't trip `set -e` and abort the script
+# before the critical CA-cert and /etc/hosts steps below. D2 is a diagram tool
+# — the least critical thing this script installs.
 echo "🗺️ Installing D2..."
 if ! command -v d2 &> /dev/null; then
-    curl -fsSL https://d2lang.com/install.sh | sh -s --
+    D2_VERSION=$(curl -s https://api.github.com/repos/terrastruct/d2/releases/latest | grep '"tag_name":' | sed -E 's/.*"(v[^"]+)".*/\1/')
+    if [[ -n "$D2_VERSION" ]] && curl -fLo d2.tar.gz "https://github.com/terrastruct/d2/releases/download/${D2_VERSION}/d2-${D2_VERSION}-linux-${KARCH}.tar.gz"; then
+        mkdir -p d2-extract
+        if tar -xzf d2.tar.gz -C d2-extract 2>/dev/null; then
+            D2_BIN="$(find d2-extract -type f -name d2 | head -1)"
+            if [[ -n "$D2_BIN" ]]; then
+                sudo install -o root -g root -m 0755 "$D2_BIN" /usr/local/bin/d2
+                echo "   ✅ D2 ${D2_VERSION} installed."
+            else
+                echo "   ⚠️  d2 binary not found in the release tarball — skipping (non-critical)."
+            fi
+        else
+            echo "   ⚠️  D2 tarball could not be extracted — skipping (non-critical)."
+        fi
+        rm -rf d2.tar.gz d2-extract
+    else
+        echo "   ⚠️  D2 download failed — continuing without it (non-critical diagram tool)."
+        echo "      Re-run this script later to retry D2; the rest of setup is unaffected."
+    fi
 else
     echo "D2 already installed."
 fi
@@ -176,7 +227,7 @@ fi
 echo "🤖 Installing aichat..."
 if ! command -v aichat &> /dev/null; then
     AICHAT_VERSION=$(curl -s https://api.github.com/repos/sigoden/aichat/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-    curl -Lo aichat.tar.gz "https://github.com/sigoden/aichat/releases/download/v${AICHAT_VERSION}/aichat-v${AICHAT_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+    curl -Lo aichat.tar.gz "https://github.com/sigoden/aichat/releases/download/v${AICHAT_VERSION}/aichat-v${AICHAT_VERSION}-${AICHAT_ARCH}-unknown-linux-musl.tar.gz"
     tar -xzf aichat.tar.gz aichat
     sudo install -o root -g root -m 0755 aichat /usr/local/bin/aichat
     rm aichat.tar.gz aichat
@@ -263,6 +314,7 @@ LAB_HOSTS=(
   "grafana.${LAB_DOMAIN}"
   "ai.${LAB_DOMAIN}"
   "mailpit.${LAB_DOMAIN}"
+  "db.${LAB_DOMAIN}"
   "docs.${LAB_DOMAIN}"
   "poll.${LAB_DOMAIN}"
 )
@@ -287,4 +339,7 @@ else
 fi
 
 echo "⚓ Setup Complete! The shipyard is ready."
+echo ""
+echo "   Self-check this VM any time:  bash scripts/verify-client.sh"
+echo ""
 echo "Type 'fish' to drop into your newly configured shell and start the adventure!"
