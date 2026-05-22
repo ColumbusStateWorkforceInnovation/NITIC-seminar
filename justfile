@@ -2,12 +2,13 @@
 # ⚓ Admiral Bash's Island Adventure — Justfile
 # ============================================================
 #
-# USAGE:
+# USAGE (REMOTE server):
 #   1. Copy lab.env.example → lab.env and fill in your values
-#   2. Run `just init` to generate certs and validate config
+#   2. Run `just init` to validate config and tools
 #   3. Run `just bootstrap-server` to set up K3s on the server
-#   4. Run `just push-cert` to load TLS into the cluster
-#   5. Run `just provision` to create student accounts
+#   4. Run `just deploy-cert-manager` then `just deploy-letsencrypt` for TLS
+#   5. Run `just deploy-core` to apply the core manifests
+#   6. Run `just provision` to create student accounts
 #
 # Install just: https://just.systems  (brew install just)
 # ============================================================
@@ -19,7 +20,7 @@ set dotenv-filename := "lab.env"
 # ── Default Values ──────────────────────────────────────────
 # All of these can be overridden in lab.env
 
-LAB_DOMAIN     := env_var_or_default("LAB_DOMAIN",     "nitic2026cbus.voyage")
+LAB_DOMAIN     := env_var_or_default("LAB_DOMAIN",     "wagbiz.org")
 SERVER_IP      := env_var_or_default("SERVER_IP",      "")
 SERVER_USER    := env_var_or_default("SERVER_USER",    "ubuntu")
 SERVER_SSH_KEY := env_var_or_default("SERVER_SSH_KEY", "~/.ssh/id_rsa")
@@ -102,19 +103,23 @@ help:
 # 🚀 SETUP RECIPES
 # ============================================================
 
-# [FIRST TIME] Full setup: validate config, generate cert, show next steps
-init: check-config check-tools cert
+# [FIRST TIME] Full setup: validate config and tools, show next steps
+init: check-config check-tools
     @echo ""
     @echo "  ✅ Lab initialized!"
     @echo ""
     @echo "  Next steps (REMOTE server):"
-    @echo "    1. just bootstrap-server   — install K3s on the server"
-    @echo "    2. just deploy-core        — apply all k8s manifests (runs push-cert)"
-    @echo "    3. just provision          — create student accounts"
+    @echo "    1. just bootstrap-server    — install K3s on the server"
+    @echo "    2. just deploy-cert-manager — install cert-manager"
+    @echo "    3. just deploy-letsencrypt  — issue the Let's Encrypt wildcard cert"
+    @echo "    4. just deploy-core         — apply all k8s manifests"
+    @echo "    5. just provision           — create student accounts"
     @echo ""
     @echo "  Next steps (LOCAL k3d test loop):"
-    @echo "    1. just bootstrap-k3d      — create local k3d cluster + Gateway API"
-    @echo "    2. just deploy-core        — apply all k8s manifests to local k3d"
+    @echo "    1. just bootstrap-k3d  — create local k3d cluster + Gateway API"
+    @echo "    2. just cert           — generate a self-signed wildcard cert"
+    @echo "    3. just push-cert      — load it as the wildcard-tls secret"
+    @echo "    4. just deploy-core    — apply all k8s manifests to local k3d"
     @echo ""
 
 # Validate that required config values are set
@@ -131,11 +136,7 @@ check-config:
     else
         echo "  ✅ SERVER_IP = {{SERVER_IP}}"
     fi
-    if [[ "{{LAB_DOMAIN}}" == "nitic2026cbus.voyage" ]]; then
-        echo "  ⚠️  LAB_DOMAIN is still the default (nitic2026cbus.voyage). Change it in lab.env if needed."
-    else
-        echo "  ✅ LAB_DOMAIN = {{LAB_DOMAIN}}"
-    fi
+    echo "  ✅ LAB_DOMAIN = {{LAB_DOMAIN}}"
     echo "  ✅ ORG_NAME = {{ORG_NAME}}"
     echo "  ✅ CERT_DAYS = {{CERT_DAYS}}"
     [[ $ERRORS -eq 0 ]] || { echo ""; echo "  Fix errors above in lab.env and re-run."; exit 1; }
@@ -259,13 +260,14 @@ enable-gateway:
     {{SSH}} "kubectl wait --for=condition=Accepted gatewayclass/traefik --timeout=120s"
     echo "✅ Gateway API is live."
 
-# Apply the wildcard-tls secret, gateway, and all core tool manifests.
+# Apply the gateway and all core tool manifests.
 # Uses envsubst to inject LAB_DOMAIN / LAB_ADMIN_EMAIL into the YAML templates.
-# NOTE: cluster-issuer.yaml is intentionally NOT applied here — ClusterIssuer is
-# a cert-manager CRD (cert-manager is not installed by deploy-core) and the
-# issuer is unused on internal/local deploys. Apply it manually only on a
-# public-IP deployment after installing cert-manager.
-deploy-core: push-cert
+#
+# TLS: the gateway consumes the `wildcard-tls` secret. On a REMOTE deploy that
+# secret is created by cert-manager — run `just deploy-cert-manager` and
+# `just deploy-letsencrypt` BEFORE this recipe. For a LOCAL k3d test loop, run
+# `just cert` + `just push-cert` first to load a self-signed wildcard-tls.
+deploy-core: ensure-namespaces
     @echo "⚙️  Deploying core k8s manifests to {{ if LOCAL == "1" { "local k3d cluster" } else { SERVER_IP } }} (domain: {{LAB_DOMAIN}})..."
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/core-tools/gateway.yaml        | {{SSH}} "kubectl apply -f -"
@@ -320,6 +322,110 @@ deploy-rancher:
     LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/rancher/rancher-values.yaml \
       | {{SSH}} "helm upgrade --install rancher rancher-stable/rancher -n cattle-system --create-namespace -f -"
+
+# Deploy the NVIDIA device plugin so pods can request nvidia.com/gpu
+deploy-gpu-plugin:
+    @echo "🎮 Ensuring the 'nvidia' RuntimeClass..."
+    @printf 'apiVersion: node.k8s.io/v1\nkind: RuntimeClass\nmetadata:\n  name: nvidia\nhandler: nvidia\n' | {{SSH}} "kubectl apply -f -"
+    @echo "🎮 Deploying the NVIDIA device plugin..."
+    {{SSH}} "helm repo add nvdp https://nvidia.github.io/k8s-device-plugin && helm repo update"
+    {{SSH}} "helm upgrade --install nvdp nvdp/nvidia-device-plugin \
+      --namespace nvidia-device-plugin --create-namespace \
+      --set runtimeClassName=nvidia"
+
+# ============================================================
+# 🔐 SSO / IDENTITY RECIPES (Dex)
+# ============================================================
+
+# Deploy Dex — centralized OIDC identity (sso.{{LAB_DOMAIN}}) + student roster.
+# RESTRICTED envsubst: a bare envsubst would mangle the `$` in the bcrypt
+# password hashes inside dex.yaml.
+deploy-dex:
+    @echo "🔐 Deploying Dex SSO (domain: sso.{{LAB_DOMAIN}})..."
+    @LAB_DOMAIN={{LAB_DOMAIN}} envsubst '${LAB_DOMAIN}' < k8s/core-tools/dex.yaml \
+      | {{SSH}} "kubectl apply -f -"
+    @echo "♻️  Rolling Dex to pick up roster/client changes..."
+    -{{SSH}} "kubectl -n admin-tools rollout restart deploy/dex"
+
+# Generate a bcrypt hash for a new Dex roster entry (students-as-code).
+# Usage:  just dex-hash 'Their-Password'
+dex-hash PASSWORD:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    docker run --rm httpd:2-alpine htpasswd -bnBC 10 "" '{{PASSWORD}}' \
+      | tr -d ':\n' | sed 's/^\$2y/\$2a/'
+    echo
+
+# Apply OIDC auth to Harbor — POST-INSTALL (the Harbor Helm chart can't do this).
+# Run AFTER `just deploy-harbor` and `just deploy-dex`.
+harbor-sso:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🔐 Switching Harbor to OIDC auth via the config API..."
+    curl -fsS -k -u "admin:AdmiralBashIsAwesome" -X PUT \
+      "https://harbor.{{LAB_DOMAIN}}/api/v2.0/configurations" \
+      -H "Content-Type: application/json" \
+      -d '{"auth_mode":"oidc_auth","oidc_name":"Dex","oidc_endpoint":"https://sso.{{LAB_DOMAIN}}","oidc_client_id":"harbor","oidc_client_secret":"harbor-oidc-secret","oidc_scope":"openid,profile,email,groups","oidc_groups_claim":"groups","oidc_auto_onboard":true,"oidc_user_claim":"name","oidc_verify_cert":false}'
+    echo
+    echo "✅ Harbor OIDC configured — students sign in via 'LOGIN VIA OIDC PROVIDER'."
+
+# Deploy cert-manager via Helm
+deploy-cert-manager:
+    @echo "🔐 Deploying cert-manager..."
+    {{SSH}} "helm repo add jetstack https://charts.jetstack.io && helm repo update"
+    {{SSH}} "helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true"
+
+# Configure Let's Encrypt with Cloudflare DNS-01 (requires CLOUDFLARE_API_TOKEN env var)
+CLOUDFLARE_API_TOKEN := env_var_or_default("CLOUDFLARE_API_TOKEN", "")
+deploy-letsencrypt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ -z "{{CLOUDFLARE_API_TOKEN}}" ]]; then
+        echo "❌ CLOUDFLARE_API_TOKEN not set. Export it or add to lab.env."
+        exit 1
+    fi
+    echo "🔐 Creating Cloudflare API secret..."
+    {{SSH}} "kubectl create secret generic cloudflare-api-token \
+        --from-literal=api-token={{CLOUDFLARE_API_TOKEN}} \
+        -n cert-manager --dry-run=client -o yaml | kubectl apply -f -"
+    echo "🔐 Creating Let's Encrypt ClusterIssuer..."
+    {{SSH}} "kubectl apply -f - <<'EOF'
+    apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: letsencrypt-prod
+    spec:
+      acme:
+        server: https://acme-v02.api.letsencrypt.org/directory
+        email: {{LAB_ADMIN_EMAIL}}
+        privateKeySecretRef:
+          name: letsencrypt-prod-account-key
+        solvers:
+        - dns01:
+            cloudflare:
+              apiTokenSecretRef:
+                name: cloudflare-api-token
+                key: api-token
+    EOF"
+    echo "🔐 Ensuring admin-tools namespace exists..."
+    {{SSH}} "kubectl create namespace admin-tools --dry-run=client -o yaml | kubectl apply -f -"
+    echo "🔐 Creating wildcard certificate for *.{{LAB_DOMAIN}}..."
+    {{SSH}} "kubectl apply -f - <<'EOF'
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: wildcard-cert
+      namespace: admin-tools
+    spec:
+      secretName: wildcard-tls
+      issuerRef:
+        name: letsencrypt-prod
+        kind: ClusterIssuer
+      dnsNames:
+      - \"{{LAB_DOMAIN}}\"
+      - \"*.{{LAB_DOMAIN}}\"
+    EOF"
+    echo "✅ Let's Encrypt configured. Check: kubectl get certificate -n admin-tools"
 
 # SSH into the server
 ssh:
@@ -424,6 +530,7 @@ show-hosts:
     @echo "  # (setup-client.sh does this automatically)"
     @echo "  {{SERVER_IP}}  rancher.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  argocd.{{LAB_DOMAIN}}"
+    @echo "  {{SERVER_IP}}  sso.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  gitea.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  harbor.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  grafana.{{LAB_DOMAIN}}"

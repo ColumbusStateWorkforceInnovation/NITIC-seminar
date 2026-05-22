@@ -7,16 +7,20 @@
 
 ## Day 1: The Ship Has Sunk (Linux & Containers)
 
+> **Note:** Day 1 opens with a full live VM build — students install VirtualBox and Ubuntu and run the bootstrap script before any lecture. This pushes the Linux/containers and Kubernetes lectures to the afternoon. The Socratic Boatswain is no longer a standalone block; it is introduced inside Lab 01.
+
 | Time | Type | Topic & Activity |
 | :--- | :--- | :--- |
-| **09:00 - 10:30** | Lecture | Welcome script execution (`setup-client.sh`). Linux basics & intro to Containerization. |
-| **10:30 - 10:45** | Break | *15 Minute Morning Break* |
-| **10:45 - 12:00** | Lab | **Mission:** The First Raft & Claiming Land. Writing Dockerfiles, Instructor Demo, Student Namespaces. |
+| **09:00 - 09:15** | Welcome | Storytime ("Day 1 Morning" reading) & setting the stage. |
+| **09:15 - 10:30** | Lab / Setup | **Lab 00 — Building Your Vessel (Pt 1):** Install VirtualBox, create the VM, launch the Ubuntu installer. |
+| **10:30 - 10:45** | Break | *15 Minute Morning Break — Ubuntu installs* |
+| **10:45 - 12:00** | Lab / Setup | **Lab 00 — Building Your Vessel (Pt 2):** First boot, clone the repo, run `setup-client.sh`, verify. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
-| **1:00 - 2:30** | Lecture | Intro to Kubernetes. Understanding Pods versus Containers. |
-| **2:30 - 2:45** | Break | *15 Minute Afternoon Break* |
-| **2:45 - 4:15** | Lab | **Mission:** Paddling Out. Generating `pod.yaml`, deploying, `kubectl exec`, and reading logs. |
-| **4:15 - 5:00** | AI Connect | **Curiosity Side-Quest:** Setup `AGENTS.md` and meet the Socratic Boatswain. |
+| **1:00 - 1:45** | Lecture | The Wreckage: Linux basics & intro to Containerization. |
+| **1:45 - 3:00** | Lab | **Mission:** The First Raft & Claiming Land. Writing Dockerfiles, Instructor Demo, Student Namespaces. |
+| **3:00 - 3:15** | Break | *15 Minute Afternoon Break* |
+| **3:15 - 4:00** | Lecture | Intro to Kubernetes. Understanding Pods versus Containers. |
+| **4:00 - 5:00** | Lab | **Mission:** Paddling Out. Generating `pod.yaml`, `kubectl exec`, reading logs, the Scavenger Hunt & debrief. |
 
 ---
 

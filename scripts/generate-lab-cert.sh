@@ -6,7 +6,7 @@
 #
 # PURPOSE:
 #   Generates a self-signed Certificate Authority and a wildcard
-#   TLS certificate for the lab domain (*.nitic2026cbus.voyage).
+#   TLS certificate for the lab domain (*.wagbiz.org).
 #
 #   The CA cert is distributed to student VMs so their browsers
 #   and CLI tools trust the cluster's HTTPS endpoints without
@@ -45,7 +45,7 @@ set -euo pipefail
 #   k8s/core-tools/gitea-values.yaml    (ingress.hosts)
 #   k8s/core-tools/harbor-values.yaml   (expose.ingress.hosts)
 #   scripts/setup-client.sh             (/etc/hosts entries)
-DOMAIN="${LAB_DOMAIN:-nitic2026cbus.voyage}"
+DOMAIN="${LAB_DOMAIN:-wagbiz.org}"
 DAYS="${CERT_DAYS:-20}"
 ORG_NAME="${ORG_NAME:-National Information Technology Innovation Center}"
 ORG_UNIT="${ORG_UNIT:-ITIN Working Connections Fleet}"
@@ -122,7 +122,7 @@ echo "   ✅ TLS key + CSR generated."
 echo "🖊️   Step 3/4: Signing wildcard certificate with CA..."
 
 # Build SAN (Subject Alternative Names) extension config
-# Covers both *.nitic2026cbus.voyage and nitic2026cbus.voyage itself
+# Covers both *.wagbiz.org and wagbiz.org itself
 cat > "${OUT_DIR}/san.cnf" <<EOF
 [req]
 req_extensions = v3_req

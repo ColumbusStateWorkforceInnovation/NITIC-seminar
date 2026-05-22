@@ -10,7 +10,7 @@
 #   bash setup-client.sh 192.168.X.X
 #
 # OPTIONAL ENV:
-#   LAB_DOMAIN       — Override the default lab domain (nitic2026cbus.voyage).
+#   LAB_DOMAIN       — Override the default lab domain (wagbiz.org).
 #   AI_MODEL         — Ollama model tag the cluster is serving. Default: gemma3:4b.
 #                      Must match the `model_name` exposed by LiteLLM (templated
 #                      from AI_MODEL in k8s/core-tools/ai-engine.yaml at deploy).
@@ -22,6 +22,10 @@
 #                      The lab CA is trusted before fetch, so HTTPS works.
 #   SKIP_DOCKER      — Set to "1" to skip the Docker install block (e.g., if
 #                      Docker is already installed by the VM image).
+#   INSTALL_LAB_CA   — Set to "1" ONLY for the legacy self-signed-cert
+#                      deployment (a server with no public DNS). The
+#                      production cluster serves a real Let's Encrypt cert
+#                      that is trusted natively — leave this unset.
 
 set -e
 
@@ -36,7 +40,7 @@ if [[ -z "$SERVER_IP" ]]; then
 fi
 
 # Lab domain — reads from env, falls back to default. Override via lab.env.
-LAB_DOMAIN="${LAB_DOMAIN:-nitic2026cbus.voyage}"
+LAB_DOMAIN="${LAB_DOMAIN:-wagbiz.org}"
 
 # AI engine — model name must match the litellm-config `model_name` (which is
 # `${AI_MODEL}` after envsubst at deploy time). API key must match LiteLLM's
@@ -248,34 +252,37 @@ else
     echo "aichat already installed."
 fi
 
-# ── Lab CA Certificate ────────────────────────────────────────
-# Install the NITIC Working Connections Fleet CA so the browser and
-# CLI tools trust the cluster's wildcard TLS cert without warnings.
-echo "🔐 Installing NITIC Lab CA Certificate..."
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-CA_CERT="${REPO_ROOT}/certs/ca.crt"
-
-if [[ -f "$CA_CERT" ]]; then
-    sudo cp "$CA_CERT" /usr/local/share/ca-certificates/nitic-working-connections-ca.crt
-    sudo update-ca-certificates
-    echo "   ✅ CA cert installed and trust store updated."
+# ── Lab TLS trust ─────────────────────────────────────────────
+# The production cluster (${LAB_DOMAIN}) serves a real Let's Encrypt wildcard
+# cert — issued by cert-manager via the Cloudflare DNS-01 solver (see
+# `just deploy-letsencrypt`). Browsers, CLI tools, and the Docker daemon all
+# trust it natively, so NO CA install is needed.
+#
+# The block below is only for the legacy self-signed-cert fallback (a server
+# with no public DNS, using `just cert` / `just push-cert`). It is opt-in:
+#   INSTALL_LAB_CA=1 bash setup-client.sh <SERVER_IP>
+if [[ "${INSTALL_LAB_CA:-0}" == "1" ]]; then
+    echo "🔐 INSTALL_LAB_CA=1 — installing the legacy self-signed lab CA..."
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+    CA_CERT="${REPO_ROOT}/certs/ca.crt"
+    if [[ -f "$CA_CERT" ]]; then
+        sudo cp "$CA_CERT" /usr/local/share/ca-certificates/nitic-working-connections-ca.crt
+        sudo update-ca-certificates
+        echo "   ✅ CA cert installed and trust store updated."
+        # Docker's daemon does NOT use the system trust store — it needs a
+        # per-registry cert at /etc/docker/certs.d/<host>/ca.crt for Harbor.
+        if command -v docker &> /dev/null; then
+            HARBOR_HOST="harbor.${LAB_DOMAIN}"
+            sudo mkdir -p "/etc/docker/certs.d/${HARBOR_HOST}"
+            sudo cp "$CA_CERT" "/etc/docker/certs.d/${HARBOR_HOST}/ca.crt"
+            echo "   ✅ Docker daemon will now trust ${HARBOR_HOST}."
+        fi
+    else
+        echo "   ⚠️  INSTALL_LAB_CA=1 but no CA cert at ${CA_CERT} — skipping."
+    fi
 else
-    echo "   ⚠️  CA cert not found at ${CA_CERT}"
-    echo "      Make sure you cloned the full repo before running this script."
-fi
-
-# ── Harbor Daemon Trust (Docker) ──────────────────────────────
-# The Day 1 lab asks students to `docker push harbor.${LAB_DOMAIN}/...`.
-# Docker's daemon does NOT use the system trust store; it requires per-registry
-# certs at /etc/docker/certs.d/<host>/ca.crt. We install the lab CA there so
-# the push works without --insecure-registry flags.
-if [[ -f "$CA_CERT" ]] && command -v docker &> /dev/null; then
-    HARBOR_HOST="harbor.${LAB_DOMAIN}"
-    echo "🔐 Installing lab CA into Docker daemon trust (${HARBOR_HOST})..."
-    sudo mkdir -p "/etc/docker/certs.d/${HARBOR_HOST}"
-    sudo cp "$CA_CERT" "/etc/docker/certs.d/${HARBOR_HOST}/ca.crt"
-    echo "   ✅ Docker daemon will now trust ${HARBOR_HOST}."
+    echo "🔐 TLS: cluster serves a real Let's Encrypt cert — no CA install needed."
 fi
 
 # ── Kubeconfig Fetch (optional) ───────────────────────────────

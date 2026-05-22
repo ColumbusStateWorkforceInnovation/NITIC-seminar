@@ -5,7 +5,7 @@
 #
 # PURPOSE:
 #   Verifies a student/client VM after setup-client.sh has run:
-#   the lab tools, Docker, the lab CA, /etc/hosts, the aichat and
+#   the lab tools, Docker, TLS trust, /etc/hosts, the aichat and
 #   Fish configs, Harbor registry trust, and HTTPS connectivity to
 #   the lab cluster through the Gateway.
 #
@@ -15,7 +15,7 @@
 #   bash scripts/verify-client.sh
 #
 # OPTIONAL ENV:
-#   LAB_DOMAIN   Override the lab domain (default: nitic2026cbus.voyage).
+#   LAB_DOMAIN   Override the lab domain (default: wagbiz.org).
 #
 # EXIT CODE:
 #   0 — every client-side check passed (warnings allowed).
@@ -24,7 +24,7 @@
 #   service down, a route not deployed) — they don't fail the run.
 # ============================================================
 
-LAB_DOMAIN="${LAB_DOMAIN:-nitic2026cbus.voyage}"
+LAB_DOMAIN="${LAB_DOMAIN:-wagbiz.org}"
 
 PASS=0
 WARN=0
@@ -89,20 +89,22 @@ else
     fail "docker daemon not reachable (is it running?)"
 fi
 
-# ── Lab CA certificate ──────────────────────────────────────
-section "Lab CA certificate"
+# ── TLS trust ───────────────────────────────────────────────
+# The production cluster serves a real Let's Encrypt cert, trusted natively —
+# normally there is no lab CA to find, and that is correct. The real proof is
+# the HTTPS connectivity check further down. A legacy self-signed CA is only
+# present on a no-public-DNS deployment (INSTALL_LAB_CA=1); report it if so.
+section "TLS trust"
 CA_FILE="/usr/local/share/ca-certificates/nitic-working-connections-ca.crt"
 if [ -f "$CA_FILE" ]; then
-    ca_subj="$(openssl x509 -in "$CA_FILE" -noout -subject 2>/dev/null | sed 's/^subject=//')"
     ca_exp="$(openssl x509 -in "$CA_FILE" -noout -enddate 2>/dev/null | cut -d= -f2)"
-    pass "lab CA installed —${ca_subj}"
     if openssl x509 -in "$CA_FILE" -noout -checkend 0 > /dev/null 2>&1; then
-        info "valid — expires ${ca_exp}"
+        info "legacy self-signed lab CA installed (valid until ${ca_exp})"
     else
-        fail "lab CA has EXPIRED (${ca_exp}) — regenerate with 'just cert' and redistribute"
+        warn "legacy self-signed lab CA installed but EXPIRED (${ca_exp})"
     fi
 else
-    fail "lab CA not found at ${CA_FILE} — setup-client.sh CA step did not run"
+    info "no lab CA installed — expected; the cluster uses a real Let's Encrypt cert"
 fi
 
 # ── /etc/hosts lab entries ──────────────────────────────────
@@ -155,17 +157,20 @@ else
 fi
 
 # ── Docker → Harbor trust ───────────────────────────────────
+# With the real Let's Encrypt cert, the Docker daemon trusts harbor.${LAB_DOMAIN}
+# via the system trust store — no per-registry cert is needed. A per-registry
+# cert is only present on the legacy self-signed path.
 section "Docker registry trust (Harbor)"
 HARBOR_CA="/etc/docker/certs.d/harbor.${LAB_DOMAIN}/ca.crt"
 if [ -f "$HARBOR_CA" ]; then
-    pass "Docker trusts harbor.${LAB_DOMAIN} (per-registry CA installed)"
+    info "legacy per-registry CA present for harbor.${LAB_DOMAIN}"
 else
-    warn "Docker registry CA missing (${HARBOR_CA}) — 'docker push' to Harbor may fail on TLS"
+    info "no per-registry CA — Docker trusts harbor.${LAB_DOMAIN} via the system store"
 fi
 
 # ── Lab connectivity (HTTPS via the Gateway) ────────────────
 # A trusted-cert HTTPS request to each lab host. Any HTTP code
-# back means the network path AND the lab CA trust both work;
+# back means the network path AND TLS trust both work;
 # the code then says whether that app is actually serving.
 # Client-side faults (DNS, untrusted cert) FAIL; server-side
 # ones (unreachable, 404) only WARN — they aren't this VM's fault.
@@ -183,7 +188,7 @@ check_url() {
         esac
     else
         case "$rc" in
-            60) fail "${host} → TLS cert NOT trusted (lab CA missing/stale, or server serving a default cert)" ;;
+            60) fail "${host} → TLS cert NOT trusted (server may be serving a default/expired cert)" ;;
             6)  fail "${host} → DNS not resolving (check /etc/hosts)" ;;
             7)  warn "${host} → connection refused (lab server down, or firewall blocking 443)" ;;
             28) warn "${host} → timed out (lab server unreachable — firewall/NSG blocking 443?)" ;;

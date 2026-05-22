@@ -11,14 +11,16 @@
 *Welcome to the island. Earning survival skills and exploring the raw elements of the new world.*
 
 ## 🕘 The Schedule
-- **09:00 - 10:30** | Lecture: The Wreckage (Linux Basics & Intro to Containers)
+- **09:00 - 09:15** | Welcome & Storytime
+- **09:15 - 10:30** | Lab 00: Building Your Vessel (VirtualBox + Ubuntu VM)
 - **10:30 - 10:45** | ☕ Break
-- **10:45 - 12:00** | Lab: The First Raft (Building your first Container)
+- **10:45 - 12:00** | Lab 00, cont.: Bootstrap & Verify (`setup-client.sh`)
 - **12:00 - 01:00** | 🥪 Lunch
-- **01:00 - 02:30** | Lecture: Into the Deep (Kubernetes Pods)
-- **02:30 - 02:45** | ☕ Break
-- **02:45 - 04:15** | Lab: Paddling Out (Generators, Namespaces, & The Scavenger Hunt)
-- **04:15 - 05:00** | AI Connect: The Socratic Boatswain
+- **01:00 - 01:45** | Lecture: The Wreckage (Linux Basics & Intro to Containers)
+- **01:45 - 03:00** | Lab 01: The First Raft (Building your first Container)
+- **03:00 - 03:15** | ☕ Break
+- **03:15 - 04:00** | Lecture: Into the Deep (Kubernetes Pods)
+- **04:00 - 05:00** | Lab 02: Paddling Out (Generators, Diagnostics & The Scavenger Hunt)
 
 ---
 
