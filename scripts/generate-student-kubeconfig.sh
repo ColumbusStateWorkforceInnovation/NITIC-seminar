@@ -47,7 +47,16 @@ echo "Waiting for token to generate..."
 sleep 2
 
 TOKEN=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath='{.data.token}' | base64 --decode)
-CLUSTER_SERVER=$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')
+# The kubeconfig handed to a student must point at an address THEIR VM can
+# reach. `kubectl config view` often reports https://127.0.0.1:6443 (k3s) or
+# https://0.0.0.0:6550 (k3d), which is useless off-host. Override as needed:
+#   CLUSTER_SERVER=https://<reachable-ip>:6443 ./generate-student-kubeconfig.sh <name>
+CLUSTER_SERVER="${CLUSTER_SERVER:-$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')}"
+if [[ "$CLUSTER_SERVER" =~ (127\.0\.0\.1|0\.0\.0\.0|localhost) ]]; then
+  echo "⚠️  CLUSTER_SERVER is '$CLUSTER_SERVER' — a student VM cannot reach a loopback address."
+  echo "   Re-run with the cluster's reachable address:"
+  echo "   CLUSTER_SERVER=https://<server-ip>:6443 $0 $STUDENT_NAME"
+fi
 CLUSTER_CA=$(kubectl config view --raw --minify -o jsonpath='{.clusters[0].cluster.certificate-authority-data}')
 
 KUBECONFIG_FILE="kubeconfig-$STUDENT_NAME.yaml"

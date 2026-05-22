@@ -23,7 +23,7 @@
 #   certs/ca.crt         — CA cert  (commit to repo, distribute to students)
 #   certs/ca.key         — CA key   (keep secure, do NOT share)
 #   certs/tls.crt        — Wildcard cert (commit to repo)
-#   certs/tls.key        — Wildcard key  (commit to repo — intentional for lab)
+#   certs/tls.key        — Wildcard key  (gitignored — scp'd to the server)
 #   certs/README.md      — Instructions for students + cluster setup
 #
 # NEXT STEP (run on the server):
@@ -144,7 +144,8 @@ DNS.7 = grafana.${DOMAIN}
 DNS.8 = ai.${DOMAIN}
 DNS.9 = mailpit.${DOMAIN}
 DNS.10 = docs.${DOMAIN}
-DNS.11 = quiz.${DOMAIN}
+DNS.11 = poll.${DOMAIN}
+DNS.12 = db.${DOMAIN}
 EOF
 
 openssl x509 -req \
@@ -243,8 +244,9 @@ openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt certs/tls.crt
 | grafana.${DOMAIN} | Grafana Dashboards |
 | ai.${DOMAIN} | Ollama/LiteLLM AI Endpoint |
 | mailpit.${DOMAIN} | Mailpit Email Sandbox |
+| db.${DOMAIN} | Adminer Database UI |
 | docs.${DOMAIN} | MkDocs Curriculum |
-| quiz.${DOMAIN} | Flash Poll App |
+| poll.${DOMAIN} | Flash Poll App |
 
 README
 

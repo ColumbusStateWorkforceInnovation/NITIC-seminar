@@ -7,7 +7,11 @@ set -e
 echo "🏴‍☠️ Deploying the Network Blockade! Shutting down cross-namespace communication..."
 
 # Apply a default deny-all-ingress NetworkPolicy to all student namespaces
-NAMESPACES=$(kubectl get ns -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -vE 'kube-|default|admin|argocd|local')
+# Target ONLY student namespaces (student-<username>, created by
+# provision-students.sh). A positive match is safer than the old exclude-list,
+# which missed cattle-system / cert-manager / chaos-mesh and would have
+# blockaded Rancher and other infrastructure.
+NAMESPACES=$(kubectl get ns -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E '^student-' || true)
 
 for NS in $NAMESPACES; do
   echo "Blockading namespace: $NS"

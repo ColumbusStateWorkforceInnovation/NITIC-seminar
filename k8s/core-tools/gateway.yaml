@@ -25,24 +25,35 @@ spec:
   # Traefik registers 'traefik' as its default GatewayClass.
   gatewayClassName: traefik
   listeners:
-  # ── HTTP (port 80) ─────────────────────────────────────────
+  # ── HTTP (entryPoint "web") ────────────────────────────────
   # Decision: Keep HTTP open to allow kubectl port-forward debugging and
   # to support any plain-HTTP lab exercises on Day 1.
+  #
+  # NOTE: port is 8000, NOT 80. Traefik's Gateway provider matches a listener
+  # to a Traefik entryPoint by PORT NUMBER, and the k3s/k3d Traefik Helm chart
+  # runs its entryPoints internally on 8000 (web) / 8443 (websecure). The
+  # Traefik Service still publishes 80/443 to the outside world (exposedPort),
+  # so external URLs are unchanged. A listener on port 80 matches no entryPoint
+  # and the Gateway reports "PortUnavailable" with both listeners dead.
   - name: web
     protocol: HTTP
-    port: 80
+    port: 8000
     allowedRoutes:
       namespaces:
         from: All
 
-  # ── HTTPS (port 443) ───────────────────────────────────────
+  # ── HTTPS (entryPoint "websecure") ─────────────────────────
   # Decision: TLS is terminated here at the Gateway edge.
   # The wildcard-tls secret (*.${LAB_DOMAIN}) is loaded from the certs/
   # directory of the repo and covers all lab subdomains.
   # Backend services receive plain HTTP — no end-to-end TLS complexity.
+  #
+  # NOTE: port is 8443, NOT 443 — same reason as the "web" listener above.
+  # External clients still reach HTTPS on 443 via the Traefik Service; 8443 is
+  # the internal entryPoint port this listener must match.
   - name: websecure
     protocol: HTTPS
-    port: 443
+    port: 8443
     tls:
       mode: Terminate
       certificateRefs:

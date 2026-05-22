@@ -32,6 +32,10 @@ ORG_COUNTRY    := env_var_or_default("ORG_COUNTRY",    "US")
 
 CERT_DAYS      := env_var_or_default("CERT_DAYS",      "20")
 
+# Pin k3s for BOTH the k3d test cluster and the remote server (empty = each
+# tool's default). Format: k3s channel string, e.g. v1.35.5+k3s1.
+K3S_VERSION    := env_var_or_default("K3S_VERSION",    "")
+
 AI_MODEL       := env_var_or_default("AI_MODEL",       "gemma3:4b")
 AI_API_KEY     := env_var_or_default("AI_API_KEY",     "sk-nitic-admin")
 
@@ -43,9 +47,33 @@ RANCHER_TOKEN  := env_var_or_default("RANCHER_TOKEN",  "")
 
 LAB_ADMIN_EMAIL := env_var_or_default("LAB_ADMIN_EMAIL", "admin@" + LAB_DOMAIN)
 
+# ── Local vs. Remote target ──────────────────────────────────
+# LOCAL = "1" runs recipes against a local k3d cluster; "0" runs them over SSH
+# against the remote server. Resolved in precedence order:
+#   1. the LOCAL env var, if set — per-terminal override: `LOCAL=1 just deploy-core`
+#   2. a target pinned by `just use-local` / `just use-remote`  (.just-target)
+#   3. auto-detect — LOCAL when SERVER_IP is blank, REMOTE when it is set
+# Testing k3d AND a server at once? Pin with `just use-local` / `use-remote`;
+# for two terminals running at the SAME time, `export LOCAL=1` in one so the
+# shells stay independent (the env var beats the pinned file).
+LOCAL_AUTO := if SERVER_IP == "" { "1" } else { "0" }
+LOCAL_PIN  := `cat .just-target 2>/dev/null | tr -d '[:space:]'`
+LOCAL := env_var_or_default("LOCAL", if LOCAL_PIN != "" { LOCAL_PIN } else { LOCAL_AUTO })
+
 # ── Computed SSH shorthand ───────────────────────────────────
-SSH := "ssh -i " + SERVER_SSH_KEY + " " + SERVER_USER + "@" + SERVER_IP
+# In LOCAL mode the "SSH" shim collapses to `bash -c`, so the piped
+# `... | {{SSH}} "kubectl apply -f -"` recipes run locally instead of over SSH.
+SSH := if LOCAL == "1" { "bash -c" } else { "ssh -i " + SERVER_SSH_KEY + " " + SERVER_USER + "@" + SERVER_IP }
 SCP := "scp -i " + SERVER_SSH_KEY
+
+# ── Project-local kubeconfig ─────────────────────────────────
+# In LOCAL mode, point every recipe's kubectl/helm at a kubeconfig inside the
+# repo (written by `just bootstrap-k3d`). This isolates the lab cluster from
+# the global ~/.kube/config and stops a k3s install on the same box from
+# hijacking kubectl (its binary defaults to root-only /etc/rancher/k3s/k3s.yaml).
+# direnv users get the same path in their shell via .envrc; this line makes
+# `just` work with or without direnv. REMOTE mode leaves KUBECONFIG untouched.
+export KUBECONFIG := if LOCAL == "1" { justfile_directory() / ".kube" / "config" } else { env_var_or_default("KUBECONFIG", "") }
 
 # ============================================================
 # 📋 DEFAULT: Show help
@@ -61,9 +89,11 @@ help:
     @echo "  ─────────────────────────────────────────────────────────"
     @echo "  Lab Domain       : {{LAB_DOMAIN}}"
     @echo "  Admin Email      : {{LAB_ADMIN_EMAIL}}"
+    @echo "  Target Mode      : {{ if LOCAL == "1" { "LOCAL (k3d)" } else { "REMOTE (SSH → " + SERVER_IP + ")" } }}{{ if LOCAL_PIN != "" { "  [pinned — 'just use-auto' to clear]" } else { "  [auto]" } }}"
     @echo "  Server IP        : {{SERVER_IP}}"
     @echo "  Org              : {{ORG_NAME}}"
     @echo "  Cert Days        : {{CERT_DAYS}}"
+    @echo "  K3s Version      : {{ if K3S_VERSION == "" { "(default — not pinned)" } else { K3S_VERSION } }}"
     @echo "  ─────────────────────────────────────────────────────────"
     @just --list --unsorted
     @echo ""
@@ -77,11 +107,14 @@ init: check-config check-tools cert
     @echo ""
     @echo "  ✅ Lab initialized!"
     @echo ""
-    @echo "  Next steps:"
+    @echo "  Next steps (REMOTE server):"
     @echo "    1. just bootstrap-server   — install K3s on the server"
-    @echo "    2. just push-cert          — load TLS cert into cluster"
-    @echo "    3. just deploy-core        — apply all k8s manifests"
-    @echo "    4. just provision          — create student accounts"
+    @echo "    2. just deploy-core        — apply all k8s manifests (runs push-cert)"
+    @echo "    3. just provision          — create student accounts"
+    @echo ""
+    @echo "  Next steps (LOCAL k3d test loop):"
+    @echo "    1. just bootstrap-k3d      — create local k3d cluster + Gateway API"
+    @echo "    2. just deploy-core        — apply all k8s manifests to local k3d"
     @echo ""
 
 # Validate that required config values are set
@@ -90,8 +123,10 @@ check-config:
     set -euo pipefail
     ERRORS=0
     echo "🔍 Checking lab.env configuration..."
-    if [[ -z "{{SERVER_IP}}" ]]; then
-        echo "  ❌ SERVER_IP is not set in lab.env"
+    if [[ "{{LOCAL}}" == "1" ]]; then
+        echo "  ✅ LOCAL mode — targeting local k3d cluster (SERVER_IP not required)"
+    elif [[ -z "{{SERVER_IP}}" ]]; then
+        echo "  ❌ SERVER_IP is not set, and LOCAL=0 is forcing remote — set SERVER_IP, or unset LOCAL for the k3d loop."
         ERRORS=$((ERRORS+1))
     else
         echo "  ✅ SERVER_IP = {{SERVER_IP}}"
@@ -138,18 +173,44 @@ cert:
      ORG_COUNTRY={{ORG_COUNTRY}} \
      bash scripts/generate-lab-cert.sh
 
-# Copy TLS key+cert to the server and create the Kubernetes secret
-push-cert:
-    @echo "📦 Pushing TLS cert to {{SERVER_IP}}..."
-    {{SCP}} certs/tls.key {{SERVER_USER}}@{{SERVER_IP}}:/tmp/tls.key
-    {{SCP}} certs/tls.crt {{SERVER_USER}}@{{SERVER_IP}}:/tmp/tls.crt
-    {{SSH}} "kubectl create secret tls wildcard-tls \
-        --cert=/tmp/tls.crt \
-        --key=/tmp/tls.key \
-        -n admin-tools \
-        --dry-run=client -o yaml | kubectl apply -f - \
-      && rm /tmp/tls.key /tmp/tls.crt \
-      && echo '✅ wildcard-tls secret created.'"
+# Create the namespaces the core manifests/secrets land in (idempotent).
+# gateway.yaml + wildcard-tls live in admin-tools; gateway-routes.yaml also
+# carries routes in the argocd and cattle-system namespaces, which must exist
+# before those HTTPRoutes can be applied.
+ensure-namespaces:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "📁 Ensuring namespaces exist (admin-tools, argocd, cattle-system)..."
+    for ns in admin-tools argocd cattle-system; do
+        {{SSH}} "kubectl create namespace $ns --dry-run=client -o yaml | kubectl apply -f -"
+    done
+
+# Copy TLS key+cert to the cluster and create the wildcard-tls secret.
+# REMOTE: scp the cert to the server, create the secret over SSH.
+# LOCAL: create the secret directly against the local k3d context.
+push-cert: ensure-namespaces
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "{{LOCAL}}" == "1" ]]; then
+        echo "📦 Creating wildcard-tls secret in the local k3d cluster..."
+        kubectl create secret tls wildcard-tls \
+            --cert=certs/tls.crt \
+            --key=certs/tls.key \
+            -n admin-tools \
+            --dry-run=client -o yaml | kubectl apply -f -
+        echo "✅ wildcard-tls secret created."
+    else
+        echo "📦 Pushing TLS cert to {{SERVER_IP}}..."
+        {{SCP}} certs/tls.key {{SERVER_USER}}@{{SERVER_IP}}:/tmp/tls.key
+        {{SCP}} certs/tls.crt {{SERVER_USER}}@{{SERVER_IP}}:/tmp/tls.crt
+        {{SSH}} "kubectl create secret tls wildcard-tls \
+            --cert=/tmp/tls.crt \
+            --key=/tmp/tls.key \
+            -n admin-tools \
+            --dry-run=client -o yaml | kubectl apply -f - \
+          && rm /tmp/tls.key /tmp/tls.crt \
+          && echo '✅ wildcard-tls secret created.'"
+    fi
 
 # Show cert expiry for the current lab cert
 cert-info:
@@ -165,18 +226,51 @@ cert-info:
 bootstrap-server:
     @echo "🚢 Bootstrapping K3s on {{SERVER_IP}}..."
     {{SCP}} scripts/setup-remote-k3s-server.sh {{SERVER_USER}}@{{SERVER_IP}}:/tmp/setup-server.sh
-    {{SSH}} "sudo bash /tmp/setup-server.sh && rm /tmp/setup-server.sh"
+    {{SSH}} "sudo env K3S_VERSION='{{K3S_VERSION}}' bash /tmp/setup-server.sh && rm /tmp/setup-server.sh"
 
-# Apply the wildcard-tls secret, gateway, and all core tool manifests
-# Uses envsubst to inject LAB_DOMAIN and LAB_ADMIN_EMAIL into all YAML templates.
+# [LOCAL] Bootstrap a local k3d cluster for the test loop.
+# Runs setup-k3d-cluster.sh: creates the cluster and enables the Traefik
+# Gateway API provider. Then run:
+#   just deploy-core
+bootstrap-k3d:
+    @echo "🚢 Bootstrapping local k3d cluster (admiral-bash-drydock)..."
+    bash scripts/setup-k3d-cluster.sh
+
+# Install the Gateway API CRDs + enable the Traefik Gateway provider on the
+# CURRENT target cluster (honors LOCAL). Fresh clusters get this automatically
+# from the setup scripts — use this to retrofit a cluster that was created
+# before this wiring existed (e.g. a k3d cluster already running).
+enable-gateway:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "⏳ Waiting for the Gateway API CRDs (shipped by k3s Traefik)..."
+    for i in $(seq 1 60); do
+      if {{SSH}} "kubectl get crd gatewayclasses.gateway.networking.k8s.io" >/dev/null 2>&1; then break; fi
+      sleep 5
+    done
+    {{SSH}} "kubectl wait --for=condition=Established --timeout=60s crd/gatewayclasses.gateway.networking.k8s.io"
+    echo "🚦 Enabling the Traefik Gateway API provider..."
+    cat k8s/core-tools/traefik-gateway-config.yaml | {{SSH}} "kubectl apply -f -"
+    echo "⏳ Waiting for Traefik to redeploy and create the traefik GatewayClass..."
+    for i in $(seq 1 60); do
+      if {{SSH}} "kubectl get gatewayclass traefik" >/dev/null 2>&1; then break; fi
+      sleep 5
+    done
+    {{SSH}} "kubectl wait --for=condition=Accepted gatewayclass/traefik --timeout=120s"
+    echo "✅ Gateway API is live."
+
+# Apply the wildcard-tls secret, gateway, and all core tool manifests.
+# Uses envsubst to inject LAB_DOMAIN / LAB_ADMIN_EMAIL into the YAML templates.
+# NOTE: cluster-issuer.yaml is intentionally NOT applied here — ClusterIssuer is
+# a cert-manager CRD (cert-manager is not installed by deploy-core) and the
+# issuer is unused on internal/local deploys. Apply it manually only on a
+# public-IP deployment after installing cert-manager.
 deploy-core: push-cert
-    @echo "⚙️  Deploying core k8s manifests to {{SERVER_IP}} (domain: {{LAB_DOMAIN}})..."
+    @echo "⚙️  Deploying core k8s manifests to {{ if LOCAL == "1" { "local k3d cluster" } else { SERVER_IP } }} (domain: {{LAB_DOMAIN}})..."
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/core-tools/gateway.yaml        | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/core-tools/gateway-routes.yaml | {{SSH}} "kubectl apply -f -"
-    @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
-      envsubst < k8s/core-tools/cluster-issuer.yaml | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} AI_MODEL={{AI_MODEL}} AI_API_KEY={{AI_API_KEY}} \
       envsubst < k8s/core-tools/ai-engine.yaml      | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
@@ -294,6 +388,27 @@ setup-env:
         echo "   Edit lab.env with your institution's values, then run: just init"
     fi
 
+# ── Target selection ─────────────────────────────────────────
+# Pin which cluster `just` deploys to, so you can keep a k3d test and a remote
+# server configured at once without misfiring. Pinning writes .just-target
+# (gitignored). A `LOCAL=1` / `LOCAL=0` env var still overrides the pin for a
+# single command or a single terminal.
+
+# Pin every following `just` command to the LOCAL k3d cluster.
+use-local:
+    @printf 1 > .just-target
+    @echo "🎯 Target pinned: LOCAL (k3d). Clear with 'just use-auto'."
+
+# Pin every following `just` command to the REMOTE server.
+use-remote:
+    @printf 0 > .just-target
+    @echo "🎯 Target pinned: REMOTE (SSH → {{SERVER_IP}}). Clear with 'just use-auto'."
+
+# Clear the pinned target — fall back to auto-detect (LOCAL when SERVER_IP is blank).
+use-auto:
+    @rm -f .just-target
+    @echo "🎯 Target unpinned — auto-detect (LOCAL when SERVER_IP is blank, else REMOTE)."
+
 # Preview the MkDocs docs site locally with your LAB_DOMAIN injected
 serve-docs:
     @echo "📖 Installing MkDocs plugins..."
@@ -314,6 +429,7 @@ show-hosts:
     @echo "  {{SERVER_IP}}  grafana.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  ai.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  mailpit.{{LAB_DOMAIN}}"
+    @echo "  {{SERVER_IP}}  db.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  docs.{{LAB_DOMAIN}}"
     @echo "  {{SERVER_IP}}  poll.{{LAB_DOMAIN}}"
     @echo ""

@@ -10,7 +10,11 @@ dashboard:
 chaosDaemon:
   # Decision: Using containerd as the runtime since k3s/k3d standardizes on it.
   runtime: containerd
-  socketPath: /run/containerd/containerd.sock
+  # k3s/k3d run their OWN embedded containerd — its socket lives under /run/k3s,
+  # not the upstream default /run/containerd. The chaos daemon needs the real
+  # path to reach the runtime for pod-kill / network / IO chaos. Wrong path =
+  # chaosDaemon can't find containers and every experiment silently no-ops.
+  socketPath: /run/k3s/containerd/containerd.sock
 
 dnsServer:
   # Decision: Disabled because we do not intend to inject DNS-specific failures for this course.

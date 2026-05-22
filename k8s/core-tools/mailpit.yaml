@@ -55,8 +55,10 @@ metadata:
 spec:
   parentRefs:
   - name: main-gateway
+  # Canonical hostname is mailpit.${LAB_DOMAIN} — it must match the entry
+  # injected into /etc/hosts by setup-client.sh and `just show-hosts`.
   hostnames:
-  - "mail.${LAB_DOMAIN}"
+  - "mailpit.${LAB_DOMAIN}"
   rules:
   - matches:
     - path:

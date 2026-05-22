@@ -71,7 +71,11 @@ spec:
         type: PathPrefix
         value: /
     backendRefs:
-    - name: harbor-portal
+    # With expose.type=clusterIP the Harbor chart's entry Service is `harbor`
+    # (the nginx component) — it fronts the portal UI, the core API, AND the
+    # registry /v2/ API. Do NOT point at `harbor-portal`: that Service only
+    # serves the UI SPA, so `docker push` (Day 1 lab) would 404.
+    - name: harbor
       port: 80
 
 ---
@@ -139,49 +143,17 @@ spec:
     - name: rancher
       port: 80
 
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: mailpit-route
-  namespace: admin-tools
-spec:
-  parentRefs:
-  - name: main-gateway
-    namespace: admin-tools
-  hostnames:
-  - "mailpit.${LAB_DOMAIN}"
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: mailpit
-      port: 8025
-
----
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: docs-route
-  namespace: admin-tools
-spec:
-  parentRefs:
-  - name: main-gateway
-    namespace: admin-tools
-  hostnames:
-  - "docs.${LAB_DOMAIN}"
-  rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /
-    backendRefs:
-    - name: mkdocs
-      port: 8000
-
-# NOTE: The Flash Poll HTTPRoute lives in k8s/core-tools/quiz-app.yaml at
-# poll.${LAB_DOMAIN} (Service: flash-poll). The legacy `quiz-route` that
-# previously pointed at a non-existent `quiz-app` Service has been removed —
-# do not re-add it. All docs and the credential card use poll.${LAB_DOMAIN}.
+# ── Routes that live with their app manifests (NOT here) ─────────────────────
+# Plain-manifest apps carry their own HTTPRoute alongside their Deployment +
+# Service. This file only carries routes for Helm-deployed apps (which can't
+# easily ship an HTTPRoute) plus litellm. App-owned routes:
+#   - docs.${LAB_DOMAIN}    → k8s/core-tools/mkdocs.yaml    (Service: docs-hub)
+#   - mailpit.${LAB_DOMAIN} → k8s/core-tools/mailpit.yaml   (Service: mailpit)
+#   - db.${LAB_DOMAIN}      → k8s/core-tools/adminer.yaml   (Service: adminer)
+#   - poll.${LAB_DOMAIN}    → k8s/core-tools/quiz-app.yaml  (Service: flash-poll)
+#
+# REMOVED (do not re-add): duplicate `docs-route` and `mailpit-route` blocks
+# once lived here. They were exact metadata.name collisions with the canonical
+# definitions in mkdocs.yaml / mailpit.yaml — and the docs one pointed at a
+# non-existent `mkdocs` Service (the real Service is `docs-hub`). The legacy
+# `quiz-route` (non-existent `quiz-app` Service) was likewise removed.

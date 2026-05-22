@@ -1,0 +1,29 @@
+# direnv — Admiral Bash's Island Adventure  (TEMPLATE)
+# ============================================================================
+# Copy this to `.envrc`, then run `direnv allow` once in this directory:
+#     cp .envrc.example .envrc && direnv allow
+#
+# `.envrc` is gitignored (machine-local); this `.example` is the version that
+# travels with the repo so a co-instructor cloning it knows the pattern.
+# ----------------------------------------------------------------------------
+# Points KUBECONFIG at a project-local kubeconfig so kubectl / just / helm /
+# k9s always target the lab's k3d cluster while you work in this repo.
+#
+# Why this exists:
+#   If k3s is also installed on this machine, its `kubectl` binary defaults to
+#   the root-only /etc/rancher/k3s/k3s.yaml. Lab commands then hit the wrong
+#   cluster — or fail with a permission error. An explicit KUBECONFIG overrides
+#   every such default.
+#
+# `just bootstrap-k3d` writes the k3d cluster's credentials to .kube/config
+# (gitignored). The justfile sets this same path for `just` recipes, so `just`
+# works with or without direnv — this file extends it to your interactive
+# shell (hand-typed kubectl, k9s, helm).
+#
+# Requires direnv (https://direnv.net):
+#   brew install direnv          # macOS
+#   sudo apt install direnv      # Debian / Ubuntu
+# Add the direnv hook to your shell, then run once in this directory:
+#   direnv allow
+# ============================================================================
+export KUBECONFIG="$PWD/.kube/config"

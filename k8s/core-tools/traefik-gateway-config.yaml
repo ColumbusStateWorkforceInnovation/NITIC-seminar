@@ -1,0 +1,44 @@
+# [Boatswain] Traefik Gateway API Enablement — k3s / k3d
+# =============================================================================
+# WHY THIS FILE EXISTS
+#
+# Every lab service is reached through the Kubernetes Gateway API
+# (Gateway + HTTPRoute, `gatewayClassName: traefik`). The Traefik bundled with
+# k3s/k3d only enables the Ingress + IngressRoute providers by default — the
+# Kubernetes Gateway provider is OFF, so without this `main-gateway` never gets
+# an address and every https://*.${LAB_DOMAIN} URL 404s.
+#
+# This HelmChartConfig merges values into the k3s-managed Traefik HelmChart:
+#   - providers.kubernetesGateway.enabled : turns the Gateway provider ON
+#   - gatewayClass.enabled                : the Traefik chart creates the
+#                                           `traefik` GatewayClass itself
+#                                           (controllerName traefik.io/...)
+#   - gateway.enabled: false              : suppress the chart's own default
+#                                           Gateway — we define our own
+#                                           main-gateway in gateway.yaml
+#
+# ⚠️  DO NOT add a `kind: GatewayClass` resource to this file. The Traefik
+# chart already templates `GatewayClass/traefik` when the provider is on. A
+# second, hand-applied copy has no Helm ownership metadata, so `helm upgrade`
+# aborts with an ownership error and the provider never actually turns on.
+#
+# The k3s Helm controller re-runs the Traefik chart automatically when this is
+# applied. The Gateway API CRDs themselves are shipped by k3s's own
+# `traefik-crd` HelmChart — they must NOT be installed separately (doing so
+# breaks the traefik-crd chart with a Helm ownership conflict).
+# =============================================================================
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesGateway:
+        enabled: true
+    gatewayClass:
+      enabled: true
+    gateway:
+      enabled: false
