@@ -2,7 +2,7 @@
 
 Before you can survive the island, you need a vessel. Every tool, every container, every command in this seminar runs inside a **Linux virtual machine** — your own private ship that lives on the classroom desktop but is completely separate from Windows.
 
-In this lab you'll install Oracle VirtualBox, build an Ubuntu VM from scratch, and run the one bootstrap script that turns a bare Linux box into a fully-stocked DevOps shipyard.
+In this lab you'll build an Ubuntu VM from scratch and run the one bootstrap script that turns a bare Linux box into a fully-stocked DevOps shipyard.
 
 !!! note "Instructor Superpower: One VM to Rule Them All"
     This is the lab that earns its keep. By the end of the morning every student is on the **exact same Ubuntu version, the exact same shell, the exact same tool versions** — regardless of what Windows desktop they sat down at. No more "it works on mine." That is the whole point of a containerized, scripted classroom: you debug the *script* once, not thirty laptops forever.
@@ -13,39 +13,27 @@ In this lab you'll install Oracle VirtualBox, build an Ubuntu VM from scratch, a
 
 This lab is run **together, as a class** — your instructor will demo each part on the projector. Don't race ahead; if you get stuck, raise a hand.
 
-You need **one value** from your instructor — write it down now, you'll need it in Part 5:
+You need **one value** from your instructor — write it down now, you'll need it in Part 4:
 
 | You need | Looks like | Where to get it |
 | :--- | :--- | :--- |
-| **`SERVER_IP`** | `20.169.218.36` | On the whiteboard |
+| **`SERVER_IP`** | `20.12.34.56` | On the whiteboard |
 
 !!! note "Instructor — do this first"
     Write **`SERVER_IP`** on the board before 9:00, and tell the class **where the Ubuntu ISO file lives** — a USB drive, a network share, or each desktop's `Downloads` folder. Staging the ISO locally (rather than 30 students downloading 6 GB at once) keeps the morning smooth. The [Setup Troubleshooting](setup-troubleshooting.md) sheet has the full pre-flight checklist.
 
 ---
 
-## Part 1 — Install Oracle VirtualBox
+## Part 1 — Build the Hull (Create the VM)
 
-VirtualBox is the software that lets your Windows desktop run a second computer (the "guest") inside a window.
-
-1. **Check if it's already there.** Open the Windows Start menu and type `VirtualBox`. If **Oracle VirtualBox** appears, it's installed — skip to Part 2.
-2. If it's not installed, run the **VirtualBox installer** your instructor points you to (an `.exe` file, staged locally — don't download it).
-3. Click through the installer: **Next → Next → Next → Yes → Install → Finish**. It may briefly warn that it will reset your network connection — that's normal, click **Yes**.
-4. Launch **Oracle VirtualBox** from the Start menu. You should see the **VirtualBox Manager** window.
-
-!!! note "If the VM only offers 32-bit options, or runs slowly"
-    On some Windows 11 machines, VirtualBox shows only **32-bit** guest options or runs with a 🐢 turtle icon — a sign that Hyper-V is competing for virtualization. The fix needs an administrator, so flag it to your instructor rather than struggling. See [Setup Troubleshooting](setup-troubleshooting.md#only-32-bit-options-or-the-vm-is-slow).
-
----
-
-## Part 2 — Build the Hull (Create the VM)
+Oracle VirtualBox is already installed on your classroom desktop — it's the software that lets your Windows desktop run a second computer (the "guest") inside a window. Open it from the Windows Start menu (type `VirtualBox` and press Enter). You should see the **VirtualBox Manager** window.
 
 1. In VirtualBox Manager, click the **New** button (top toolbar).
 2. **Name and Operating System:**
     - **Name:** `island-vessel`
     - **ISO Image:** click the dropdown → **Other...** → browse to the Ubuntu `.iso` file your instructor staged.
     - VirtualBox should auto-detect **Type: Linux** and **Version: Ubuntu (64-bit)**.
-    - ✅ **Tick the box "Skip Unattended Installation."** This is important — it lets you run the real Ubuntu installer yourself in Part 3.
+    - ✅ **Tick the box "Skip Unattended Installation."** This is important — it lets you run the real Ubuntu installer yourself in Part 2.
 3. Click **Next**. **Hardware:**
     - **Base Memory:** `8192 MB` (8 GB). If your desktop has only 8 GB of RAM total, use `4096 MB` instead.
     - **Processors:** `2` (or `4` if the slider's green zone allows it).
@@ -62,9 +50,12 @@ Your new VM appears in the left-hand list. One more tweak before you start it:
     - **Network →** confirm **Attached to: NAT**. This is the default and is all you need — it gives the VM internet access.
     - Click **OK**.
 
+!!! note "If the VM only offers 32-bit options, or runs slowly"
+    On some Windows 11 machines, VirtualBox shows only **32-bit** guest options or runs with a 🐢 turtle icon — a sign that Hyper-V is competing for virtualization. The fix needs an administrator, so flag it to your instructor rather than struggling. See [Setup Troubleshooting](setup-troubleshooting.md#only-32-bit-options-or-the-vm-is-slow).
+
 ---
 
-## Part 3 — Install Ubuntu (Launch the Ship)
+## Part 2 — Install Ubuntu (Launch the Ship)
 
 1. Select **`island-vessel`** and click **Start** (the green arrow). A new window opens and boots from the ISO.
 2. Wait for the Ubuntu installer to load, then:
@@ -89,7 +80,7 @@ The VM reboots into a fresh Ubuntu desktop. **You've launched your ship.** 🚢
 
 ---
 
-## Part 4 — First Boot & Provisions
+## Part 3 — First Boot & Provisions
 
 1. Log in (or it logs in automatically). Click through or close any "What's new" / online-account welcome screens.
 2. Open a **Terminal**: press the **Super key** (the Windows key) and type `terminal`, then press Enter.
@@ -104,9 +95,9 @@ The VM reboots into a fresh Ubuntu desktop. **You've launched your ship.** 🚢
 
 ---
 
-## Part 5 — Board the Shipyard (Bootstrap Script)
+## Part 4 — Board the Shipyard (Bootstrap Script)
 
-This is the step that does the heavy lifting. One script installs **Docker, kubectl, Helm, k9s, the Fish shell, Starship, aichat**, the lab's trusted certificate, and wires up your `/etc/hosts` so the island's services resolve.
+This is the step that does the heavy lifting. One script installs **Docker, git, kubectl, Helm, k9s, the Fish shell, Starship, and aichat**, and wires up your `/etc/hosts` so the island's services resolve.
 
 1. Clone the seminar repository:
 
@@ -129,7 +120,7 @@ This is the step that does the heavy lifting. One script installs **Docker, kube
 
 ---
 
-## Part 6 — Inspect the Hull (Verify)
+## Part 5 — Inspect the Hull (Verify)
 
 Run the self-check. It installs nothing — it just confirms every tool, certificate, and connection is shipshape:
 
@@ -142,7 +133,7 @@ A healthy run ends with all checks **passed**. If anything **fails**, flag it to
 
 ---
 
-## Part 7 — You're Afloat
+## Part 6 — You're Afloat
 
 Drop into your new shell:
 
@@ -150,15 +141,29 @@ Drop into your new shell:
 fish
 ```
 
-You should see the **Starship** prompt. Try the toolkit:
+You should see the **Starship** prompt. Confirm the core tools came aboard:
 
 ```bash
-k9s            # press : then type "quit" to exit
-kubectl get ns
-aichat --help
+k9s version
+kubectl version --client
 ```
 
-If those run, your vessel is seaworthy. Open **Day 1 → Lab 01 — The First Raft** and wait for the class. 🏴‍☠️
+Both should print a version. You don't have cluster access yet — that's expected. You'll point `kubectl` and the `k9s` dashboard at the live island cluster in **Lab 02**, once your instructor has added you to Rancher.
+
+### Hailing the Island's AI
+
+Your toolkit also includes **`aichat`**, a command-line client already pointed at the island's private AI engine — a local LLM running on the cluster, so nothing you type ever leaves the island. Give it a quick hail:
+
+```bash
+aichat "Ahoy! In one short sentence, what is a Linux container?"
+```
+
+A one-sentence reply means `aichat` is wired to the island's AI engine and ready for duty. A couple more things worth knowing:
+
+- Run `aichat` with **no arguments** to open an interactive session. Inside it, type `.info` to see exactly which model you're connected to, and `.exit` to leave.
+- You don't have an `AGENTS.md` file yet — that's deliberate. In **Lab 01** you'll create one to turn `aichat` into the **Socratic Boatswain**, your in-class teaching assistant that gives hints instead of answers.
+
+If those three tools run, your vessel is seaworthy. Open **Day 1 → Lab 01 — The First Raft** and wait for the class. 🏴‍☠️
 
 ---
 

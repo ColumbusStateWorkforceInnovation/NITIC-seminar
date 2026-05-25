@@ -28,3 +28,28 @@ repoServer:
 applicationSet:
   # Decision: Enable ApplicationSets to allow dynamic generation of student namespaces via GitOps
   enabled: true
+
+# ── SSO via Dex (OIDC) ────────────────────────────────────────
+# Point ArgoCD straight at our external Dex. ArgoCD ships its OWN bundled Dex,
+# but that only exists to broker UPSTREAM identity providers — we already are
+# one, so disable it and wire ArgoCD to Dex as a plain OIDC client.
+dex:
+  enabled: false
+
+configs:
+  cm:
+    url: https://argocd.${LAB_DOMAIN}
+    # This block is consumed verbatim by the argocd-cm ConfigMap.
+    oidc.config: |
+      name: Dex
+      issuer: https://sso.${LAB_DOMAIN}
+      clientID: argocd
+      clientSecret: argocd-oidc-secret
+      requestedScopes: ["openid", "profile", "email", "groups"]
+      # Dex serves the self-signed lab cert — paste certs/ca.crt under a
+      # `rootCA: |` key here, or add the lab CA to argocd-server's trust store.
+  rbac:
+    # Everyone signs in read-only; the 'instructors' Dex group is mapped to admin.
+    policy.default: role:readonly
+    policy.csv: |
+      g, instructors, role:admin

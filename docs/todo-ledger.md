@@ -38,7 +38,6 @@ This ledger tracks major milestones across four primary domains to ensure overal
 - [x] Confirm the lab environment architecture: **One Giant Shared k3d Cluster**.
 - [x] Wildcard DNS A-Record — **not required**. Deployment target is an internal CSCC VM (10.x.y.z, no public reachability). Students resolve lab subdomains via `/etc/hosts` injection in `setup-client.sh`. (Re-open this if CSCC IT later offers internal DNS or a public IP.)
 - [x] Reconfigure Rancher TLS — removed Let's Encrypt ingress source (would never validate on internal-only cluster). Rancher now runs `tls: external` with `ingress.enabled: false`; TLS terminates at the Gateway via the existing `rancher-route` HTTPRoute using the wildcard-tls secret.
-- [ ] **Confirm exact CSCC VM specs with IT** — GPU access confirmed (2026-05-20); still need vCPU, RAM, vGPU profile, NVIDIA driver presence, and license-server reachability. Concurrency target revised to 10–15 users; 8 GB vGPU profile is sufficient. See [final readiness review](stakeholder-updates/2026-05-20-final-readiness-review.md) for the suggested email language to send IT.
 - [x] Develop backend manifests and Helms charts to bootstrap the core cluster capabilities:
   - [x] Internal Registry (Harbor)
   - [x] GitOps Engine (ArgoCD) & Version Control (Gitea)
@@ -49,7 +48,7 @@ This ledger tracks major milestones across four primary domains to ensure overal
 - [x] Write `setup-client.sh` bootstrap script. Provisions Fish + Starship, k=kubectl alias, Docker (with Harbor CA trust), kubectl, helm, k9s, d2, aichat (pointed at the cluster's Gemma endpoint), the lab CA, and optional `KUBECONFIG_URL` kubeconfig fetch.
 - [x] Finalize student workstation network access requirements with CSCC IT (Standard SSH/CLI access to the shared cluster; NO Kasm/Guacamole required).
 - [ ] Perform end-to-end testing of daily lab exercises in the finalized environment.
-- [ ] **Thursday 2026-05-21 PM:** Fresh-Ubuntu 24.04.4 install — run `setup-client.sh` end-to-end and walk a real Day 1 docker push.
+- [X] **Thursday 2026-05-21 PM:** Fresh-Ubuntu 24.04.4 install — run `setup-client.sh` end-to-end and walk a real Day 1 docker push.
 - [ ] Add justfile recipes for cert-manager, loki-stack, chaos-mesh, clabernetes (currently no `deploy-*` for these — only argocd/gitea/harbor/rancher are scripted).
 - [ ] Pre-create Harbor `raft-fleet` project with anonymous-push policy (Day 1 lab depends on it).
 - [x] Reconcile `quiz` vs `poll` subdomain — canonicalized on `poll.${LAB_DOMAIN}` across `setup-client.sh`, `justfile show-hosts`, and `gateway-routes.yaml` (orphan `quiz-route` removed).
@@ -64,10 +63,10 @@ This ledger tracks major milestones across four primary domains to ensure overal
 
 ### 🎁 Logistics & Platform
 
-- [ ] Procure door prizes.
-- [ ] Look into printing the CNCF books locally (e.g., *Admiral Bash*). They are under Creative Commons, so the only cost is printing.
-- [ ] Outline badging requirements (Credly).
-- [ ] Set up and configure the Engagez platform.
+- [X] Procure door prizes.
+- [X] Look into printing the CNCF books locally (e.g., *Admiral Bash*). They are under Creative Commons, so the only cost is printing.
+- [X] Outline badging requirements (Credly).
+- [X] Set up and configure the Engagez platform.
 
 ### 👩‍🏫 Instructor Prep
 

@@ -17,15 +17,117 @@ fi
 # `just bootstrap-server` passes this through from lab.env.
 K3S_VERSION="${K3S_VERSION:-}"
 
+# --- NVIDIA GPU driver (Tesla T4) -------------------------------------------
+# Azure's NvidiaGpuDriverLinux extension is unreliable on Ubuntu 24.04, so we
+# install the signed -server-open driver straight from Ubuntu's archive.
+# Two gotchas this block handles:
+#   1. The kernel module only loads after a reboot → two-pass bootstrap.
+#   2. The headless metapackage does NOT ship nvidia-smi (that lives in
+#      nvidia-utils-<branch>-server). Without it the nvidia-smi health check
+#      can never pass, so an older version of this script reinstalled +
+#      rebooted forever. We install utils explicitly and gate the reboot on
+#      whether the kernel module is actually loaded (lsmod), not on nvidia-smi.
+NVIDIA_BRANCH="${NVIDIA_BRANCH:-580}"
+if lspci | grep -qi nvidia; then
+    if ! nvidia-smi >/dev/null 2>&1; then
+        if lsmod | grep -q '^nvidia '; then
+            # Module is already loaded; we only lack the userspace tools.
+            # nvidia-smi is userspace-only — NO reboot needed here.
+            echo "🎮 Driver module loaded; installing nvidia-smi (nvidia-utils)..."
+            apt-get install -y "nvidia-utils-${NVIDIA_BRANCH}-server"
+            if ! nvidia-smi >/dev/null 2>&1; then
+                echo "🔁 nvidia-smi still failing after utils install — rebooting once."
+                echo "   Wait ~60s for the VM, then run 'just bootstrap-server' again."
+                reboot; exit 0
+            fi
+        else
+            echo "🎮 Installing the NVIDIA GPU driver (Tesla T4, branch ${NVIDIA_BRANCH})..."
+            apt-get update
+            apt-get install -y ubuntu-drivers-common
+            # Pin ONE branch + its utils. Avoid `ubuntu-drivers install --gpgpu`,
+            # which pulled multiple branches (e.g. 580 driver + 595 firmware)
+            # that can clash and leave the module unloaded.
+            apt-get install -y \
+                "nvidia-headless-no-dkms-${NVIDIA_BRANCH}-server-open" \
+                "linux-modules-nvidia-${NVIDIA_BRANCH}-server-open-azure" \
+                "nvidia-utils-${NVIDIA_BRANCH}-server"
+            echo "🔁 Driver installed — rebooting now."
+            echo "   Wait ~60s for the VM, then run 'just bootstrap-server' again."
+            reboot; exit 0
+        fi
+    fi
+    echo "✅ NVIDIA driver active: $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
+fi
+
 echo "📦 Installing prerequisites..."
 apt-get update
 apt-get install -y curl wget git jq ufw
+
+echo "⎈ Installing Helm..."
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
 echo "🛡️ Configuring Firewall (UFW)..."
 ufw allow 6443/tcp # K8s API
 ufw allow 80/tcp   # HTTP Ingress
 ufw allow 443/tcp  # HTTPS Ingress
 ufw allow 22/tcp   # SSH
+
+# --- Data disk: format + mount at /var/lib/rancher -------------------------
+# The Azure 256 GB data disk (lun 0) is attached but raw. k3s keeps container
+# images + local-path PVCs under /var/lib/rancher — parking that on the big
+# Premium SSD keeps the 64 GB OS disk from filling up (Harbor, the Ollama
+# model, etc.). Idempotent: safe to re-run; never reformats existing data.
+DATA_DISK="/dev/disk/azure/scsi1/lun0"
+RANCHER_DIR="/var/lib/rancher"
+if [ -e "$DATA_DISK" ]; then
+    if ! mountpoint -q "$RANCHER_DIR"; then
+        echo "💾 Preparing the 256 GB data disk..."
+        if ! blkid "$DATA_DISK" >/dev/null 2>&1; then
+            echo "   Formatting $DATA_DISK as ext4..."
+            mkfs.ext4 -F -L nitic-data "$DATA_DISK"
+        fi
+        mkdir -p "$RANCHER_DIR"
+        # If k3s already wrote to the OS-disk /var/lib/rancher, migrate it first
+        if [ -n "$(ls -A "$RANCHER_DIR" 2>/dev/null)" ]; then
+            echo "   Migrating existing $RANCHER_DIR onto the data disk..."
+            systemctl stop k3s 2>/dev/null || true
+            TMP_MNT="$(mktemp -d)"
+            mount "$DATA_DISK" "$TMP_MNT"
+            cp -a "$RANCHER_DIR/." "$TMP_MNT/"
+            umount "$TMP_MNT" && rmdir "$TMP_MNT"
+            rm -rf "${RANCHER_DIR:?}/"*
+        fi
+        UUID="$(blkid -s UUID -o value "$DATA_DISK")"
+        grep -q "$UUID" /etc/fstab || \
+            echo "UUID=$UUID  $RANCHER_DIR  ext4  defaults,nofail  0  2" >> /etc/fstab
+        mount "$RANCHER_DIR"
+        echo "   ✅ Data disk mounted at $RANCHER_DIR ($(df -h "$RANCHER_DIR" | awk 'NR==2{print $2}'))"
+    else
+        echo "💾 Data disk already mounted at $RANCHER_DIR"
+    fi
+else
+    echo "ℹ️  No data disk at $DATA_DISK — using OS disk for /var/lib/rancher"
+fi
+
+# --- NVIDIA Container Toolkit -----------------------------------------------
+# Lets containerd run GPU containers. k3s auto-detects nvidia-container-runtime
+# at startup and wires up the 'nvidia' containerd runtime — so this MUST be
+# installed before the k3s install below.
+if lspci | grep -qi nvidia; then
+    if ! command -v nvidia-container-runtime >/dev/null 2>&1; then
+        echo "📦 Installing NVIDIA Container Toolkit..."
+        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey \
+            | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+        curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+            | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
+            > /etc/apt/sources.list.d/nvidia-container-toolkit.list
+        apt-get update
+        apt-get install -y nvidia-container-toolkit
+    fi
+    echo "✅ NVIDIA Container Toolkit present."
+    # If k3s was already installed on a prior run, restart so it picks up the runtime.
+    systemctl is-active --quiet k3s && systemctl restart k3s || true
+fi
 
 echo "⚓ Installing K3s (Single Node Server)..."
 # K3S_KUBECONFIG_MODE=644 makes /etc/rancher/k3s/k3s.yaml world-readable so the

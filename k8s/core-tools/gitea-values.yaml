@@ -6,7 +6,7 @@ gitea:
   admin:
     # Decision: Create a default admin user for the instructor.
     username: "admiral"
-    password: "password123" # To be injected via secrets later in production
+    password: "${GITEA_ADMIN_PASSWORD}" # injected from lab.env by `just deploy-gitea`
     email: "admiral@bash.local"
   
   config:
@@ -14,6 +14,20 @@ gitea:
       # Decision: Route via standard ingress
       DOMAIN: "gitea.${LAB_DOMAIN}"
       ROOT_URL: "https://gitea.${LAB_DOMAIN}/"
+
+  # ── SSO via Dex (OIDC) ──────────────────────────────────────
+  # Auto-registers a "Dex" login source on startup, so students click
+  # "Sign in with Dex" instead of using a Gitea-local password. The key/secret
+  # must match the `gitea` staticClient in k8s/core-tools/dex.yaml.
+  # NOTE: Gitea verifies Dex's TLS cert when it fetches the discovery URL, so
+  # the lab CA (certs/ca.crt) must be trusted by the Gitea container — see the
+  # Day 3 SSO walkthrough for the extraVolumeMounts that handle that.
+  oauth:
+    - name: "Dex"
+      provider: "openidConnect"
+      key: "gitea"
+      secret: "gitea-oidc-secret"
+      autoDiscoverUrl: "https://sso.${LAB_DOMAIN}/.well-known/openid-configuration"
 
 redis-cluster:
   # Decision: Disable HA Redis to save resources

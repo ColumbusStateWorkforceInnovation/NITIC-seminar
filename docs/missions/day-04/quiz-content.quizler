@@ -1,0 +1,99 @@
+{
+  "name": "Day 4: The Admiral's Challenge",
+  "text": "Final lightning round mixing Kubernetes resilience, chaos engineering, and the pedagogy of teaching cloud-native at scale.",
+  "max_players": 50,
+  "filtering": "None",
+  "questions": [
+    {
+      "text": "Why do Site Reliability Engineers intentionally break their own systems with Chaos Engineering?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 1, "value": "To prove the system can recover from real-world failure.", "correct": true },
+        { "id": 2, "value": "To make the cluster run faster.", "correct": false },
+        { "id": 3, "value": "To delete logs they do not want anyone to see.", "correct": false },
+        { "id": 4, "value": "Because Kubernetes requires it before every deploy.", "correct": false }
+      ]
+    },
+    {
+      "text": "The Pirate keeps killing your pod, but it keeps coming back. What Kubernetes object is protecting it?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 5, "value": "The Deployment, which respawns Pods to match the desired count.", "correct": true },
+        { "id": 6, "value": "The ConfigMap, which stores a backup of the Pod.", "correct": false },
+        { "id": 7, "value": "The Service, which restarts crashed containers.", "correct": false },
+        { "id": 8, "value": "Nothing — the Pod is just lucky.", "correct": false }
+      ]
+    },
+    {
+      "text": "An instructor distributes a containerized JupyterLab over a URL instead of an install disk. What is the main pedagogical win?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 9, "value": "Every student gets an identical environment with zero local setup.", "correct": true },
+        { "id": 10, "value": "Students no longer need to think about the subject.", "correct": false },
+        { "id": 11, "value": "It makes the course impossible to cheat in.", "correct": false },
+        { "id": 12, "value": "It removes the need for an instructor entirely.", "correct": false }
+      ]
+    },
+    {
+      "text": "For 3 days the AI was a Socratic tutor that refused to give answers. Why overwrite it into a direct 'Incident Commander' during the attack?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 13, "value": "The right AI persona depends on the urgency of the task.", "correct": true },
+        { "id": 14, "value": "The Socratic prompt had stopped working entirely.", "correct": false },
+        { "id": 15, "value": "Direct answers are always better than Socratic hints.", "correct": false },
+        { "id": 16, "value": "The AI model was swapped out for a smarter one.", "correct": false }
+      ]
+    },
+    {
+      "text": "What does vCluster give a student that a plain Kubernetes namespace cannot?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 17, "value": "A full, isolated cluster with their own admin rights — safely.", "correct": true },
+        { "id": 18, "value": "Faster internet access inside the cluster.", "correct": false },
+        { "id": 19, "value": "A permanent copy of every other student's work.", "correct": false },
+        { "id": 20, "value": "The ability to skip writing YAML forever.", "correct": false }
+      ]
+    }
+  ],
+  "images": []
+}

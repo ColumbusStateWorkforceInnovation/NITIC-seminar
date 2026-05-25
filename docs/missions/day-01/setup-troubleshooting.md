@@ -8,9 +8,9 @@ The setup path — VirtualBox → Ubuntu install → `setup-client.sh` → `veri
 
 ## Pre-Flight Checklist (before June 1)
 
-1. **Test one classroom desktop.** Install VirtualBox and confirm a 64-bit Ubuntu VM boots at normal speed (no 🐢 turtle icon). If 64-bit options are missing or the VM crawls, it's a Hyper-V/BIOS issue — see [below](#only-32-bit-options-or-the-vm-is-slow) — and the fix needs administrator rights, so loop in CSCC IT early.
+1. **Test one classroom desktop.** Confirm VirtualBox is installed, then check that a 64-bit Ubuntu VM boots at normal speed (no 🐢 turtle icon). If 64-bit options are missing or the VM crawls, it's a Hyper-V/BIOS issue — see [below](#only-32-bit-options-or-the-vm-is-slow) — and the fix needs administrator rights, so loop in CSCC IT early.
 2. **Stage the Ubuntu ISO locally.** Pre-copy `ubuntu-24.04-desktop-amd64.iso` to each desktop's `Downloads` folder, a USB drive, or a fast local share. Thirty students downloading a ~6 GB ISO at once will saturate the campus link — easy to avoid.
-3. **Confirm VirtualBox is available** on the desktops (7.1 or newer), or stage the installer.
+3. **Confirm VirtualBox is installed** on every desktop (7.1 or newer). If a desktop is missing it, stage the installer so you can add it before class.
 4. **Run the whole path once on a classroom desktop, on the classroom network.** `setup-client.sh` reaches `download.docker.com`, `github.com`, `dl.k8s.io`, `get.helm.sh`, `starship.rs`, and `raw.githubusercontent.com`. Confirm the campus firewall/proxy allows them.
 5. **Confirm `SERVER_IP`** and write it on the board. The lab domain (`wagbiz.org`) is now the built-in default, so students only need the IP.
 

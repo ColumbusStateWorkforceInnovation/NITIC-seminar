@@ -19,10 +19,11 @@ variable "location" {
   description = <<-EOT
     Azure region. NOTE: GPU SKUs are not in every region — verify the chosen
     vm_size is offered here before applying:
-      az vm list-skus --location <region> --size Standard_NV --all -o table
+      az vm list-skus --location <region> --size Standard_NC --all -o table
+    The NCasT4_v3 GPU quota for this lab was granted in North Central US.
   EOT
   type        = string
-  default     = "eastus"
+  default     = "northcentralus"
 }
 
 variable "vm_name" {
@@ -32,9 +33,9 @@ variable "vm_name" {
 }
 
 variable "vm_size" {
-  description = "Azure VM SKU. Standard_NV4as_v4 is a GPU SKU (1/8 AMD Radeon Instinct MI25)."
+  description = "Azure VM SKU. Standard_NC4as_T4_v3 is the lab GPU node (4 vCPU, 28GB RAM, 1× NVIDIA Tesla T4 16GB). For a CPU-only VM use e.g. Standard_D4as_v5."
   type        = string
-  default     = "Standard_NV4as_v4"
+  default     = "Standard_NC4as_T4_v3"
 }
 
 variable "admin_username" {
@@ -56,10 +57,11 @@ variable "ssh_public_key_path" {
 variable "os_image" {
   description = <<-EOT
     Marketplace image (publisher:offer:sku:version). Default targets Ubuntu
-    26.04 LTS "Resolute Raccoon", Gen2 — the Gen2 SKU is plain "server"
-    (there is no "server-gen2"). List available SKUs with:
-      az vm image list-skus --location eastus --publisher Canonical --offer ubuntu-26_04-lts -o table
-    24.04 LTS fallback: offer = "ubuntu-24_04-lts" (sku stays "server").
+    24.04 LTS, Gen2 — the Gen2 SKU is plain "server" (there is no
+    "server-gen2"). 24.04 is used because the NVIDIA driver + container
+    toolkit are battle-tested there; 26.04 is too new for reliable GPU
+    support. List available SKUs with:
+      az vm image list-skus --location northcentralus --publisher Canonical --offer ubuntu-24_04-lts -o table
   EOT
   type = object({
     publisher = string
@@ -69,7 +71,7 @@ variable "os_image" {
   })
   default = {
     publisher = "Canonical"
-    offer     = "ubuntu-26_04-lts"
+    offer     = "ubuntu-24_04-lts"
     sku       = "server"
     version   = "latest"
   }
@@ -127,11 +129,11 @@ variable "nsg_rules" {
 
 variable "install_gpu_driver" {
   description = <<-EOT
-    Whether to install the GPU driver via a VM extension. Default false.
-    NOTE: Standard_NV4as_v4 uses an AMD GPU — on Linux the AMD driver generally
-    needs a manual install in the guest. The extension below targets the NVIDIA
-    Linux driver, so flip this on only if you switch vm_size to an NVIDIA SKU
-    (e.g. Standard_NC4as_T4_v3).
+    Whether to install the GPU driver via the Azure NvidiaGpuDriverLinux VM
+    extension. Default false — and it should stay false: the extension is
+    unreliable on Ubuntu 22.04+. The Tesla T4 driver is installed instead by
+    scripts/setup-remote-k3s-server.sh during `just bootstrap-server`. Turning
+    the extension on would fight that.
   EOT
   type        = bool
   default     = false

@@ -1,0 +1,248 @@
+/* @theme nautical */
+
+/*
+ * Nautical — the shared Marp theme for "Admiral Bash's Island Adventure".
+ * A weathered sea chart: deep ocean navy, brass fittings, parchment.
+ *
+ * Slide classes:
+ *   (default)          parchment content slide
+ *   <!-- _class: lead -->     dark ocean title / closing card
+ *   <!-- _class: chapter -->  dark ocean section divider
+ *   <!-- _class: center -->   parchment slide, content centered
+ */
+
+@import 'default';
+
+:root {
+  --ocean-deep:   #0c2733;
+  --ocean-mid:    #15414f;
+  --teal:         #2c7d8c;
+  --brass:        #d8a43c;
+  --brass-dark:   #a8761f;
+  --parchment:    #f3e7cc;
+  --parchment-dk: #e6d4ad;
+  --foam:         #fbf6e9;
+  --ink:          #1b333d;
+  --ink-soft:     #41606b;
+  --rope:         #c4a468;
+}
+
+/* ---------------------------------------------------------------- */
+/*  Base slide — a weathered chart on the captain's table           */
+/* ---------------------------------------------------------------- */
+section {
+  position: relative;
+  overflow: hidden;
+  font-family: "Helvetica Neue", "Segoe UI", system-ui, Arial, sans-serif;
+  font-size: 25px;
+  line-height: 1.5;
+  color: var(--ink);
+  background-color: var(--parchment);
+  /* layers: rope strip at the bottom, then two parchment vignettes */
+  background-image:
+    repeating-linear-gradient(-45deg, var(--brass) 0 8px, var(--brass-dark) 8px 16px),
+    radial-gradient(ellipse at 12% 8%,  rgba(255,255,255,0.55), transparent 55%),
+    radial-gradient(ellipse at 88% 96%, rgba(12,39,51,0.10),   transparent 55%);
+  background-size: 100% 9px, 100% 100%, 100% 100%;
+  background-position: bottom left, top left, bottom right;
+  background-repeat: no-repeat;
+  padding: 54px 72px 64px;
+  border-top: 9px solid var(--ocean-deep);
+}
+
+/* ---------------------------------------------------------------- */
+/*  Headings — ink on an old map                                    */
+/* ---------------------------------------------------------------- */
+h1, h2, h3, h4 {
+  font-family: Georgia, "Palatino Linotype", "Iowan Old Style",
+               "Times New Roman", serif;
+  font-weight: 700;
+  margin: 0 0 0.4em;
+}
+h1 { font-size: 49px; color: var(--ocean-deep); letter-spacing: 0.3px; }
+h2 {
+  font-size: 35px;
+  color: var(--ocean-mid);
+  border-bottom: 3px solid var(--brass);
+  padding-bottom: 0.12em;
+  margin-bottom: 0.5em;
+}
+h3 { font-size: 27px; color: var(--teal); }
+h4 {
+  font-size: 21px;
+  color: var(--brass-dark);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 0.25em;
+}
+
+/* ---------------------------------------------------------------- */
+/*  Body text & lists — bullets become brass diamonds               */
+/* ---------------------------------------------------------------- */
+p { margin: 0.35em 0; }
+strong { color: var(--brass-dark); }
+em { color: var(--ink-soft); }
+a { color: var(--teal); }
+
+ol { margin: 0.3em 0; padding-left: 1.5em; }
+ul { margin: 0.3em 0; padding-left: 1.5em; list-style: none; }
+li { margin: 0.32em 0; }
+ul > li { position: relative; }
+ul > li::before {
+  content: "\25C6";              /* ◆ */
+  position: absolute;
+  left: -1.4em;
+  top: 0.02em;
+  color: var(--brass-dark);
+  font-size: 0.72em;
+}
+ul ul > li::before { content: "\2013"; color: var(--teal); font-size: 1em; top: 0; }
+ol > li::marker { color: var(--brass-dark); font-weight: 700; }
+li > ul, li > ol { margin: 0.12em 0 0.2em; }
+
+/* ---------------------------------------------------------------- */
+/*  Code — a dark ship's-log page                                   */
+/* ---------------------------------------------------------------- */
+code { font-family: "SF Mono", "JetBrains Mono", Consolas, "DejaVu Sans Mono", monospace; }
+:not(pre) > code {
+  background: var(--parchment-dk);
+  color: var(--ocean-deep);
+  padding: 1px 7px;
+  border: 1px solid var(--rope);
+  border-radius: 4px;
+  font-size: 0.86em;
+}
+pre {
+  background: var(--ocean-deep);
+  border-radius: 6px;
+  border-left: 6px solid var(--brass);
+  padding: 14px 22px;
+  margin: 0.55em auto;
+  width: fit-content;
+  max-width: 100%;
+  text-align: left;
+  box-shadow: 0 4px 14px rgba(12,39,51,0.28);
+}
+pre code {
+  color: var(--foam);
+  background: transparent;
+  font-size: 20px;
+  line-height: 1.32;
+  text-align: left;
+}
+
+/* ---------------------------------------------------------------- */
+/*  Blockquote — the Boatswain pipes up                             */
+/* ---------------------------------------------------------------- */
+blockquote {
+  background: var(--parchment-dk);
+  border-left: 8px solid var(--teal);
+  border-radius: 0 6px 6px 0;
+  margin: 0.55em 0;
+  padding: 10px 24px;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+blockquote strong { color: var(--ocean-mid); font-style: normal; }
+
+/* ---------------------------------------------------------------- */
+/*  Tables — a navigator's comparison chart                         */
+/* ---------------------------------------------------------------- */
+table { border-collapse: collapse; margin: 0.5em auto; font-size: 22px; }
+th {
+  background: var(--ocean-mid);
+  color: var(--parchment);
+  font-family: Georgia, serif;
+  padding: 9px 16px;
+  text-align: left;
+}
+td { padding: 8px 16px; border: 1px solid var(--rope); }
+tr:nth-child(even) td { background: rgba(196,164,104,0.16); }
+
+/* ---------------------------------------------------------------- */
+/*  Footer & pagination — entries in the captain's log              */
+/* ---------------------------------------------------------------- */
+footer {
+  font-family: Georgia, serif;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+section::after {
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* ---------------------------------------------------------------- */
+/*  CENTER — parchment slide with content centered                  */
+/* ---------------------------------------------------------------- */
+section.center { align-items: center; text-align: center; }
+section.center h2 { border-bottom: none; }
+
+/* ---------------------------------------------------------------- */
+/*  LEAD & CHAPTER — standing on deck, open water ahead             */
+/* ---------------------------------------------------------------- */
+section.lead, section.chapter {
+  background-color: var(--ocean-deep);
+  /* layers: rope strip, faint compass-rose watermark, teal glow, ocean gradient */
+  background-image:
+    repeating-linear-gradient(-45deg, var(--brass) 0 8px, var(--brass-dark) 8px 16px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><g opacity='0.11' fill='white' stroke='white'><circle cx='100' cy='100' r='96' fill='none' stroke-width='1.5'/><circle cx='100' cy='100' r='72' fill='none' stroke-width='1'/><polygon points='100,10 90,100 110,100'/><polygon points='190,100 100,90 100,110'/><polygon points='100,190 90,100 110,100'/><polygon points='10,100 100,90 100,110'/><circle cx='100' cy='100' r='6'/></g></svg>"),
+    radial-gradient(ellipse at 28% 20%, rgba(44,125,140,0.55), transparent 62%),
+    linear-gradient(168deg, #0d2d3b 0%, #12404f 55%, #08222c 100%);
+  background-size: 100% 9px, 430px 430px, 100% 100%, 100% 100%;
+  background-position: bottom left, right -55px bottom -45px, top left, top left;
+  background-repeat: no-repeat;
+  color: var(--parchment);
+  border-top: 9px solid var(--brass);
+  justify-content: center;
+  text-align: center;
+}
+section.lead h1, section.chapter h1 {
+  color: var(--brass);
+  font-size: 60px;
+  margin-bottom: 0.18em;
+}
+section.lead h2, section.chapter h2 {
+  color: var(--parchment);
+  border: none;
+  font-size: 31px;
+  font-weight: 400;
+  font-style: italic;
+}
+section.lead h3, section.chapter h3 { color: var(--rope); }
+section.lead h4, section.chapter h4 { color: var(--brass); }
+section.lead p,  section.chapter p  { color: var(--rope); }
+section.lead strong, section.chapter strong { color: var(--brass); }
+section.lead em, section.chapter em { color: var(--rope); }
+section.lead code, section.chapter code {
+  background: rgba(255,255,255,0.10);
+  color: var(--foam);
+  border-color: rgba(216,164,60,0.40);
+}
+section.lead::after,  section.chapter::after  { color: var(--rope); }
+section.lead footer,  section.chapter footer  { color: var(--rope); }
+section.lead a, section.chapter a { color: var(--brass); }
+section.lead ul > li::before, section.chapter ul > li::before { color: var(--brass); }
+section.lead blockquote, section.chapter blockquote {
+  background: rgba(255,255,255,0.07);
+  border-left-color: var(--brass);
+  color: var(--parchment);
+}
+
+/* ---------------------------------------------------------------- */
+/*  ASCII art on dark slides — faint brass line-art, no log-box      */
+/* ---------------------------------------------------------------- */
+section.lead pre, section.chapter pre {
+  background: transparent;
+  border-left: none;
+  box-shadow: none;
+  padding: 2px 0;
+  margin: 0.3em auto;
+}
+section.lead pre code, section.chapter pre code {
+  color: var(--rope);
+  font-size: 18px;
+  line-height: 1.28;
+}

@@ -15,7 +15,7 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 ## 09:15 - 12:00 | Lab 00: Building Your Vessel (Setup)
 **Goal:** Every student ends with a working Ubuntu VM that passes `verify-client.sh`.
 - **Action:** Have students open `lab-00-building-your-vessel.md` and run it **as a class** — demo each Part on the projector, then let the room catch up before moving on. Do not let fast students sprint ahead; pace to the middle of the room.
-- **Pt 1 (≈09:15–10:30):** Install/launch VirtualBox, create the VM, start the Ubuntu installer. The installer itself runs 10–20 min — kick it off *before* the 10:30 break so it installs while everyone is out.
+- **Pt 1 (≈09:15–10:30):** Launch VirtualBox (pre-installed on the desktops), create the VM, start the Ubuntu installer. The installer itself runs 10–20 min — kick it off *before* the 10:30 break so it installs while everyone is out.
 - **Break 10:30–10:45:** Ubuntu finishes installing unattended.
 - **Pt 2 (≈10:45–12:00):** First boot, `git clone`, `setup-client.sh`, then `verify-client.sh`. The bootstrap script runs 5–15 min mostly unattended — use that window to circulate and clear stragglers.
 - **Watch for:** the `docker` group needs a fresh login — remind everyone to **log out and back in** after `setup-client.sh`. Keep the [Troubleshooting sheet](setup-troubleshooting.md) handy for the odd machine that misbehaves.
@@ -41,10 +41,11 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 ## 03:15 - 04:00 | Into the Deep (Lecture)
 **Goal:** Transition from pure Docker to Kubernetes Pods.
 - **Lecture:** Explain the "Pod" abstraction. Why do we need a pod? (Shared namespaces, networking, sidecars).
-- **Action (Flash Poll):** Open the Quiz App (`poll.{{ lab_domain }}`). Load the 5 questions from `quiz-content.md`. Have the students race to answer them. Use the results to gauge comprehension before the afternoon lab.
+- **Action (Flash Poll):** Open the Quiz App (`poll.{{ lab_domain }}`). Load the 5 questions from `quiz-content.quizler`. Have the students race to answer them. Use the results to gauge comprehension before the afternoon lab.
 
 ## 04:00 - 05:00 | Lab 02: Paddling Out & Debrief
 **Goal:** Imperative generation (`--dry-run`), diagnostics (`logs`, `exec`), and close out the day.
+- **Action (Cluster onboarding — do this first):** Lab 02 is the first time students need live cluster access. Each student needs a **Rancher** login ready — have those accounts set up — then the lab's opening section walks them through copying their kubeconfig from the Rancher UI into `~/.kube/config`. Until they're in Rancher, `kubectl` has nothing to talk to.
 - **Action:** Have them follow `lab-02-paddling-out.md`.
 - **Action (The Ghost Ship Demo):** Early in the lab, stop the class and project your terminal. Exec into a running Nginx pod, change the `index.html` manually, show it working — then delete the pod and show the edits are gone when it respawns. *This visual permanently cements infrastructure immutability.*
 - **Action (Scavenger Hunt):** Around 4:25 PM, secretly run `./scripts/day-01-scavenger-hunt.sh` from your terminal. Announce a Treasure Chest has been hidden; first student to find it and read the logs wins.

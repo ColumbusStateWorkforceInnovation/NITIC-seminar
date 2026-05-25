@@ -7,12 +7,12 @@
 
 ## Day 1: The Ship Has Sunk (Linux & Containers)
 
-> **Note:** Day 1 opens with a full live VM build — students install VirtualBox and Ubuntu and run the bootstrap script before any lecture. This pushes the Linux/containers and Kubernetes lectures to the afternoon. The Socratic Boatswain is no longer a standalone block; it is introduced inside Lab 01.
+> **Note:** Day 1 opens with a full live VM build — students build an Ubuntu VM (VirtualBox is pre-installed on the classroom desktops) and run the bootstrap script before any lecture. This pushes the Linux/containers and Kubernetes lectures to the afternoon. The Socratic Boatswain is no longer a standalone block; it is introduced inside Lab 01.
 
 | Time | Type | Topic & Activity |
 | :--- | :--- | :--- |
 | **09:00 - 09:15** | Welcome | Storytime ("Day 1 Morning" reading) & setting the stage. |
-| **09:15 - 10:30** | Lab / Setup | **Lab 00 — Building Your Vessel (Pt 1):** Install VirtualBox, create the VM, launch the Ubuntu installer. |
+| **09:15 - 10:30** | Lab / Setup | **Lab 00 — Building Your Vessel (Pt 1):** Create the VM and launch the Ubuntu installer. |
 | **10:30 - 10:45** | Break | *15 Minute Morning Break — Ubuntu installs* |
 | **10:45 - 12:00** | Lab / Setup | **Lab 00 — Building Your Vessel (Pt 2):** First boot, clone the repo, run `setup-client.sh`, verify. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
@@ -32,7 +32,7 @@
 | **10:30 - 10:45** | Break | *15 Minute Morning Break* |
 | **10:45 - 12:00** | Lab | **Mission:** Deploying the Fleet. The `k9s` CrashLoopBackOff Speed Round. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
-| **1:00 - 2:30** | Lecture | Introduction to Networking, Services, and Linkerd (Service Mesh overviews). |
+| **1:00 - 2:30** | Lecture | Introduction to Networking, Services, and internal DNS. |
 | **2:30 - 2:45** | Break | *15 Minute Afternoon Break* |
 | **2:45 - 4:15** | Lab | **Mission:** Fleet Logistics. Forming 3-tier alliances and linking Services across boundaries. |
 | **4:15 - 5:00** | AI Connect | **Curiosity Side-Quest:** Update `AGENTS.md` to be the Strict Syllabus Enforcer. |

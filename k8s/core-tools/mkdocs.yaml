@@ -53,6 +53,9 @@ spec:
       # before starting the dev server, so no custom image is needed.
       - name: mkdocs
         image: squidfunk/mkdocs-material:latest
+        env:
+        - name: LAB_DOMAIN
+          value: "${LAB_DOMAIN}"
         command:
           - /bin/sh
           - -c

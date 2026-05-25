@@ -12,7 +12,7 @@
 
 ## 🕘 The Schedule
 - **09:00 - 09:15** | Welcome & Storytime
-- **09:15 - 10:30** | Lab 00: Building Your Vessel (VirtualBox + Ubuntu VM)
+- **09:15 - 10:30** | Lab 00: Building Your Vessel (Create the Ubuntu VM)
 - **10:30 - 10:45** | ☕ Break
 - **10:45 - 12:00** | Lab 00, cont.: Bootstrap & Verify (`setup-client.sh`)
 - **12:00 - 01:00** | 🥪 Lunch

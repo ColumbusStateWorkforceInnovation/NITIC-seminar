@@ -1,0 +1,187 @@
+# Dex — Centralized Identity for the Island (OIDC Provider)
+# =============================================================================
+# Dex is the cluster's single sign-on broker. It speaks OpenID Connect (OIDC),
+# so every lab tool (Gitea, ArgoCD, Harbor, Grafana, Rancher) can hand its
+# login screen over to Dex instead of keeping its own user list.
+#
+# WHY DEX (and not Ory Hydra):
+#   Hydra is an OAuth2 token issuer with NO user store and NO login UI — it
+#   needs a separate identity service + a login/consent app. Dex has a built-in
+#   password database (`staticPasswords`), so the student roster lives right
+#   here, in code, in Git. That is the "students-as-code" win.
+#
+# DEPLOY:
+#   just deploy-dex      (bcrypt-hashes DEX_DEMO_PASSWORD from lab.env and
+#                         injects it as ${DEX_PASSWORD_HASH}; restricted envsubst
+#                         protects the `$` in the generated hash)
+#
+# NOTE: Dex serves plain HTTP on :5556. TLS is terminated at the Gateway edge,
+# exactly like every other lab service. The `issuer` is the public HTTPS URL.
+# =============================================================================
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dex-config
+  namespace: admin-tools
+data:
+  config.yaml: |
+    # The public, browser-reachable identity URL. Must be HTTPS — the apps AND
+    # the students' browsers both resolve this name.
+    issuer: https://sso.${LAB_DOMAIN}
+
+    # In-memory storage is fine for a lab: clients + users come from this file,
+    # only short-lived auth codes live in memory (lost on restart — harmless).
+    storage:
+      type: memory
+
+    web:
+      http: 0.0.0.0:5556
+
+    # Skip the "Grant access?" screen — this is a trusted, closed lab.
+    oauth2:
+      skipApprovalScreen: true
+
+    # Turn on the built-in password database (the staticPasswords list below).
+    enablePasswordDB: true
+
+    # ── 🧑‍🎓 STUDENTS AS CODE ─────────────────────────────────────────────
+    # THIS LIST IS THE ROSTER. Add a student here → commit → `just deploy-dex`
+    # → they can immediately sign in to every tool wired to Dex.
+    # `hash` is a bcrypt hash of the password. Every account below references
+    # ${DEX_PASSWORD_HASH}, which `just deploy-dex` generates from
+    # DEX_DEMO_PASSWORD (in lab.env) at apply time — so no password or hash is
+    # committed. To give one account its own password, replace its `hash:` with
+    # a literal value from `just dex-hash 'their-password'`.
+    staticPasswords:
+      - email: "admiral@${LAB_DOMAIN}"
+        username: "admiral"
+        userID: "947f8d41-6ab9-467a-b29e-c4a269134eed"
+        hash: "${DEX_PASSWORD_HASH}"
+      - email: "blackbeard@${LAB_DOMAIN}"
+        username: "blackbeard"
+        userID: "101796d4-fa75-47ea-8572-adb909917d6d"
+        hash: "${DEX_PASSWORD_HASH}"
+      - email: "annebonny@${LAB_DOMAIN}"
+        username: "annebonny"
+        userID: "45a399d7-9020-43b3-824b-387c17406a08"
+        hash: "${DEX_PASSWORD_HASH}"
+      - email: "calicojack@${LAB_DOMAIN}"
+        username: "calicojack"
+        userID: "91e48811-bad8-4d43-96a9-2fc8e7238fff"
+        hash: "${DEX_PASSWORD_HASH}"
+      # ── 🧪 TEST CREW — disposable accounts for shakedown testing ──────────
+      # Mirrored in scripts/students.csv so the Rancher provisioner picks them
+      # up too. Same DEX_DEMO_PASSWORD as the crew above. Delete before go-live.
+      - email: "testcrew1@${LAB_DOMAIN}"
+        username: "testcrew1"
+        userID: "34e39fda-2e1b-47b5-8df1-f612e7f32a55"
+        hash: "${DEX_PASSWORD_HASH}"
+      - email: "testcrew2@${LAB_DOMAIN}"
+        username: "testcrew2"
+        userID: "f3049e13-6dd9-4cdc-a5f5-8adec43436cf"
+        hash: "${DEX_PASSWORD_HASH}"
+      - email: "testcrew3@${LAB_DOMAIN}"
+        username: "testcrew3"
+        userID: "4eb44248-fb34-487d-a846-b89fc7915b0b"
+        hash: "${DEX_PASSWORD_HASH}"
+
+    # ── ⚓ OAUTH2 CLIENTS — one registration per lab tool ─────────────────
+    # Each app authenticates to Dex with its id + secret. The redirectURIs are
+    # exact — a trailing-slash typo here is the #1 cause of "redirect_uri
+    # mismatch" errors. Lab-default secrets; rotate for a real deployment.
+    staticClients:
+      - id: gitea
+        name: "Gitea"
+        secret: gitea-oidc-secret
+        redirectURIs:
+          - "https://gitea.${LAB_DOMAIN}/user/oauth2/dex/callback"
+      - id: argocd
+        name: "ArgoCD"
+        secret: argocd-oidc-secret
+        redirectURIs:
+          - "https://argocd.${LAB_DOMAIN}/auth/callback"
+      - id: harbor
+        name: "Harbor"
+        secret: harbor-oidc-secret
+        redirectURIs:
+          - "https://harbor.${LAB_DOMAIN}/c/oidc/callback"
+      - id: grafana
+        name: "Grafana"
+        secret: grafana-oidc-secret
+        redirectURIs:
+          - "https://grafana.${LAB_DOMAIN}/login/generic_oauth"
+      - id: rancher
+        name: "Rancher"
+        secret: rancher-oidc-secret
+        redirectURIs:
+          - "https://rancher.${LAB_DOMAIN}/verify-auth"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dex
+  namespace: admin-tools
+  labels:
+    app: dex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dex
+  template:
+    metadata:
+      labels:
+        app: dex
+    spec:
+      containers:
+      - name: dex
+        image: ghcr.io/dexidp/dex:latest
+        command: ["/usr/local/bin/dex", "serve", "/etc/dex/cfg/config.yaml"]
+        ports:
+        - containerPort: 5556
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /etc/dex/cfg
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: config
+        configMap:
+          name: dex-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dex
+  namespace: admin-tools
+spec:
+  selector:
+    app: dex
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5556
+  type: ClusterIP
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: dex-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+  hostnames:
+  - "sso.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: dex
+      port: 80

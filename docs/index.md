@@ -43,7 +43,7 @@ You'll be using these services constantly — they're all served from this same 
 
 1. Run `setup-client.sh` on your VM (see your credential card).
 2. Drop into Fish: `fish`.
-3. Verify the toolkit:  `k9s`, `kubectl get ns`, `aichat`.
+3. Verify the toolkit:  `k9s version`, `kubectl version --client`, `aichat`.
 4. Open **Day 1 → Briefing** in the sidebar.
 
 You're ready. Hoist the flag — let's set sail. 🏴‍☠️

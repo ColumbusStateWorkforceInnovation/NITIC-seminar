@@ -5,6 +5,10 @@ temp-context/
 # Institution-specific lab config (copy from lab.env.example and fill in)
 lab.env
 
+# Student roster — holds real names + emails (PII). Copy from
+# students.csv.example and fill in. Never commit to a public repo.
+scripts/students.csv
+
 # Project-local kubeconfig — written by `just bootstrap-k3d`; holds k3d
 # cluster admin credentials. Never commit.
 .kube/
@@ -17,6 +21,10 @@ lab.env
 # Public certs (ca.crt, tls.crt) ARE committed — students need them to trust the CA.
 certs/*.key
 certs/*.srl
+
+# Rendered slide decks — build artifacts from `just slides`.
+# Deck SOURCES (slides/**/*.md, slides/themes/, slides/.marprc.yml) ARE committed.
+slides/build/
 
 # macOS artifacts
 .DS_Store

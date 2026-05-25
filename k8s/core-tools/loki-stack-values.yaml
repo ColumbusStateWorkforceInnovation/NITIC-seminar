@@ -17,7 +17,8 @@ promtail:
 
 grafana:
   enabled: true
-  adminPassword: "AdmiralBashIsAwesome"
+  # Injected from lab.env at deploy time by `just deploy-loki` (envsubst).
+  adminPassword: "${GRAFANA_ADMIN_PASSWORD}"
   # Decision: Ingress generation is disabled. We manually define HTTPRoute objects
   # to demonstrate the Gateway API paradigm.
   ingress:
@@ -26,3 +27,22 @@ grafana:
   sidecar:
     datasources:
       enabled: true
+  # ── SSO via Dex (OIDC) ────────────────────────────────────
+  # Grafana's generic_oauth connector — points at our Dex client `grafana`.
+  "grafana.ini":
+    server:
+      root_url: https://grafana.${LAB_DOMAIN}
+    "auth.generic_oauth":
+      enabled: true
+      name: Dex
+      client_id: grafana
+      client_secret: grafana-oidc-secret
+      scopes: "openid profile email groups"
+      auth_url: https://sso.${LAB_DOMAIN}/auth
+      token_url: https://sso.${LAB_DOMAIN}/token
+      api_url: https://sso.${LAB_DOMAIN}/userinfo
+      # Dex uses the self-signed lab CA — skip verification inside the closed cluster.
+      tls_skip_verify_insecure: true
+      allow_sign_up: true
+      # Map the Dex 'instructors' group to Grafana Admin, everyone else to Viewer.
+      role_attribute_path: "contains(groups[*], 'instructors') && 'Admin' || 'Viewer'"

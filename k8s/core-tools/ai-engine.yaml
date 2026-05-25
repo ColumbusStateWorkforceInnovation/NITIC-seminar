@@ -1,7 +1,22 @@
 # Local AI Engine Infrastructure
-# Decision: We deploy Ollama to host the model locally (free, secure) and LiteLLM to act 
+# Decision: We deploy Ollama to host the model locally (free, secure) and LiteLLM to act
 # as an API gateway. This provides an OpenAI-compatible endpoint that enforces authentication.
 # Both services run within the cluster to eliminate external internet dependency for AI labs.
+
+---
+# PVC for Ollama model storage — persists the pulled model across pod restarts
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: admin-tools
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path   # k3s default; lands on the 256GB data disk
+  resources:
+    requests:
+      storage: 20Gi
 
 ---
 apiVersion: v1
@@ -40,28 +55,37 @@ spec:
       labels:
         app: ollama
     spec:
+      runtimeClassName: nvidia   # GPU node (1× Tesla T4); `deploy-core` strips this in LOCAL k3d mode
       containers:
       - name: ollama
         # Decision: Use the official Ollama image to serve the local LLM
         # (default: gemma3:4b — see lab.env / AI_MODEL). Any Ollama-supported
         # tag works; just `just pull-model <tag>` after deploy.
+        # The ollama/ollama image is CUDA-capable — no image change for GPU.
         image: ollama/ollama:latest
         ports:
         - containerPort: 11434
-        # Decision: High memory limits since LLMs require significant RAM to load weights.
+        # GPU mode: the model is offloaded to the T4's 16GB VRAM, so the pod's
+        # CPU/RAM footprint stays small. The nvidia.com/gpu resource goes in
+        # limits ONLY — k8s mirrors it to requests automatically. The node has
+        # just 4 vCPU (shared with Harbor, Gitea, Rancher, etc.), so the CPU
+        # limit is kept modest. Needs `just deploy-gpu-plugin` applied first.
         resources:
           limits:
+            nvidia.com/gpu: 1
             memory: "8Gi"
             cpu: "2000m"
           requests:
             memory: "4Gi"
             cpu: "1000m"
         volumeMounts:
-        - name: ollama-data
+        - name: ollama-models
           mountPath: /root/.ollama
       volumes:
-      - name: ollama-data
-        emptyDir: {}
+      - name: ollama-models
+        # Use a PVC so the model persists across pod restarts
+        persistentVolumeClaim:
+          claimName: ollama-models
 
 ---
 apiVersion: v1

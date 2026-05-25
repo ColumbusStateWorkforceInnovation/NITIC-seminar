@@ -6,7 +6,7 @@ In this lab, you will build a custom web server container (your raft), hoist you
 
 ## 🤖 Instructor Superpower: The Socratic Boatswain
 
-*As educators, we know students will use AI. Instead of fighting it, we will harness it. We have deployed a local, private LLM (Gemma 3) running right here on the island. We are going to configure it to act as your Teaching Assistant.*
+*As educators, we know students will use AI. Instead of fighting it, we will harness it. We have deployed a local, private LLM running right here on the island — it runs entirely on the cluster, so nothing typed into it ever leaves the room. We are going to configure it to act as your Teaching Assistant.*
 
 1. In your terminal, type `aichat` to start a conversation.
 2. Type `.info` to verify you are connected to the island's model.

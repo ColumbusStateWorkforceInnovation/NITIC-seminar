@@ -1,0 +1,99 @@
+{
+  "name": "Day 3: Automated Shipyards",
+  "text": "Flash Poll quiz testing Helm charts and templating, the GitOps mental model, and ArgoCD sync and self-healing behavior.",
+  "max_players": 50,
+  "filtering": "None",
+  "questions": [
+    {
+      "text": "In a Helm chart, what is the job of values.yaml?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 1, "value": "It holds the adjustable knobs the templates read from.", "correct": true },
+        { "id": 2, "value": "It is the log file of every helm install you have run.", "correct": false },
+        { "id": 3, "value": "It stores the cluster's kubeconfig credentials.", "correct": false },
+        { "id": 4, "value": "It is the compiled output Helm sends to the cluster.", "correct": false }
+      ]
+    },
+    {
+      "text": "You changed a value and want to roll it out to a running Helm release. Which command?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 5, "value": "helm reinstall <release>", "correct": false },
+        { "id": 6, "value": "helm upgrade <release> ./<chart>", "correct": true },
+        { "id": 7, "value": "kubectl apply -f values.yaml", "correct": false },
+        { "id": 8, "value": "helm refresh <release>", "correct": false }
+      ]
+    },
+    {
+      "text": "GitOps has one commandment. What is the single source of truth?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 9, "value": "Whatever is currently running live in the cluster.", "correct": false },
+        { "id": 10, "value": "The Git repository — the desired state you wrote down.", "correct": true },
+        { "id": 11, "value": "The last command you typed into kubectl.", "correct": false },
+        { "id": 12, "value": "The ArgoCD UI dashboard.", "correct": false }
+      ]
+    },
+    {
+      "text": "Your ArgoCD app has Self Heal on. You run 'kubectl delete deployment' on a managed app. What happens?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 13, "value": "ArgoCD recreates it to match the Git state.", "correct": true },
+        { "id": 14, "value": "It stays deleted — kubectl always wins.", "correct": false },
+        { "id": 15, "value": "ArgoCD deletes the whole Git repository.", "correct": false },
+        { "id": 16, "value": "The cluster shuts down for safety.", "correct": false }
+      ]
+    },
+    {
+      "text": "In ArgoCD, what does an application status of 'OutOfSync' mean?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 17, "value": "The live cluster state no longer matches what is in Git.", "correct": true },
+        { "id": 18, "value": "The Git server has lost its internet connection.", "correct": false },
+        { "id": 19, "value": "The Helm chart has a YAML syntax error.", "correct": false },
+        { "id": 20, "value": "The cluster clock is set to the wrong time zone.", "correct": false }
+      ]
+    }
+  ],
+  "images": []
+}

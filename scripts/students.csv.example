@@ -4,8 +4,19 @@
 # - username: lowercase, no spaces. Used as: sailor-<username>
 # - Lines starting with # are ignored
 # ============================================================
+# Copy this file to scripts/students.csv, then edit your copy:
+#     cp scripts/students.csv.example scripts/students.csv
+# scripts/students.csv is gitignored — it holds real names + emails.
+# ============================================================
+
+# TEST CREW — disposable shakedown accounts, mirrored in the Dex SSO
+# roster (k8s/core-tools/dex.yaml). Use them to dry-run provisioning;
+# delete them when you add your real students.
+testcrew1,Test Crew One,testcrew1@wagbiz.org
+testcrew2,Test Crew Two,testcrew2@wagbiz.org
+testcrew3,Test Crew Three,testcrew3@wagbiz.org
+
+# ── Real roster (example format — uncomment and edit) ─────────
 # tanaka,Hiroshi Tanaka,h.tanaka@nitic.ac.jp
 # yamamoto,Kenji Yamamoto,k.yamamoto@nitic.ac.jp
 # sato,Yuki Sato,y.sato@nitic.ac.jp
-# suzuki,Akiko Suzuki,a.suzuki@nitic.ac.jp
-# nakamura,Takeshi Nakamura,t.nakamura@nitic.ac.jp

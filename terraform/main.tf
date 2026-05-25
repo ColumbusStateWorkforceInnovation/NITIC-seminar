@@ -23,6 +23,16 @@ resource "azurerm_subnet" "nitic" {
   resource_group_name  = azurerm_resource_group.nitic.name
   virtual_network_name = azurerm_virtual_network.nitic.name
   address_prefixes     = ["10.20.1.0/24"]
+
+  # A subnet has no `location` of its own and references the vnet only by NAME,
+  # so when the vnet is replaced (e.g. a region change) none of this subnet's
+  # tracked attributes change — terraform leaves it untouched in state while
+  # Azure deletes it along with the old vnet. That orphans every subnet_id
+  # reference (the NIC, the NSG association) and the apply fails with
+  # "Subnet ... was not found". Force the subnet to be recreated with the vnet.
+  lifecycle {
+    replace_triggered_by = [azurerm_virtual_network.nitic.id]
+  }
 }
 
 resource "azurerm_network_security_group" "nitic" {

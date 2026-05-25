@@ -34,5 +34,23 @@ persistence:
     trivy:
       size: 1Gi
 
-# Default harbor admin password
-harborAdminPassword: "AdmiralBashIsAwesome"
+# Harbor admin password — injected from lab.env at deploy time by `just
+# deploy-harbor` (envsubst). No real password is committed here.
+harborAdminPassword: "${HARBOR_ADMIN_PASSWORD}"
+
+# ── SSO via Dex (OIDC) — POST-INSTALL STEP ────────────────────
+# The Harbor Helm chart CANNOT configure OIDC auth through values.yaml — this
+# is a known chart limitation. OIDC must be applied AFTER `just deploy-harbor`
+# via Harbor's configuration API. The `just harbor-sso` recipe does this; it
+# PUTs the following to /api/v2.0/configurations:
+#   auth_mode:          oidc_auth
+#   oidc_name:          Dex
+#   oidc_endpoint:      https://sso.${LAB_DOMAIN}
+#   oidc_client_id:     harbor
+#   oidc_client_secret: harbor-oidc-secret   (matches dex.yaml staticClients)
+#   oidc_scope:         openid,profile,email,groups
+#   oidc_groups_claim:  groups
+#   oidc_auto_onboard:  true
+#   oidc_user_claim:    name
+#   oidc_verify_cert:   false   (Dex uses the self-signed lab CA)
+# See the Day 3 SSO walkthrough for the full curl call.

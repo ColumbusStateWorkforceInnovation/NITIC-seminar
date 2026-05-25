@@ -5,10 +5,11 @@
 # USAGE (REMOTE server):
 #   1. Copy lab.env.example → lab.env and fill in your values
 #   2. Run `just init` to validate config and tools
-#   3. Run `just bootstrap-server` to set up K3s on the server
-#   4. Run `just deploy-cert-manager` then `just deploy-letsencrypt` for TLS
-#   5. Run `just deploy-core` to apply the core manifests
-#   6. Run `just provision` to create student accounts
+#   3. Run `just bootstrap-server` to set up K3s (+ NVIDIA driver) on the server
+#   4. Run `just deploy-gpu-plugin` so pods can schedule the Tesla T4
+#   5. Run `just deploy-cert-manager` then `just deploy-letsencrypt` for TLS
+#   6. Run `just deploy-core` to apply the core manifests
+#   7. Run `just provision` to create student accounts
 #
 # Install just: https://just.systems  (brew install just)
 # ============================================================
@@ -38,7 +39,23 @@ CERT_DAYS      := env_var_or_default("CERT_DAYS",      "20")
 K3S_VERSION    := env_var_or_default("K3S_VERSION",    "")
 
 AI_MODEL       := env_var_or_default("AI_MODEL",       "gemma3:4b")
-AI_API_KEY     := env_var_or_default("AI_API_KEY",     "sk-nitic-admin")
+
+# ── App admin credentials (SECRETS) ──────────────────────────
+# Real values live in lab.env (gitignored) — that is the source of truth.
+# The committed default is a non-secret placeholder, so NO password ships in
+# Git. The deploy recipes call `_require` and refuse to run until the real
+# value is set in lab.env. `just creds` reads these too, so it always mirrors
+# lab.env. To set one:  echo 'HARBOR_ADMIN_PASSWORD=...' >> lab.env
+SECRET_PLACEHOLDER         := "CHANGE_ME_IN_lab.env"
+AI_API_KEY                 := env_var_or_default("AI_API_KEY",                 SECRET_PLACEHOLDER)
+HARBOR_ADMIN_PASSWORD      := env_var_or_default("HARBOR_ADMIN_PASSWORD",      SECRET_PLACEHOLDER)
+RANCHER_BOOTSTRAP_PASSWORD := env_var_or_default("RANCHER_BOOTSTRAP_PASSWORD", SECRET_PLACEHOLDER)
+GRAFANA_ADMIN_PASSWORD     := env_var_or_default("GRAFANA_ADMIN_PASSWORD",     SECRET_PLACEHOLDER)
+GITEA_ADMIN_PASSWORD       := env_var_or_default("GITEA_ADMIN_PASSWORD",       SECRET_PLACEHOLDER)
+# One demo password for every Dex SSO account; deploy-dex bcrypt-hashes it at
+# apply time, so no hash is committed. Give an account its own password later
+# by replacing its `hash:` in dex.yaml with a literal `just dex-hash` value.
+DEX_DEMO_PASSWORD          := env_var_or_default("DEX_DEMO_PASSWORD",          SECRET_PLACEHOLDER)
 
 STUDENT_ROSTER := env_var_or_default("STUDENT_ROSTER", "scripts/students.csv")
 PASSWORD_PREFIX := env_var_or_default("PASSWORD_PREFIX", "AdmiralBash")
@@ -108,18 +125,25 @@ init: check-config check-tools
     @echo ""
     @echo "  ✅ Lab initialized!"
     @echo ""
-    @echo "  Next steps (REMOTE server):"
-    @echo "    1. just bootstrap-server    — install K3s on the server"
-    @echo "    2. just deploy-cert-manager — install cert-manager"
-    @echo "    3. just deploy-letsencrypt  — issue the Let's Encrypt wildcard cert"
-    @echo "    4. just deploy-core         — apply all k8s manifests"
-    @echo "    5. just provision           — create student accounts"
+    @echo "  Next steps (REMOTE server) — see README.md for the full guide:"
+    @echo "    1.  just bootstrap-server    — install K3s (+ GPU driver) on the server"
+    @echo "    2.  just deploy-gpu-plugin   — advertise the GPU to the scheduler (GPU servers only)"
+    @echo "    3.  just deploy-cert-manager — install cert-manager"
+    @echo "    4.  just deploy-letsencrypt  — issue the Let's Encrypt wildcard cert"
+    @echo "    5.  just deploy-core         — apply the core k8s manifests"
+    @echo "    6.  just deploy-dex          — single sign-on (OIDC)"
+    @echo "    7.  just deploy-gitea / deploy-harbor / deploy-loki / deploy-argocd / deploy-rancher"
+    @echo "    8.  just harbor-sso          — wire Harbor to Dex"
+    @echo "    9.  just pull-model          — pull the AI model into Ollama"
+    @echo "    10. just provision           — create student accounts (needs RANCHER_TOKEN)"
     @echo ""
     @echo "  Next steps (LOCAL k3d test loop):"
     @echo "    1. just bootstrap-k3d  — create local k3d cluster + Gateway API"
     @echo "    2. just cert           — generate a self-signed wildcard cert"
     @echo "    3. just push-cert      — load it as the wildcard-tls secret"
-    @echo "    4. just deploy-core    — apply all k8s manifests to local k3d"
+    @echo "    4. just deploy-core    — apply the core k8s manifests"
+    @echo "    5. just deploy-dex     — single sign-on (OIDC)"
+    @echo "    6. just deploy-gitea / deploy-harbor / deploy-loki / deploy-argocd / deploy-rancher"
     @echo ""
 
 # Validate that required config values are set
@@ -148,7 +172,7 @@ check-tools:
     set -euo pipefail
     MISSING=0
     echo "🔧 Checking required tools..."
-    for tool in openssl kubectl helm ssh scp curl jq; do
+    for tool in openssl kubectl helm ssh scp curl jq envsubst; do
         if command -v "$tool" &>/dev/null; then
             echo "  ✅ $tool"
         else
@@ -267,14 +291,20 @@ enable-gateway:
 # secret is created by cert-manager — run `just deploy-cert-manager` and
 # `just deploy-letsencrypt` BEFORE this recipe. For a LOCAL k3d test loop, run
 # `just cert` + `just push-cert` first to load a self-signed wildcard-tls.
-deploy-core: ensure-namespaces
+#
+# AI engine: ai-engine.yaml is GPU-enabled (runtimeClassName: nvidia +
+# nvidia.com/gpu: 1). In LOCAL k3d mode those two lines are stripped on the fly
+# so Ollama falls back to CPU — the MacBook k3d cluster has no GPU.
+deploy-core: ensure-namespaces (_require "AI_API_KEY" AI_API_KEY)
     @echo "⚙️  Deploying core k8s manifests to {{ if LOCAL == "1" { "local k3d cluster" } else { SERVER_IP } }} (domain: {{LAB_DOMAIN}})..."
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/core-tools/gateway.yaml        | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/core-tools/gateway-routes.yaml | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} AI_MODEL={{AI_MODEL}} AI_API_KEY={{AI_API_KEY}} \
-      envsubst < k8s/core-tools/ai-engine.yaml      | {{SSH}} "kubectl apply -f -"
+      envsubst < k8s/core-tools/ai-engine.yaml \
+      | {{ if LOCAL == "1" { "grep -vE 'runtimeClassName: nvidia|nvidia.com/gpu:'" } else { "cat" } }} \
+      | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/core-tools/adminer.yaml        | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
@@ -294,6 +324,17 @@ pull-model MODEL=AI_MODEL:
 # 🪝 HELM DEPLOY RECIPES
 # ============================================================
 
+# [private] Fail fast if a secret is unset / still the placeholder. Used as a
+# dependency by the deploy recipes:  deploy-x: (_require "KEY" KEY)
+[private]
+_require KEY VALUE:
+    #!/usr/bin/env bash
+    if [[ -z '{{VALUE}}' || '{{VALUE}}' == '{{SECRET_PLACEHOLDER}}' ]]; then
+        echo "❌ {{KEY}} is not set — real values live in lab.env (gitignored), not in Git." >&2
+        echo "   Set it:  echo '{{KEY}}=your-secret' >> lab.env" >&2
+        exit 1
+    fi
+
 # Deploy ArgoCD via Helm (envsubst injects LAB_DOMAIN into values)
 deploy-argocd:
     @echo "🐙 Deploying ArgoCD (domain: argocd.{{LAB_DOMAIN}})..."
@@ -301,25 +342,35 @@ deploy-argocd:
     LAB_DOMAIN={{LAB_DOMAIN}} envsubst < k8s/core-tools/argocd-values.yaml \
       | {{SSH}} "helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace -f -"
 
-# Deploy Gitea via Helm (envsubst injects LAB_DOMAIN)
-deploy-gitea:
+# Deploy Gitea via Helm (envsubst injects LAB_DOMAIN + admin password)
+deploy-gitea: (_require "GITEA_ADMIN_PASSWORD" GITEA_ADMIN_PASSWORD)
     @echo "🐙 Deploying Gitea (domain: gitea.{{LAB_DOMAIN}})..."
     {{SSH}} "helm repo add gitea https://dl.gitea.com/charts && helm repo update"
-    LAB_DOMAIN={{LAB_DOMAIN}} envsubst < k8s/core-tools/gitea-values.yaml \
+    LAB_DOMAIN={{LAB_DOMAIN}} GITEA_ADMIN_PASSWORD='{{GITEA_ADMIN_PASSWORD}}' \
+      envsubst < k8s/core-tools/gitea-values.yaml \
       | {{SSH}} "helm upgrade --install gitea gitea/gitea -n admin-tools --create-namespace -f -"
 
-# Deploy Harbor via Helm (envsubst injects LAB_DOMAIN)
-deploy-harbor:
+# Deploy Harbor via Helm (envsubst injects LAB_DOMAIN + admin password)
+deploy-harbor: (_require "HARBOR_ADMIN_PASSWORD" HARBOR_ADMIN_PASSWORD)
     @echo "⚓ Deploying Harbor (domain: harbor.{{LAB_DOMAIN}})..."
     {{SSH}} "helm repo add harbor https://helm.goharbor.io && helm repo update"
-    LAB_DOMAIN={{LAB_DOMAIN}} envsubst < k8s/core-tools/harbor-values.yaml \
+    LAB_DOMAIN={{LAB_DOMAIN}} HARBOR_ADMIN_PASSWORD='{{HARBOR_ADMIN_PASSWORD}}' \
+      envsubst < k8s/core-tools/harbor-values.yaml \
       | {{SSH}} "helm upgrade --install harbor harbor/harbor -n admin-tools --create-namespace -f -"
 
-# Deploy Rancher via Helm (envsubst injects LAB_DOMAIN + LAB_ADMIN_EMAIL)
-deploy-rancher:
+# Deploy Loki + Grafana via Helm (envsubst injects LAB_DOMAIN + Grafana admin pw)
+deploy-loki: (_require "GRAFANA_ADMIN_PASSWORD" GRAFANA_ADMIN_PASSWORD)
+    @echo "📊 Deploying loki-stack (Grafana: grafana.{{LAB_DOMAIN}})..."
+    {{SSH}} "helm repo add grafana https://grafana.github.io/helm-charts && helm repo update"
+    LAB_DOMAIN={{LAB_DOMAIN}} GRAFANA_ADMIN_PASSWORD='{{GRAFANA_ADMIN_PASSWORD}}' \
+      envsubst < k8s/core-tools/loki-stack-values.yaml \
+      | {{SSH}} "helm upgrade --install loki-stack grafana/loki-stack -n admin-tools --create-namespace -f -"
+
+# Deploy Rancher via Helm (envsubst injects LAB_DOMAIN + LAB_ADMIN_EMAIL + bootstrap pw)
+deploy-rancher: (_require "RANCHER_BOOTSTRAP_PASSWORD" RANCHER_BOOTSTRAP_PASSWORD)
     @echo "🐄 Deploying Rancher (domain: rancher.{{LAB_DOMAIN}})..."
     {{SSH}} "helm repo add rancher-stable https://releases.rancher.com/server-charts/stable && helm repo update"
-    LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
+    LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} RANCHER_BOOTSTRAP_PASSWORD='{{RANCHER_BOOTSTRAP_PASSWORD}}' \
       envsubst < k8s/rancher/rancher-values.yaml \
       | {{SSH}} "helm upgrade --install rancher rancher-stable/rancher -n cattle-system --create-namespace -f -"
 
@@ -340,12 +391,20 @@ deploy-gpu-plugin:
 # Deploy Dex — centralized OIDC identity (sso.{{LAB_DOMAIN}}) + student roster.
 # RESTRICTED envsubst: a bare envsubst would mangle the `$` in the bcrypt
 # password hashes inside dex.yaml.
-deploy-dex:
-    @echo "🔐 Deploying Dex SSO (domain: sso.{{LAB_DOMAIN}})..."
-    @LAB_DOMAIN={{LAB_DOMAIN}} envsubst '${LAB_DOMAIN}' < k8s/core-tools/dex.yaml \
+deploy-dex: (_require "DEX_DEMO_PASSWORD" DEX_DEMO_PASSWORD)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🔐 Deploying Dex SSO (domain: sso.{{LAB_DOMAIN}})..."
+    # Bcrypt the one demo password at apply time so no hash is committed; every
+    # staticPassword in dex.yaml references ${DEX_PASSWORD_HASH}. (Needs Docker.)
+    DEX_PASSWORD_HASH=$(docker run --rm httpd:2-alpine htpasswd -bnBC 10 "" '{{DEX_DEMO_PASSWORD}}' | tr -d ':\n' | sed 's/^\$2y/\$2a/')
+    # Restricted envsubst: ONLY these two vars — a bare envsubst would eat the
+    # `$` in the generated bcrypt hash.
+    LAB_DOMAIN='{{LAB_DOMAIN}}' DEX_PASSWORD_HASH="$DEX_PASSWORD_HASH" \
+      envsubst '${LAB_DOMAIN} ${DEX_PASSWORD_HASH}' < k8s/core-tools/dex.yaml \
       | {{SSH}} "kubectl apply -f -"
-    @echo "♻️  Rolling Dex to pick up roster/client changes..."
-    -{{SSH}} "kubectl -n admin-tools rollout restart deploy/dex"
+    echo "♻️  Rolling Dex to pick up roster/client changes..."
+    {{SSH}} "kubectl -n admin-tools rollout restart deploy/dex" || true
 
 # Generate a bcrypt hash for a new Dex roster entry (students-as-code).
 # Usage:  just dex-hash 'Their-Password'
@@ -358,11 +417,11 @@ dex-hash PASSWORD:
 
 # Apply OIDC auth to Harbor — POST-INSTALL (the Harbor Helm chart can't do this).
 # Run AFTER `just deploy-harbor` and `just deploy-dex`.
-harbor-sso:
+harbor-sso: (_require "HARBOR_ADMIN_PASSWORD" HARBOR_ADMIN_PASSWORD)
     #!/usr/bin/env bash
     set -euo pipefail
     echo "🔐 Switching Harbor to OIDC auth via the config API..."
-    curl -fsS -k -u "admin:AdmiralBashIsAwesome" -X PUT \
+    curl -fsS -k -u "admin:{{HARBOR_ADMIN_PASSWORD}}" -X PUT \
       "https://harbor.{{LAB_DOMAIN}}/api/v2.0/configurations" \
       -H "Content-Type: application/json" \
       -d '{"auth_mode":"oidc_auth","oidc_name":"Dex","oidc_endpoint":"https://sso.{{LAB_DOMAIN}}","oidc_client_id":"harbor","oidc_client_secret":"harbor-oidc-secret","oidc_scope":"openid,profile,email,groups","oidc_groups_claim":"groups","oidc_auto_onboard":true,"oidc_user_claim":"name","oidc_verify_cert":false}'
@@ -467,6 +526,57 @@ reset-student USERNAME:
     RANCHER_TOKEN={{RANCHER_TOKEN}} \
     bash scripts/provision-students.sh --roster {{STUDENT_ROSTER}} --reset {{USERNAME}}
 
+# Verify a student's access boundary BEFORE class. Impersonates the Rancher user
+# found in their namespace's RoleBindings, then confirms they are DENIED on the
+# admin namespaces (secrets + pod-create, the two ways to reach a secret) and
+# ALLOWED in their own namespace. This checks the cluster's NATIVE RBAC — what
+# the API server itself enforces — so it reflects reality regardless of Rancher.
+# Needs your admin kubeconfig (honors LOCAL/REMOTE).  Usage: just check-access blackbeard
+check-access USERNAME:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    NS="student-{{USERNAME}}"
+    echo "🔎 Access boundary for '{{USERNAME}}'  (namespace: $NS)"
+    if ! {{SSH}} "kubectl get namespace $NS" >/dev/null 2>&1; then
+        echo "❌ Namespace '$NS' not found. Provision first:  just provision-one {{USERNAME}}"
+        exit 1
+    fi
+    # Discover the exact subject Rancher bound into the student's namespace, so
+    # we impersonate the real identity rather than guessing Rancher's naming.
+    SUBJECT=$({{SSH}} "kubectl get rolebindings -n $NS -o json" \
+      | jq -r '[.items[].subjects[]? | select(.kind=="User") | .name] | unique | map(select(. != "")) | .[0] // empty')
+    if [[ -z "$SUBJECT" ]]; then
+        echo "❌ No User subject in $NS RoleBindings — is the student bound to their project?"
+        exit 1
+    fi
+    echo "   Impersonating Rancher user: $SUBJECT"
+    FAIL=0
+    chk () {  # label verb resource namespace expected(yes|no) critical(1|0)
+        local label="$1" verb="$2" res="$3" ns="$4" want="$5" crit="$6" got mark
+        got=$({{SSH}} "kubectl auth can-i $verb $res -n $ns --as=$SUBJECT" 2>/dev/null || true)
+        got=${got:-no}
+        if [[ "$got" == "$want" ]]; then mark="✅"; else mark="❌"; [[ "$crit" == "1" ]] && FAIL=$((FAIL+1)) || mark="⚠️ "; fi
+        printf "   %s  %-42s want=%-3s got=%s\n" "$mark" "$label" "$want" "$got"
+    }
+    echo ""
+    echo "  ── Must be DENIED (the admin boundary) ───────────────────────"
+    chk "read secrets in admin-tools"    get    secrets admin-tools   no 1
+    chk "read secrets in argocd"         get    secrets argocd        no 1
+    chk "read secrets in cattle-system"  get    secrets cattle-system no 1
+    chk "read secrets in kube-system"    get    secrets kube-system   no 1
+    chk "create pods in admin-tools"     create pods    admin-tools   no 1
+    echo ""
+    echo "  ── Should be ALLOWED (their own workspace) ───────────────────"
+    chk "create workloads in own ns"     create deployments "$NS"     yes 0
+    chk "read secrets in own ns"         get    secrets     "$NS"     yes 0
+    echo ""
+    if [[ $FAIL -eq 0 ]]; then
+        echo "✅ Boundary intact — '{{USERNAME}}' cannot reach the admin creds."
+    else
+        echo "⚠️  $FAIL CRITICAL check(s) FAILED — this student can reach admin creds. Fix before class."
+        exit 1
+    fi
+
 # ============================================================
 # 🎓 STUDENT CLIENT RECIPE
 # ============================================================
@@ -521,6 +631,52 @@ serve-docs:
     @pip install --quiet -r requirements.txt
     @echo "📖 Serving docs at http://localhost:8000 (domain: {{LAB_DOMAIN}})..."
     @LAB_DOMAIN={{LAB_DOMAIN}} mkdocs serve
+
+# Render the seminar slide decks (Marp → PDF + HTML) into slides/build/.
+# Uses npx to fetch the Marp CLI if it isn't installed globally. PDF export
+# needs a Chrome/Chromium install. Run after editing any deck under slides/.
+slides:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🪧  Rendering slide decks with Marp..."
+    cd slides
+    mkdir -p build
+    shopt -s nullglob
+    MARP="npx --yes @marp-team/marp-cli@4"
+    for deck in */*.md; do
+      out="build/$(echo "${deck%.md}" | tr '/' '-')"
+      echo "  → ${deck}"
+      $MARP --no-stdin "${deck}" -o "${out}.pdf"
+      $MARP --no-stdin "${deck}" -o "${out}.html"
+    done
+    echo "✅  Decks rendered to slides/build/"
+
+# Print the admin credentials for every app in the cluster (read-only).
+# Static passwords are the defaults baked into the k8s/ values files; ArgoCD's
+# initial admin password is generated at install time and read live from its
+# secret. Honors LOCAL/REMOTE for the live lookups.
+creds:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    D="{{LAB_DOMAIN}}"
+    echo ""
+    echo "  🔑 Admiral Bash — Admin Credentials   (domain: $D)"
+    echo "  ──────────────────────────────────────────────────────────────"
+    printf "  %-8s  %-26s  %-9s  %s\n" "APP" "URL" "USERNAME" "PASSWORD"
+    printf "  %-8s  %-26s  %-9s  %s\n" "Harbor"  "https://harbor.$D"  "admin"    '{{HARBOR_ADMIN_PASSWORD}}'
+    printf "  %-8s  %-26s  %-9s  %s\n" "Rancher" "https://rancher.$D" "admin"    '{{RANCHER_BOOTSTRAP_PASSWORD}}'
+    printf "  %-8s  %-26s  %-9s  %s\n" "Grafana" "https://grafana.$D" "admin"    '{{GRAFANA_ADMIN_PASSWORD}}'
+    printf "  %-8s  %-26s  %-9s  %s\n" "Gitea"   "https://gitea.$D"   "admiral"  '{{GITEA_ADMIN_PASSWORD}}'
+    printf "  %-8s  %-26s  %-9s  %s\n" "AI/LLM"  "https://ai.$D"      "(bearer)" '{{AI_API_KEY}}'
+    printf "  %-8s  %-26s  %-9s  %s\n" "SSO/Dex" "https://sso.$D"     "admiral"  '{{DEX_DEMO_PASSWORD}}'
+    # ArgoCD's initial admin password is created at install and lives in a secret.
+    ARGO=$({{SSH}} "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}'" 2>/dev/null | openssl base64 -d -A 2>/dev/null || true)
+    [[ -z "$ARGO" ]] && ARGO="(not found — ArgoCD not deployed yet, or password rotated)"
+    printf "  %-8s  %-26s  %-9s  %s\n" "ArgoCD"  "https://argocd.$D"  "admin"    "$ARGO"
+    echo "  ──────────────────────────────────────────────────────────────"
+    echo "  SSO/Dex logins (all password '{{DEX_DEMO_PASSWORD}}'):"
+    echo "    admiral, blackbeard, annebonny, calicojack, testcrew1, testcrew2, testcrew3"
+    echo ""
 
 # Show the /etc/hosts block students need (for manual distribution)
 show-hosts:

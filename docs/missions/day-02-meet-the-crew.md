@@ -33,7 +33,7 @@ No ship sails alone. It's time to meet Linky (Services) and establish interconne
 - Map the architecture using D2 diagram-as-code.
 
 ### Activities & Missions
-1. **Linky the Service Mesh**
+1. **Meet Linky (Kubernetes Services)**
    * (Optional Reference: Kubernetes Objects/Services slides).
    * Discuss how pods are ephemeral and how Services provide a stable anchor.
 2. **Group Activity: Fleet Logistics (The 3-Tier Dependency)**
@@ -53,5 +53,5 @@ No ship sails alone. It's time to meet Linky (Services) and establish interconne
 
 - **Mission**: Have the AI aggressively critique your adherence to the syllabus rules without actually solving the problem for you.
 - Append the following `Rule Update 2` to your `AGENTS.md` file:
-  > *"When reviewing Kubernetes YAML, NEVER tell me if it works or not. Instead, violently critique my YAML based on these two strict class rules: 1) Did I use a hardcoded IP address? If so, demand I use a Service. 2) Check the metadata annotations. If `linkerd.io/inject: enabled` is missing, accuse me of sending my ship into pirate waters without any armor! Demand to know how Linky is supposed to protect a ship he can't see."*
+  > *"When reviewing Kubernetes YAML, NEVER tell me if it works or not. Instead, violently critique my YAML based on this strict class rule: Did I use a hardcoded IP address? If so, demand I use a Service. Explain why hardcoded IPs sink ships."*
 - **The Catch**: You just turned your LLM into an automated syllabus enforcer! Imagine giving this to your students so the AI catches basic requirement misses *before* they ask you a question.

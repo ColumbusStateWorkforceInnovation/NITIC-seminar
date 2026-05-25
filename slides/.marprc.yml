@@ -1,0 +1,9 @@
+# Marp configuration for "Admiral Bash's Island Adventure" slide decks.
+#
+# Registers the shared nautical theme so any deck can use `theme: nautical`
+# in its front-matter. Marp auto-loads this file when run from slides/.
+#
+# Render a deck:   cd slides && marp day-01/the-wreckage.md --pdf
+# Or from anywhere: just slides
+themeSet:
+  - ./themes
