@@ -19,7 +19,7 @@
 - **01:00 - 02:30** | AI Connect: The Paradigm Shift (The Incident Commander)
 - **02:30 - 02:45** | ☕ Break
 - **02:45 - 04:15** | Discussion: The Educator's Strategic Roundtable
-- **04:15 - 05:00** | Wrap-Up: Trivia & Swag
+- **04:15 - 05:00** | Wrap-Up: Trivia & Send-Off
 
 ---
 

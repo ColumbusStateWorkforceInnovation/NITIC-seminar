@@ -1,0 +1,153 @@
+{
+  "name": "Know Your Ship: Tools & Files",
+  "text": "Orientation flash poll on the lab toolkit — k9s, the justfile, AGENTS.md, and the files that run the seminar.",
+  "max_players": 50,
+  "filtering": "None",
+  "questions": [
+    {
+      "text": "Every operational command for the lab — deploying services, provisioning the crew, minting certs — is collected in one file at the repo root. Run it with no arguments and it lists every recipe. What is it?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 1, "value": "justfile", "correct": true },
+        { "id": 2, "value": "Makefile", "correct": false },
+        { "id": 3, "value": "lab.env", "correct": false },
+        { "id": 4, "value": "mkdocs.yml", "correct": false }
+      ]
+    },
+    {
+      "text": "You summon the Socratic Boatswain by typing `aichat`. To hand it a persona and rules, you drop a file in your working directory for it to read. What is that file called?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 5, "value": "README.md", "correct": false },
+        { "id": 6, "value": ".aichat-config", "correct": false },
+        { "id": 7, "value": "AGENTS.md", "correct": true },
+        { "id": 8, "value": "boatswain.txt", "correct": false }
+      ]
+    },
+    {
+      "text": "The lab you're working through is published on the docs site, but it's authored as a plain text file in the repo. To fix a typo in Lab 01, 'The First Raft', which file do you edit?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 9, "value": "mkdocs.yml", "correct": false },
+        { "id": 10, "value": "index.html", "correct": false },
+        { "id": 11, "value": "justfile", "correct": false },
+        { "id": 12, "value": "docs/missions/day-01/lab-01-the-first-raft.md", "correct": true }
+      ]
+    },
+    {
+      "text": "In the `k9s` dashboard you've highlighted a misbehaving Pod and want to drop into a shell inside its container. Which key do you press?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 13, "value": "d", "correct": false },
+        { "id": 14, "value": "s", "correct": true },
+        { "id": 15, "value": "l", "correct": false },
+        { "id": 16, "value": "Ctrl-d", "correct": false }
+      ]
+    },
+    {
+      "text": "Your `k9s` screen is a wall of resources. Which key opens a search/filter so you can narrow it down to the one you're hunting for?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 17, "value": "/", "correct": true },
+        { "id": 18, "value": "?", "correct": false },
+        { "id": 19, "value": "Ctrl-f", "correct": false },
+        { "id": 20, "value": "f", "correct": false }
+      ]
+    },
+    {
+      "text": "By default `k9s` shows one namespace at a time. Which key flips the view to show resources across every namespace at once?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 21, "value": "a", "correct": false },
+        { "id": 22, "value": "*", "correct": false },
+        { "id": 23, "value": "0", "correct": true },
+        { "id": 24, "value": "9", "correct": false }
+      ]
+    },
+    {
+      "text": "On Day 1 every crew member runs a single bootstrap script on their fresh VM — it installs Docker, kubectl, k9s, and aichat, and wires up /etc/hosts. What is that script?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 25, "value": "provision-students.sh", "correct": false },
+        { "id": 26, "value": "bootstrap-server.sh", "correct": false },
+        { "id": 27, "value": "install.sh", "correct": false },
+        { "id": 28, "value": "setup-client.sh", "correct": true }
+      ]
+    },
+    {
+      "text": "The lab's configuration — your domain, server IP, and secrets — lives in one gitignored file you copy from a template before deploying. What is it?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 29, "value": "config.yaml", "correct": false },
+        { "id": 30, "value": "lab.env", "correct": true },
+        { "id": 31, "value": ".envrc", "correct": false },
+        { "id": 32, "value": "settings.json", "correct": false }
+      ]
+    }
+  ],
+  "images": []
+}

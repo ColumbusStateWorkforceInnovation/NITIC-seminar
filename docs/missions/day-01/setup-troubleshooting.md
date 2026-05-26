@@ -13,6 +13,7 @@ The setup path — VirtualBox → Ubuntu install → `setup-client.sh` → `veri
 3. **Confirm VirtualBox is installed** on every desktop (7.1 or newer). If a desktop is missing it, stage the installer so you can add it before class.
 4. **Run the whole path once on a classroom desktop, on the classroom network.** `setup-client.sh` reaches `download.docker.com`, `github.com`, `dl.k8s.io`, `get.helm.sh`, `starship.rs`, and `raw.githubusercontent.com`. Confirm the campus firewall/proxy allows them.
 5. **Confirm `SERVER_IP`** and write it on the board. The lab domain (`wagbiz.org`) is now the built-in default, so students only need the IP.
+6. **Stage the Harbor push token.** Run `just bootstrap-harbor` (creates the public `raft-fleet` project + push robot, writes `harbor-robot.env`) then `just deploy-harbor-creds` (publishes it at `https://docs.wagbiz.org/creds/harbor-robot.env`). `setup-client.sh` fetches it automatically so every VM is logged in for Lab 01's `docker push` — no login step in class. Skip this and the push fails with *"project raft-fleet not found"* / *"unauthorized."*
 
 ---
 
@@ -51,10 +52,11 @@ The setup path — VirtualBox → Ubuntu install → `setup-client.sh` → `veri
 
 **Cause:** The script was run without `SERVER_IP`.
 
-**Fix:** Re-run with the IP from the board:
+**Fix:** Re-run with the IP **and AI key** from the board. (Re-running rewrites your aichat config, so the AI key must be set too — otherwise aichat stops authenticating.)
 
 ```bash
 export SERVER_IP=<the IP on the board>
+export AI_API_KEY=<the AI key on the board>
 bash scripts/setup-client.sh
 ```
 
@@ -65,6 +67,20 @@ bash scripts/setup-client.sh
 **Cause:** `setup-client.sh` didn't finish, so the lab subdomains were never added to `/etc/hosts`.
 
 **Fix:** Re-run `setup-client.sh` (it's idempotent — safe to run again) and watch it report the `/etc/hosts` entries. To check by hand: `grep wagbiz /etc/hosts`. If you're running a domain other than the `wagbiz.org` default, students must `export LAB_DOMAIN=<your domain>` before running the script.
+
+### `aichat` won't answer / "authentication" / "invalid api key"
+
+**Cause:** `setup-client.sh` was run without `AI_API_KEY` set (or with a typo), so aichat got a placeholder key the server rejects.
+
+**Fix:** Export the key from the board and re-run (it's idempotent):
+
+```bash
+export SERVER_IP=<the IP on the board>
+export AI_API_KEY=<the AI key on the board>
+bash scripts/setup-client.sh
+```
+
+`bash scripts/verify-client.sh` catches this — a healthy run reports **"AI endpoint reachable and key accepted."**
 
 ### `docker: permission denied` in Lab 01
 

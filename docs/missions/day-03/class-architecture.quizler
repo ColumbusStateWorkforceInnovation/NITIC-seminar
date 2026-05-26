@@ -1,0 +1,153 @@
+{
+  "name": "Charting the Island: The Lab Stack",
+  "text": "Orientation flash poll on the island's services — which tool is the registry, the Git server, the GitOps engine, and what holds the whole cluster up.",
+  "max_players": 50,
+  "filtering": "None",
+  "questions": [
+    {
+      "text": "When you `docker push` your raft image up to the island, it lands in the cluster's container registry. Which service is that registry?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 1, "value": "Gitea", "correct": false },
+        { "id": 2, "value": "Harbor", "correct": true },
+        { "id": 3, "value": "Rancher", "correct": false },
+        { "id": 4, "value": "ArgoCD", "correct": false }
+      ]
+    },
+    {
+      "text": "The island runs its own private Git server — the 'Captain's Log' where every crew member's code repository lives. Which service is it?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 5, "value": "Harbor", "correct": false },
+        { "id": 6, "value": "GitHub", "correct": false },
+        { "id": 7, "value": "Gitea", "correct": true },
+        { "id": 8, "value": "Dex", "correct": false }
+      ]
+    },
+    {
+      "text": "On Day 2 you log into a web UI and copy your kubeconfig out of it so `kubectl` can finally talk to the cluster. Which service hands out that cluster access?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 9, "value": "Rancher", "correct": true },
+        { "id": 10, "value": "Adminer", "correct": false },
+        { "id": 11, "value": "Mailpit", "correct": false },
+        { "id": 12, "value": "ArgoCD", "correct": false }
+      ]
+    },
+    {
+      "text": "GitOps treats the Git repo as the desired state and forces the live cluster to match it. Which service is the sync engine that watches Git and reconciles the cluster?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 13, "value": "Gitea", "correct": false },
+        { "id": 14, "value": "Harbor", "correct": false },
+        { "id": 15, "value": "ArgoCD", "correct": true },
+        { "id": 16, "value": "k3s", "correct": false }
+      ]
+    },
+    {
+      "text": "The whole island is one lightweight Kubernetes cluster. Which Kubernetes distribution actually powers it (running as k3d when you spin it up locally)?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 17, "value": "OpenShift", "correct": false },
+        { "id": 18, "value": "k3s", "correct": true },
+        { "id": 19, "value": "Docker Swarm", "correct": false },
+        { "id": 20, "value": "Minikube", "correct": false }
+      ]
+    },
+    {
+      "text": "One set of credentials logs you into Gitea, Harbor, ArgoCD, and Grafana alike. Which service provides that single sign-on?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 21, "value": "Rancher", "correct": false },
+        { "id": 22, "value": "LiteLLM", "correct": false },
+        { "id": 23, "value": "Mailpit", "correct": false },
+        { "id": 24, "value": "Dex", "correct": true }
+      ]
+    },
+    {
+      "text": "The Socratic Boatswain is a local LLM that runs entirely inside the cluster, so nothing you type ever leaves the room. Which tool serves that model?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 25, "value": "The OpenAI API", "correct": false },
+        { "id": 26, "value": "Ollama (fronted by LiteLLM)", "correct": true },
+        { "id": 27, "value": "Gitea Actions", "correct": false },
+        { "id": 28, "value": "Grafana", "correct": false }
+      ]
+    },
+    {
+      "text": "Last one, crew: this very flash-poll app — the one you're tapping answers into right now — is self-hosted on the island. What is it called?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 29, "value": "Kahoot", "correct": false },
+        { "id": 30, "value": "Slido", "correct": false },
+        { "id": 31, "value": "Quizler", "correct": true },
+        { "id": 32, "value": "Mentimeter", "correct": false }
+      ]
+    }
+  ],
+  "images": []
+}

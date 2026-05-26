@@ -58,7 +58,7 @@ You can't leave your raft on the beach forever. Push it to the central registry 
 
 `docker push harbor.{{ lab_domain }}/raft-fleet/<your-name>:v1`
 
-*(Note: The `raft-fleet` project in Harbor has been pre-configured to accept anonymous pushes from inside the campus network for this lab).*
+*(Note: Your vessel was already signed in to the Harbor registry back in Lab 00 — the setup script logged Docker in with a shared `raft-fleet` push token, so `docker push` just works with no login step. The `raft-fleet` project is **public**, which is how the Kubernetes cluster will pull your image without any credentials this afternoon in Lab 02.)*
 
 ---
-**🏆 Gamification Checkpoint:** The first person to successfully push their image to the Harbor registry and show the Instructor wins a prize!
+**🏆 Gamification Checkpoint:** Be the first person to successfully push your image to the Harbor registry and show the Instructor!

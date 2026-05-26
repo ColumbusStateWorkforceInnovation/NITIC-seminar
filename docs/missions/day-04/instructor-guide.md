@@ -14,7 +14,7 @@ The final day. The morning is a meta-lecture aimed squarely at the *faculty* —
 **Goal:** Students survive a live chaos attack and remediate it under pressure.
 - **Action (The Attack):** During the 10:30 break, install Chaos Mesh and apply the chaos experiments (see `lab-01-the-pirate-strikes.md` → Instructor Playbook). Pods start dying; cross-namespace links drop intermittently.
 - **Action:** Students open `lab-01-the-pirate-strikes.md`. Do **not** explain what is wrong — that is the game.
-- **The Game:** First alliance to (1) trace the root cause to the Chaos manifests and (2) stabilize their 3-tier pipeline wins. Watch for teams that panic-delete pods vs. teams that read `kubectl get events`.
+- **The Game:** First alliance to (1) trace the root cause to the Chaos manifests and (2) stabilize their 3-tier pipeline takes the Challenge. Watch for teams that panic-delete pods vs. teams that read `kubectl get events`.
 - **Talking Point (Instructor Superpower):** "This is the ultimate exam generator. A `NetworkChaos` manifest *is* the test. You are not grading a multiple-choice sheet — you are grading their ability to auto-remediate a real incident."
 - **Safety valve:** If a team is genuinely stuck near 11:45, point them at `kubectl get events --sort-by=.lastTimestamp` and the `chaos` namespace.
 
@@ -30,8 +30,8 @@ The final day. The morning is a meta-lecture aimed squarely at the *faculty* —
 - **Prompts:** What will you *start* doing (GitOps for syllabus updates? AI personas as TAs?). What will you *stop* (managing 30 laptop VMs? banning AI?). What will you *continue*?
 - **Action:** Revisit the three core Instructor Superpowers: (1) GitOps to push lab/syllabus changes instantly, (2) lab distribution via a URL instead of an install disk, (3) AI personas as scalable, local TAs.
 
-## 04:15 - 05:00 | Wrap-Up: Trivia & Swag
-- **Action (Flash Poll):** Open the Quiz App (`poll.{{ lab_domain }}`) and load `quiz-content.quizler` — a lightning round mixing K8s and pedagogy. Award the final swag.
+## 04:15 - 05:00 | Wrap-Up: Trivia & Send-Off
+- **Action (Flash Poll):** Open the Quiz App (`poll.{{ lab_domain }}`) and load `quiz-content.quizler` — a lightning round mixing K8s and pedagogy to close out the week.
 - **Action (Storytime):** Project the PDF and read the "Day 4 Afternoon" passage from `book-readings.md` to close the seminar.
 - Thank the crew. They sailed.
 
@@ -39,5 +39,4 @@ The final day. The morning is a meta-lecture aimed squarely at the *faculty* —
 - [ ] **Chaos Mesh** install is staged and tested — it is *not* in `deploy-core` (see `k8s/core-tools/chaos-mesh-values.yaml`). Practice the install + the experiments once before class.
 - [ ] The 3-tier alliances from Day 2/3 are still deployed (the chaos targets them).
 - [ ] vCluster and KubeVirt demos are rehearsed and the demo manifests are ready.
-- [ ] Final swag is counted and on the prize table.
 - [ ] You have a clean way to **stop** the chaos fast if the room melts down: `kubectl delete podchaos,networkchaos --all -A`.

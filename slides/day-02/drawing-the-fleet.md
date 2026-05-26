@@ -29,7 +29,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Drawing the Fleet"
 - Pod-to-Pod communication built on IPs is a ship built on sand.
 - The next 90 minutes close that gap — four legs:
   - Why Pods need anchors
-  - Meet **Linky** — Kubernetes Services
+  - Meet the **Service** — a stable anchor for your Pods
   - Charting the sea lanes — internal DNS
   - The three-tier fleet — wiring it all together
 - Then **Lab 03 — Fleet Logistics**.
@@ -45,13 +45,15 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Drawing the Fleet"
 # Why Pods Need Anchors
 
 ```text
-          _
-         (o)
-          |
-       .--+--.
-        \ | /
-         \|/
-      ~~~~+~~~~
+            .---.
+            ( o )
+            '-+-'
+              |
+          .   |   .
+           \  |  /
+         '. \ | / .'
+           '.\|/.'
+         ~~~~~'~~~~~
 ```
 
 > *"A crew that changes berth every tide needs a fixed notice-board — or no one finds the mess-hall."* — the Boatswain
@@ -107,19 +109,20 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Drawing the Fleet"
 
 #### Part II
 
-# Meet Linky
+# Meet the Service
 
 ```text
-       .-""""-.
-     .'  .--.  '.
-    /   /    \   \
-    |   |    |   |
-    \   \    /   /
-     '.  '--'  .'
-       '-....-'
+          .------.
+         /        \
+        |   .--.   |
+         \ /    \ /
+          X      X
+         / \    / \
+        |   '--'   |
+         \________/
 ```
 
-> *"Linky don't care which hull carries the cargo — she just makes sure it gets there."* — the Boatswain
+> *"A Service don't care which hull carries the cargo — it just makes sure it gets there."* — the Boatswain
 
 ---
 
@@ -239,15 +242,16 @@ spec:
 # Charting the Sea Lanes
 
 ```text
-   .-~-~-~-~-~-~-~-.
-   |   .        X  |
-   |  / \    ~~    |
-   | /   \   .-.   |
-   |~~~~~~~ (   )  |
-   '-~-~-~-~-`-'~-~'
+      .------------------.
+      | ~   .--.      X  |
+      |   ./    \.    ~  |
+      | ~ |  ~~  |  ~    |
+      |   '.    .'    ~  |
+      | ~~  '--'    ~~   |
+      '------------------'
 ```
 
-> *"Every port has a name, every lane a chart. Get the chart wrong and ye sail to the bottom."* — the Boatswain
+> *"It is not down in any map; true places never are."* — Herman Melville, *Moby-Dick*
 
 ---
 
@@ -345,15 +349,15 @@ spec:
 # The Three-Tier Fleet
 
 ```text
-          |
-         /|\
-        / | \
-       '--+--'
-         )_)
-        )___)
-      __)_____)__
-      \_________/
-    ~~~~~~~~~~~~~~~
+            |\
+            | \
+            |  \
+            |   \
+            |    \
+         ___|_____\___
+         \           /
+          \_________/
+       ~~~~~~~~~~~~~~~~~
 ```
 
 > *"Three ships in formation beat one ship alone — but only if the signals are right."* — the Boatswain
@@ -411,9 +415,9 @@ spec:
   Student A's Redis
 ```
 
-- If Student A's Service name is wrong, **Student B's pod crashes**.
-- If Student B's Service name is wrong, **Student C's UI breaks**.
-- One typo in the DNS name propagates all the way up the chain.
+- If Student A's Service name is wrong, **Student B's link to it silently dies** — the pod stays green.
+- If Student B's Service name is wrong, **Student C's link silently dies** the same way.
+- Nothing crashes. The break only surfaces when you *test* the connection from inside the dependent Pod.
 
 <!-- This is authentic distributed-systems debugging. The symptom appears at the top; the cause is at the bottom. That's the real lesson. -->
 
@@ -425,7 +429,7 @@ spec:
 |---|---|---|---|
 | **A** | Redis cache | `redis:alpine` | ClusterIP |
 | **B** | Go API | `stefanprodan/podinfo` | ClusterIP |
-| **C** | React UI | `paulbouwer/hello-kubernetes` | NodePort |
+| **C** | Web UI | `paulbouwer/hello-kubernetes` | NodePort |
 
 - Pre-built images are provided — focus stays on **YAML, not application code**.
 - Every student writes exactly: **one Deployment + one Service**.
@@ -443,12 +447,12 @@ spec:
                                     ^
                                     wrong namespace
 
-  Result: Pod B enters CrashLoopBackOff
-          Pod A is healthy but unreachable
-          Student C's UI shows nothing
+  Result: Pod B stays GREEN — it never dials Redis on boot
+          The name points at the wrong namespace (or nowhere)
+          The break is invisible until someone tests the link
 ```
 
-- The **application** breaks. The **infrastructure** is fine.
+- The **link** is broken. The **pods** are fine.
 - `kubectl get pods` shows green across the board.
 - Only `kubectl exec` + `nslookup` reveals the actual fault.
 
@@ -475,12 +479,10 @@ spec:
 
 - Services and internal DNS let you wire **real dependencies between students**.
 - Student A owns the database. Student B owns the backend. Student C owns the frontend — each in their own namespace.
-- This mimics real **cross-team microservice development**: if A's Service is misconfigured, C's dashboard breaks.
+- This mimics real **cross-team microservice development**: if A's Service is misconfigured, C's tier can't reach it down the chain.
 - Students debug an authentic distributed system — not a toy exercise.
-
-*Genuine cross-team systems pedagogy on one shared cluster. No extra infrastructure to request, no IT ticket per group.*
-
-<!-- Slow down here. The structural squeeze is the frame: a lesson that needs real distributed-systems thinking would normally require multiple VMs per group, a provisioning request, and a waiting period. This is all of that, running already, in the cluster they already have. -->
+- You can stand this up yourself — for one class session or a whole semester — with no new infrastructure to request.
+<!-- Slow down here. The frame is agency: distributed-systems pedagogy that used to need multiple VMs per group and a provisioning request is already running on the cluster you have. If you want a closer, put it to the room yourself: concept, or maintenance? -->
 
 ---
 
@@ -515,9 +517,9 @@ spec:
 # Man the sea lanes.
 
 ```text
-   ~  ~~  ~~~  ~~  ~~~~  ~~  ~
-  ~~~~  ~~  ~~~~  ~~  ~~~  ~~~
-   ~  ~~~~  ~~  ~~~  ~~  ~~  ~
+   ~~~^~~~~~^~~~~~~^~~~~^~~~~~^~~~
+  ~~~~~~^~~~~~~^~~~~^~~~~~~^~~~~~~~
+   ~^~~~~~^~~~~~~^~~~~~^~~~~~^~~~~~
 ```
 
 *The fleet is drawn. Wire it together.*

@@ -1,0 +1,93 @@
+# Harbor push-creds static server (Day 1 Lab 01)
+# ------------------------------------------------------------------
+# Serves the shared Harbor push-robot creds at
+#   https://docs.${LAB_DOMAIN}/creds/harbor-robot.env
+# so setup-client.sh can fetch them and `docker login` each student VM —
+# nobody hand-types the '$'-laden robot username (Harbor has no anonymous push).
+#
+# The creds are NOT in this manifest. `just deploy-harbor-creds` builds the
+# `harbor-creds` ConfigMap from the gitignored harbor-robot.env (written by
+# `just bootstrap-harbor`), so no token is ever committed. A tiny nginx mounts
+# that ConfigMap and the route below exposes it under /creds on the docs host.
+#
+# Threat model: this is a push-only token scoped to the throwaway raft-fleet
+# project, served at a public URL by design (the fetch path we chose). Re-run
+# `just bootstrap-harbor` after the seminar to rotate it.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harbor-creds
+  namespace: admin-tools
+  labels:
+    app: harbor-creds
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: harbor-creds
+  template:
+    metadata:
+      labels:
+        app: harbor-creds
+    spec:
+      volumes:
+      - name: creds
+        configMap:
+          # Created by `just deploy-harbor-creds` (not committed). The deploy
+          # recipe applies this manifest right after, so the volume is populated.
+          name: harbor-creds
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        # nginx serves /usr/share/nginx/html at /, so the file lands at
+        # /creds/harbor-robot.env — matching the route's PathPrefix below.
+        - name: creds
+          mountPath: /usr/share/nginx/html/creds
+          readOnly: true
+        resources:
+          limits:
+            memory: "32Mi"
+            cpu: "50m"
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: harbor-creds
+  namespace: admin-tools
+spec:
+  selector:
+    app: harbor-creds
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+
+---
+# More specific than docs-route's "/" on the same host, so /creds/* lands here
+# while everything else still serves the MkDocs site.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor-creds-route
+  namespace: admin-tools
+spec:
+  parentRefs:
+  - name: main-gateway
+  hostnames:
+  - "docs.${LAB_DOMAIN}"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /creds
+    backendRefs:
+    - name: harbor-creds
+      port: 80

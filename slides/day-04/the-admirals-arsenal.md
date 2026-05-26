@@ -44,18 +44,18 @@ footer: "Admiral Bash's Island Adventure  ·  Day 4 · The Admiral's Arsenal"
 # The Bunk and the Ship
 
 ```text
-          |
-         /|\
-        / | \
-       '--+--'
-         )_)
-        )___)
-      __)_____)__
-      \_________/
-    ~~~~~~~~~~~~~~~
+          |\          |\
+          | \         | \
+          |  \        |  \
+          |   \       |   \
+       ___|____\______|____\___
+       \                      /
+        \   A D M I R A L     /
+         \____________________/
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
-> *"A bunk is shelter. A ship is command. Know which one ye're handing out."* — the Boatswain
+> *"What a ship is... is freedom."* — Captain Jack Sparrow, *Pirates of the Caribbean: The Curse of the Black Pearl*
 
 ---
 
@@ -160,11 +160,12 @@ footer: "Admiral Bash's Island Adventure  ·  Day 4 · The Admiral's Arsenal"
 # The Legacy Fleet
 
 ```text
-     .-=-=-.
-    | | | | |
-    | | | | |
-    | | | | |
-     '-=-=-'
+        .-=======-.
+       / | | | | | \
+       | | | | | | |
+       | | | | | | |
+       \ | | | | | /
+        '-=======-'
 ```
 
 > *"Don't scuttle the old fleet just because ye launched a new one. Some cargoes need the old hull."* — the Boatswain
@@ -253,22 +254,21 @@ The VM is live on the **same virtual network** as the Day 2 web Pods.
 # Summoning the Storm
 
 ```text
-        .-----.
-       ( o   o )
-        )  ^  (
-       /| ~~~ |\
-      ( | | | | )
-       \|_|_|_|/
+       .--.                    .--.
+      ( oo )--.            .--( ~~ )
+       '--'   '--.      .--'   '--'
+                  '~~~~'
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
-> *"A sea that never storms never tests the hull. Bring the gale; find the weak planks before they find ye."* — the Boatswain
+> *"A man can be destroyed but not defeated."* — Ernest Hemingway, *The Old Man and the Sea*
 
 ---
 
 ## Real systems fail
 
 - No production system runs forever without a fault.
-- The question is not *whether* it will fail — it is *whether you will find out* from monitoring or from a phone call at 2 a.m.
+- The question is not *whether* it will fail — it is *whether you find out* from your own monitoring, or from a flood of angry users.
 - **Chaos Engineering** means intentionally breaking your own system — under controlled conditions, in your own lab — to *prove* it can survive.
 - This is not recklessness. It is the methodology of modern **Site Reliability Engineering (SRE)**.
 
@@ -358,16 +358,16 @@ spec:
 # The Ultimate Exam
 
 ```text
-       . * .
-      [=====]
-       |   |
-       | + |
-      /|   |\
-     /_|___|_\
-   ~~~~~~~~~~~~~
+      \`-.             .-'/
+         `-.         .-'
+            `-.   .-'
+             [==X==]
+            .-'   `-.
+         .-'         `-.
+      /-'               `-\
 ```
 
-> *"The finest exam is a real storm with a working ship. Everything else is just theory."* — the Boatswain
+> *"A smooth sea never made a skilled sailor."* — a sailor's proverb
 
 ---
 
@@ -424,15 +424,13 @@ This morning's three topics are not independent demos. They form a stack:
 
 #### The Cloud-Native Classroom Stack
 
-The three tools this morning answer the structural squeeze directly:
+This morning's three tools all point the same way — at what you can now build yourself:
 
-- **vCluster** — 30 students, 30 real clusters, one shared host. Stand it up yourself, without an IT provisioning ticket.
-- **KubeVirt** — keep teaching Windows Server and legacy Linux admin on the same unified cluster as your container labs. No separate VM infrastructure. No separate request to IT.
-- **Chaos Mesh** — turn a `NetworkChaos` manifest into an auto-gradeable capstone exam. No multiple-choice sheet, no lab practical coordinator needed.
-
-*Together: a faculty member can design, deploy, and assess advanced scalable lab infrastructure — without waiting for an under-resourced IT department to catch up.*
-
-<!-- This is the destination slide for the whole morning. Slow down. The IT-bottleneck framing is the emotional hook for this room: educators caught between students who need working environments now and an IT department that is under-resourced and often a version or two behind. These three tools are the bypass. -->
+- **vCluster** — 30 students, 30 real clusters on one shared host. Stand it up yourself.
+- **KubeVirt** — teach Windows Server and legacy Linux admin on the same unified cluster as your container labs.
+- **Chaos Mesh** — turn a `NetworkChaos` manifest into an auto-gradeable capstone exam.
+- The environments you can choose to support have radically expanded. You don't wait for IT to say "sure, we can support that" — you build it, for a lesson, a course, or a seminar like this one.
+<!-- This is the destination slide for the whole morning. Slow down. The hook is agency, not grievance — the environments an educator can choose to support have radically expanded, and these three tools are how you build them. If you want a closer, put it to the room yourself: concept, or maintenance? -->
 
 ---
 
@@ -461,9 +459,9 @@ What you will use:
 # To the storm.
 
 ```text
-   ~  ~~  ~~~  ~~  ~~~~  ~~  ~
-  ~~~~  ~~  ~~~~  ~~  ~~~  ~~~
-   ~  ~~~~  ~~  ~~~  ~~  ~~  ~
+   ~~~^~~~~~^~~~~~~^~~~~^~~~~~^~~~
+  ~~~~~~^~~~~~~^~~~~^~~~~~~^~~~~~~~
+   ~^~~~~~^~~~~~~^~~~~~^~~~~~^~~~~~
 ```
 
 *The arsenal is loaded. The Pirate is coming. Prove the fleet is ready.*

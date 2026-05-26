@@ -131,4 +131,4 @@ Push it, then watch the **Actions** tab in Gitea light up.
     GitOps loop above is the part that matters today.
 
 ---
-**🏆 Gamification Checkpoint:** First pirate whose ArgoCD app reaches **Healthy / Synced** *and* who can correctly explain the difference between the Captain's Log and the Crew's Actions wins a prize!
+**🏆 Gamification Checkpoint:** Be the first pirate whose ArgoCD app reaches **Healthy / Synced** *and* who can correctly explain the difference between the Captain's Log and the Crew's Actions!

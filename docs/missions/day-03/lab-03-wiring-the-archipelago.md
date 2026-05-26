@@ -122,4 +122,4 @@ ping 10.255.0.2 network-instance default
 Replies coming back means the deep-sea cable is **live** — two commercial routers, talking across a route you charted, all running inside Kubernetes, all deployed by GitOps.
 
 ---
-**🏆 Gamification Checkpoint:** First alliance to land a successful loopback-to-loopback ping across the archipelago wins! Stretch prize: swap the static route for **BGP peering** between the two `default` network-instances.
+**🏆 Gamification Checkpoint:** Be the first alliance to land a successful loopback-to-loopback ping across the archipelago! Stretch goal: swap the static route for **BGP peering** between the two `default` network-instances.

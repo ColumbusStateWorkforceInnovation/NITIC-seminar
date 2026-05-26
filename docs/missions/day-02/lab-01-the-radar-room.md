@@ -23,16 +23,25 @@ Oh no! A rogue wave has hit the fleet! The Admiral just deployed a broken compon
 2. Highlight the broken pod.
 3. Press `l` (lowercase L) to view the live logs of that pod.
 4. Read the error message in the logs to figure out exactly *why* the pod is crashing.
-5. The first student to stand up and yell out the exact error message wins a copy of the textbook!
+5. Be the first student to stand up and yell out the exact error message!
 
 *(Hint: If the logs are moving too fast, press `s` to toggle auto-scroll, or use the arrow keys to scroll up).*
 
-## Step 3: Cleaning Up the Wreckage
+## Step 3: The Pod That Won't Die
 
-Now that you've diagnosed the issue, we need to clear the debris.
+Now that you've diagnosed the issue, let's try to clear the debris.
 1. Press `Esc` to go back to the Pod view in `k9s`.
 2. Highlight the broken pod.
 3. Press `Ctrl-d` to delete it. A confirmation dialog will appear. Press Enter to confirm.
-4. Watch as the cluster terminates the pod.
+4. Watch closely... the pod terminates, and then — **a brand new broken pod appears in its place!**
 
-You are now a certified Radar Operator. Keep `k9s` open in a separate terminal window or tab for the rest of the day to monitor your deployments!
+What happened? The `leaky-ship` isn't a lone Pod — it's managed by a **Deployment**, the resilient manager you'll meet in Lab 02. The Deployment's whole job is to keep a pod running, so the instant you delete one, it spawns a replacement. You can't sink this ship by bailing water; you have to scuttle the whole vessel.
+
+## Step 4: Scuttling the Whole Ship
+
+To truly clear the wreckage, delete the **Deployment**, not the Pod.
+1. Press `:` to open the command prompt, type `deploy`, and hit Enter. You are now in the Deployments view.
+2. Highlight `leaky-ship`.
+3. Press `Ctrl-d` and confirm. Now the Deployment *and* its pod are gone for good.
+
+You just witnessed the core idea behind the very next lab: Deployments self-heal. You are now a certified Radar Operator. Keep `k9s` open in a separate terminal window or tab for the rest of the day to monitor your deployments!

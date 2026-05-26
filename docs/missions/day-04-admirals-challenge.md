@@ -30,7 +30,7 @@ The theoretical discussions are interrupted. A Pirate has infiltrated the Git re
 ### Activities & Missions
 1. **The Pirate Strikes! (Live Chaos Game)**
    - The instructor installs a CNCF Chaos Engineering platform (**Chaos Mesh**) into the cluster.
-   - **The Game**: The Pirate deploys an active chaos experiment that randomly severs cross-namespace communication and kills web server pods within the 3-Tier alliances. The first team to trace the root cause and fully stabilize their logistics pipeline wins!
+   - **The Game**: The Pirate deploys an active chaos experiment that randomly severs cross-namespace communication and kills web server pods within the 3-Tier alliances. The first team to trace the root cause and fully stabilize their logistics pipeline takes the Admiral's Challenge!
 2. **Restoring the Fleet**
    - **Group Mission**: Work together across your 3-Tier alliances to stabilize the grid while actively under attack.
    - What is happening?! Students must use `k9s` and `kubectl get events` to trace the intermittent failures back to the Chaos manifests discussed in the morning lecture.
@@ -41,7 +41,7 @@ The theoretical discussions are interrupted. A Pirate has infiltrated the Git re
      1. **Updating Classes**: Using GitOps to push syllabus/lab changes instantly.
      2. **Lab Distribution**: Giving students a URL to a containerized JupyterLab instead of an install disk.
      3. **AI at Scale**: Engineering LLM personas to act as local, automated TAs.
-   * **Games & Prizes**: Lightning round of K8s / Pedagogy Trivia to distribute the final batch of sweet Swag.
+   * **Closing Game**: Lightning round of K8s / Pedagogy Trivia to send the crew off.
 
 ---
 ### 🤖 Curiosity Side-Quest: The AI Incident Commander

@@ -15,7 +15,7 @@ Day 3 is the leap from *manual* operations to *automated* ones. The students sto
 - **Action:** Have students open `lab-01-drafting-the-blueprint.md` on the docs site (`docs.{{ lab_domain }}`).
 - **Action (The Trap):** Let them try to hand-write Go-template syntax. They will mangle the {% raw %}`{{ }}`{% endraw %} braces. Let them struggle for a few minutes.
 - **Action (The Save):** Remind them the Boatswain is still on duty — but it will *not* write the loop for them (that is Rule Update 3, coming this afternoon — for now it still gives concept-only hints).
-- **Game (Templating Speed Run):** Once charts are installed, call it: "First pirate to run `helm upgrade` and push their replica count to 5 — verified in `k9s` — wins." Watch for students who edit `values.yaml` vs. those who use `--set`; both are valid, discuss the difference.
+- **Game (Templating Speed Run):** Once charts are installed, call it: "First pirate to run `helm upgrade` and push their replica count to 5 — verified in `k9s` — takes the round." Watch for students who edit `values.yaml` vs. those who use `--set`; both are valid, discuss the difference.
 - **Talking Point:** "Notice nobody re-applied a Service. Helm tracked every object in the release. One command upgraded the whole stack."
 
 ## 01:00 - 02:30 | Git Is Truth (Lecture)

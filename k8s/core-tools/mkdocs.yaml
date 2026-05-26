@@ -32,12 +32,17 @@ spec:
         - name: GITSYNC_REPO
           # Route traffic directly to the Gitea service in the cluster
           value: "http://gitea-http.admin-tools.svc.cluster.local:3000/admiral/nitic-seminar.git"
-        - name: GITSYNC_BRANCH
+        # git-sync v4 reads GITSYNC_REF (not the v3-era GITSYNC_BRANCH, which it
+        # silently ignores → it would default to --ref=HEAD). Pin our trunk here.
+        - name: GITSYNC_REF
           # Nautical Trunk-Based Development!
           value: "maindeck"
         - name: GITSYNC_ROOT
           value: "/tmp/git"
-        - name: GITSYNC_DEST
+        # git-sync v4 names the worktree symlink via GITSYNC_LINK (the v3 name was
+        # GITSYNC_DEST, which v4 ignores → it would default the link to the repo
+        # basename "nitic-seminar.git" and mkdocs's /docs/repo path would be empty).
+        - name: GITSYNC_LINK
           value: "repo"
         # Since it's a closed cluster, we can disable SSL verification and sync frequently
         - name: GITSYNC_WAIT
@@ -60,6 +65,11 @@ spec:
           - /bin/sh
           - -c
           - |
+            # The git-sync sidecar populates /docs/repo asynchronously. Wait for
+            # it instead of crash-looping (mkdocs would exit non-zero if the file
+            # isn't there yet, racing on every pod start until the first sync).
+            echo "⏳ Waiting for git-sync to populate /docs/repo..."
+            until [ -f /docs/repo/mkdocs.yml ]; do sleep 2; done
             echo "📦 Installing MkDocs plugins from requirements.txt..."
             pip install --quiet -r /docs/repo/requirements.txt
             echo "📖 Starting MkDocs server..."

@@ -45,12 +45,15 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · Into the Deep"
 # Why a Raft Isn't a Fleet
 
 ```text
-       _~
-    _~ )_)_~
-    )_))_))_)
-    _!__!__!_
-    \______t/
-  ~~~~~~~~~~~~~
+            |\
+            | \
+            |  \
+            |   \
+            |    \
+         ___|_____\___
+         \           /
+          \_________/
+       ~~~~~~~~~~~~~~~~~
 ```
 
 > *"One raft is a tale. A fleet is a future. Ye can't crew the whole ocean alone."* — the Boatswain
@@ -61,11 +64,11 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · Into the Deep"
 
 - On your VM you can already do this:  `docker run my-raft`
 - It works — until it doesn't:
-  - the container **crashes** at 2 a.m.
-  - the **host reboots**
-  - traffic spikes and you need **ten** of them, not one
-  - you need to move it to a different machine
-- Every one of those is now **your** job, by hand, while everyone waits.
+  - the container **crashes** and stays down
+  - the **host reboots** and nothing comes back
+  - you need **ten** copies, not one
+  - the machine it runs on fails, and it has to move
+- A lone container has nothing watching it. Something has to — and "a person doing it by hand" is not a plan that survives contact with reality.
 
 <!-- Let this land. A single container is a great building block and a terrible production strategy. The pain is operational, not conceptual. -->
 
@@ -115,13 +118,13 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · Into the Deep"
 # A Life-Jacket Called a Pod
 
 ```text
-       .-""""-.
-     .'  .--.  '.
-    /   /    \   \
-    |   |    |   |
-    \   \    /   /
-     '.  '--'  .'
-       '-....-'
+        .-"""""-.
+      .'  _____  '.
+     /   /     \   \
+    |   |       |   |
+     \   \_____/   /
+      '.         .'
+        '-.....-'
 ```
 
 > *"Never send a crate to sea without a life-jacket. The deep don't forgive."* — the Boatswain
@@ -206,13 +209,13 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · Into the Deep"
 # Charts, Not Hand-Steering
 
 ```text
-           N
-           .
-         \ | /
-      W .--+--. E
-         / | \
-           .
-           S
+               N
+            .  |  .
+             \ | /
+        W .----+----. E
+             / | \
+            .  |  .
+               S
 ```
 
 > *"Hand the sea a good chart and it'll hold your course while ye sleep."* — the Boatswain
@@ -301,15 +304,16 @@ kubectl config set-context --current --namespace=<your-name>
 # Ghost Ships
 
 ```text
-        .-----.
-       ( o   o )
-        )  ^  (
-       /| ~~~ |\
-      ( | | | | )
-       \|_|_|_|/
+          .-~~~~~-.
+         / (o) (o) \
+         \    <    /
+        .-'~~~~~~~'-.
+       / / / | \ \ \ \
+      ( ( (  |  ) ) ) )
+       \_\_\_|_/_/_/_/
 ```
 
-> *"Don't weep for a sunk pod, lad — the chart raises another by mornin'."* — the Boatswain
+> *"You best start believing in ghost stories, Miss Turner... you're in one."* — Captain Barbossa, *Pirates of the Caribbean: The Curse of the Black Pearl*
 
 ---
 
@@ -367,13 +371,10 @@ kubectl exec -it <pod> -- sh  board the Pod and look around
 
 #### One cluster, thirty safe sandboxes
 
-- Every student's work is now two things you can **see**:
-  - a **manifest** — a plain YAML file you can read, diff, and grade
-  - a **namespace** — an isolated sandbox you can inspect any time
-- A student stuck? `delete` the Pod, `apply` the file — a clean reset in seconds. No hidden state, no "what did you change?"
-- One shared cluster covers the whole room — **no machine per student, and no IT ticket per environment.**
-
-<!-- This is the destination slide for a room of educators. The declarative model turns "debug a mystery laptop" into "re-apply a known file." Slow down and let it land. -->
+- Every student's work is two things you can **see**: a readable **manifest** and an isolated **namespace**.
+- A student stuck? `delete` the Pod, re-`apply` the file — a clean reset in seconds.
+- The real shift: the environments you can *choose* to support have radically expanded. You don't wait for IT to say "sure, we can support that" — you build it yourself, for a lesson, a project, a whole course.
+<!-- This is the destination slide for a room of educators. The declarative model turns "debug a mystery laptop" into "re-apply a known file." Slow down. If you want a closer, put it to the room yourself: are you teaching the concept, or the maintenance? -->
 
 ---
 
@@ -402,7 +403,7 @@ kubectl exec -it <pod> -- sh  board the Pod and look around
      _~ )_)_~
      )_))_))_)
      _!__!__!_
-     \______t/
+     \_______/
    ~~~~~~~~~~~~~
 ```
 

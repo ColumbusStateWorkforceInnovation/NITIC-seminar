@@ -45,18 +45,16 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 # Git Is Truth
 
 ```text
-          |
-         /|\
-        / | \
-       '--+--'
-         )_)
-        )___)
-      __)_____)__
-      \_________/
-    ~~~~~~~~~~~~~~~
+               N
+            .  |  .
+             \ | /
+        W .----+----. E
+             / | \
+            .  |  .
+               S
 ```
 
-> *"A ship that takes orders from every sailor sails nowhere. Write the orders down — one log, one truth."* — the Boatswain
+> *"All I ask is a tall ship and a star to steer her by."* — John Masefield, "Sea-Fever"
 
 ---
 
@@ -149,12 +147,14 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 # The CI Loop
 
 ```text
-   .-~-~-~-~-~-~-~-.
-   |   .        X  |
-   |  / \    ~~    |
-   | /   \   .-.   |
-   |~~~~~~~ (   )  |
-   '-~-~-~-~-`-'~-~'
+          .------.
+         /        \
+        |   .--.   |
+         \ /    \ /
+          X      X
+         / \    / \
+        |   '--'   |
+         \________/
 ```
 
 > *"You don't haul cargo by hand every voyage. Build the crane once and let it load itself."* — the Boatswain
@@ -265,11 +265,13 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 # The CD Engine
 
 ```text
-        .-"-.
-      .' .|. '.
-      |--( + )--|
-      '. '|' .'
-        '-.-'
+          .-"|"-.
+        .'  _|_  '.
+       /  .-'|'-.  \
+      |---(   O   )---|
+       \  '-.|.-'  /
+        '.  "|"  .'
+          '-"|"-'
 ```
 
 > *"The helmsman doesn't keep asking which way to steer. He reads the chart once and holds it."* — the Boatswain
@@ -425,13 +427,18 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 # Wiring the Archipelago
 
 ```text
-        ____
-      .[____]===- -  *
-      /------\
-     (o)----(o)
+           \ | /
+          \ \|/ /
+         '--\|/--'
+             |
+             |
+          .--+--.
+       __/       \__
+    ~~~  the island  ~~~
+       \___________/
 ```
 
-> *"Every island in the chain needs a cable to the next. Rope and YAML — same job, different sea."* — the Boatswain
+> *"No man is an island, entire of itself."* — John Donne, Meditation XVII
 
 ---
 
@@ -540,23 +547,20 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
   - An IT ticket to get any of it provisioned
 - With **Clabernetes + ArgoCD**: commit a YAML file → every student has a full multi-router lab.
 - No GNS3. No EVE-NG. No physical hardware.
-- The educator is no longer caught between a curriculum that needs real routers **now** and an IT department that cannot provision them in time — or at all.
+- A full router lab used to mean a hardware budget and a provisioning request. Now it is a YAML file you commit yourself.
 
-<!-- Frame with the IT-bottleneck lens: the structural squeeze. Not "time you lose," but the position of being between students who need a working environment and an IT department that is understaffed and behind. GitOps routes around both. -->
+<!-- Frame with agency: teaching real router topologies used to require hardware budgets and provisioning requests. GitOps + Clabernetes means you build the lab yourself, from a YAML file. -->
 
 ---
 
 ## Both superpowers, one lens
 
-- **The IT-bottleneck squeeze:** your lesson needs a working environment. IT is under-resourced and often a version or two behind. You are caught in the middle.
-- GitOps routes around both sides of that squeeze:
-  - Push a curriculum change → **the whole class gets it instantly**, no IT ticket.
-  - Define the environment in Git → **IT can review it, reproduce it, and version it** like any other codebase.
-- The Git repo becomes the single language both sides can read.
+- Step back from the two demos — the shift underneath them is the same.
+- The environments you can choose to support have radically expanded: a data-science stack, a multi-router lab, a whole course. You don't need anyone's permission to build one.
+- Define it in Git and it isn't just yours — IT can read it, reproduce it, and version it like any other codebase. The repo becomes a language both sides share.
+*The Captain's Log isn't just for the cluster. It's for the institution.*
 
-*The Captain's Log is not just for the cluster. It is for the institution.*
-
-<!-- This is the meta-message slide for the room of educators. Slow down here. The DevOps content is the vehicle; this is the destination. -->
+<!-- This is the meta-message slide for the room of educators. Slow down here. The DevOps content is the vehicle; this is the destination. If you want a closer, put it to the room yourself: concept, or maintenance? -->
 
 ---
 
@@ -585,13 +589,14 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 # Write it down. Push it. Trust the Log.
 
 ```text
-      |\_____
-      |      \
-      | SAIL  |
-      |  ON  /
-      |____/
-      |
-      |
+         \  .  /
+        '-.[O].-'
+           |=|
+          /| |\
+         / |#| \
+        /  | |  \
+       /___|_|___\
+     ~~~~~~~~~~~~~~~~
 ```
 
 *The laptop leaves the loop. The Log takes the wheel.*

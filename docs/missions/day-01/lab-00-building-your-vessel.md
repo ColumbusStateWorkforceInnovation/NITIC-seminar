@@ -106,14 +106,17 @@ This is the step that does the heavy lifting. One script installs **Docker, git,
     cd NITIC-seminar
     ```
 
-2. Set the **`SERVER_IP` from the whiteboard**, then run the bootstrap script. Replace `<SERVER_IP>` with the real value:
+2. Copy the **`SERVER_IP` and `AI_API_KEY` from the whiteboard**, then run the bootstrap script. Replace both placeholders with the real values:
 
     ```bash
     export SERVER_IP=<SERVER_IP>
+    export AI_API_KEY=<AI_KEY>
     bash scripts/setup-client.sh
     ```
 
-3. The script prints its progress with ⚓ emoji. It takes **5–15 minutes** depending on the network. When you see **"⚓ Setup Complete! The shipyard is ready,"** you're almost there.
+    The `AI_API_KEY` is what wires `aichat` to the island's AI engine (Part 6) — if you skip it, `aichat` won't be able to log in.
+
+3. The script prints its progress with ⚓ emoji. It takes **5–15 minutes** depending on the network. Along the way it also logs Docker into the island's **Harbor** registry for you (you'll see a `🔑 ... logged in to Harbor` line) so your first `docker push` in Lab 01 just works — no login to memorize. When you see **"⚓ Setup Complete! The shipyard is ready,"** you're almost there.
 
 !!! warning "Log out and back in"
     The script adds you to the `docker` group, but that change only takes effect on a fresh login. **Log out of Ubuntu and log back in** (or just reboot the VM) before the next part — otherwise `docker` will complain about permissions in Lab 01.

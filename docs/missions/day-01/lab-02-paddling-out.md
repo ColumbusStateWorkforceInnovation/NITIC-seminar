@@ -42,12 +42,16 @@ Let's prove why we use Dockerfiles.
    `kubectl exec -it my-raft -- /bin/sh`
 2. You are now inside the container. Let's make a manual edit to your flag:
    `echo "<h1>I WAS MANUALLY HACKED</h1>" > /usr/share/nginx/html/index.html`
-3. Exit the container (`exit`). If you curl your pod's IP, you will see the hacked message.
+3. Exit the container (`exit`), then read the page back **through Kubernetes** to confirm your sabotage landed:
+   `kubectl exec my-raft -- cat /usr/share/nginx/html/index.html`
+   You'll see the `I WAS MANUALLY HACKED` message.
+   !!! info "Why not just `curl` the pod's IP?"
+       A Pod's IP (something like `10.42.x.x`) lives on the cluster's *internal* network — it isn't routable from your VM. `kubectl exec` reaches inside the pod for you, which is why we read the file that way.
 4. Now, the storm hits. Delete the pod:
    `kubectl delete pod my-raft`
 5. The ocean is empty. Apply your `pod.yaml` again:
    `kubectl apply -f pod.yaml`
-6. Check your website again. The hacked message is gone! The pod pulled the immutable image from the Harbor. **Lesson learned: Manual server configurations die. Infrastructure as Code survives.**
+6. Read the page one more time: `kubectl exec my-raft -- cat /usr/share/nginx/html/index.html`. The hacked message is **gone** — your original flag is back! The pod pulled the immutable image from the Harbor. **Lesson learned: Manual server configurations die. Infrastructure as Code survives.**
 
 ## Step 4: The Scavenger Hunt
 
@@ -56,4 +60,4 @@ Somewhere out in the cluster, Admiral Bash has hidden a `treasure-chest` Pod in 
 **Your Mission:**
 1. Find the pod. (Hint: `kubectl get pods -A` lists pods across *all* namespaces).
 2. Read the logs of that pod to extract the secret code.
-3. The first person to yell out the code wins a book copy!
+3. Be the first person to yell out the code!

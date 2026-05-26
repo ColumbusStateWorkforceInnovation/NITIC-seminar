@@ -111,7 +111,7 @@ Hazel does not rebuild ships — she *upgrades* them. There are two ways to turn
 - Edit `values.yaml` and run `helm upgrade my-stack ./island-stack -n <your-name>`
 - Or override on the fly: `helm upgrade my-stack ./island-stack -n <your-name> --set cache.replicaCount=5`
 
-**The Race:** First pirate to push their cache tier to **5 replicas** — and prove it in `k9s` — wins a prize! Bonus book copy if you can explain to the room *why* `--set` beats editing the file in a hurry.
+**The Race:** Be the first pirate to push your cache tier to **5 replicas** — and prove it in `k9s`! Bonus round: explain to the room *why* `--set` beats editing the file in a hurry.
 
 ---
 **🧹 Cleanup:** One blueprint, one command to scrap the whole fleet: `helm uninstall my-stack -n <your-name>`. Notice Helm removes *every* object it created — no orphaned Services left drifting.

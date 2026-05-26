@@ -44,18 +44,18 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
 # Why the SS Legacy Sank
 
 ```text
-          |
-         /|\
-        / | \
-       '--+--'
-         )_)
-        )___)
-      __)_____)__
-      \_________/
-    ~~~~~~~~~~~~~~~
+          |\          |\
+          | \         | \
+          |  \        |  \
+          |   \       |   \
+       ___|____\______|____\___
+       \                      /
+        \   A D M I R A L     /
+         \____________________/
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
-> *"A ship too proud to change course is just a reef with sails."* — the Boatswain
+> *"...then all collapsed, and the great shroud of the sea rolled on as it rolled five thousand years ago."* — Herman Melville, *Moby-Dick*
 
 ---
 
@@ -104,11 +104,13 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
 # Anatomy of Your Vessel
 
 ```text
-        .-'''-.
-      .'  / \  '.
-     /   /   \   \
-    |---+-----+---|
-     '-.._|_..-'
+          .-"""""-.
+        .' .-----. '.
+       /  /  ~ ~  \  \
+       |  | ~ . ~ |  |
+       \  \  ~ ~  /  /
+        '. '-----' .'
+          '-.....-'
 ```
 
 > *"Know every plank of your hull, or the sea will teach ye — the hard way."* — the Boatswain
@@ -211,11 +213,12 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
 # From Hull to Crates
 
 ```text
-     .-=-=-.
-    | | | | |
-    | | | | |
-    | | | | |
-     '-=-=-'
+        .-=======-.
+       / | | | | | \
+       | | | | | | |
+       | | | | | | |
+       \ | | | | | /
+        '-=======-'
 ```
 
 > *"Why haul a whole ship when a crate'll do? Pack light, sail fast."* — the Boatswain
@@ -324,13 +327,15 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
 # Building a Crate
 
 ```text
-          _
-         (o)
-          |
-       .--+--.
-        \ | /
-         \|/
-      ~~~~+~~~~
+            .---.
+            ( o )
+            '-+-'
+              |
+          .   |   .
+           \  |  /
+         '. \ | / .'
+           '.\|/.'
+         ~~~~~'~~~~~
 ```
 
 > *"Measure twice, cut once — a crate built right is a crate built once."* — the Boatswain
@@ -402,11 +407,9 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
 
 - This morning's `setup-client.sh` and this afternoon's container are the **same idea at two scales**:
 - *describe the environment as code → build it once → hand everyone an identical copy.*
-- Containerize an assignment and you ship students the **environment**, not just the code.
-- Roughly **90% of "it won't run on my machine"** tickets simply disappear.
-- You debug the **image once** — not thirty laptops, forever.
-
-<!-- This is the meta-message of the seminar. Slow down here. The DevOps content is the vehicle; THIS is the destination for a room of educators. -->
+- Containerize an assignment and you ship students the **environment**, not just the code — thirty identical setups from one definition.
+- The environments you can choose to support have radically expanded. You don't wait for IT to bless a toolchain — you build it into the image yourself.
+<!-- This is the meta-message of the seminar. Slow down here. The DevOps content is the vehicle; this is the destination for a room of educators. If you want a closer, ask them yourself: concept, or maintenance? -->
 
 ---
 
@@ -433,7 +436,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
      _~ )_)_~
      )_))_))_)
      _!__!__!_
-     \______t/
+     \_______/
    ~~~~~~~~~~~~~
 ```
 

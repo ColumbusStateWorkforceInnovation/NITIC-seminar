@@ -186,8 +186,22 @@ provision_student() {
           \"limitsCpu\": \"500m\",
           \"limitsMemory\": \"512Mi\"
         }
+      },
+      \"containerDefaultResourceLimit\": {
+        \"limitsCpu\": \"100m\",
+        \"limitsMemory\": \"96Mi\",
+        \"requestsCpu\": \"50m\",
+        \"requestsMemory\": \"64Mi\"
       }
     }" | jq -r '.id')
+    # containerDefaultResourceLimit makes Rancher create a per-namespace
+    # LimitRange that injects default limits/requests into containers that omit
+    # them. Without it, the namespaceDefaultResourceQuota above (which caps
+    # limits.cpu/limits.memory) REJECTS any limitless pod — including the bare
+    # Deployment students generate in Day 2 Lab 02. The failure is silent:
+    # `kubectl apply` succeeds but 0 pods ever start (error buried in
+    # ReplicaSet events). Keep the defaults * max replicas under the quota:
+    # 100m/96Mi * 4 (3 replicas + rolling-update surge) = 400m/384Mi < 500m/512Mi.
     echo "   ✅ Project created (ID: $PROJECT_ID)"
   fi
 

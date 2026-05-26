@@ -44,15 +44,12 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Master Blueprint"
 # The Tyranny of Raw YAML
 
 ```text
-     .-~-~-~-~-~-~-~-.
-     |   .        X  |
-     |  / \    ~~    |
-     | /   \   .-.   |
-     |~~~~~~~ (   )  |
-     '-~-~-~-~-`-'~-~'
+   ~~~^~~~~~^~~~~~~^~~~~^~~~~~^~~~
+  ~~~~~~^~~~~~~^~~~~^~~~~~~^~~~~~~~
+   ~^~~~~~^~~~~~~^~~~~~^~~~~~^~~~~~
 ```
 
-> *"A map drawn thirty times by hand is a map drawn wrong thirty times."* — the Boatswain
+> *"Water, water, every where, nor any drop to drink."* — Samuel Taylor Coleridge, *The Rime of the Ancient Mariner*
 
 ---
 
@@ -94,20 +91,19 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Master Blueprint"
 
 *Raw YAML does not scale. It compounds mistakes.*
 
-<!-- This is the structural squeeze the audience lives in: a lesson needs a working environment now, IT is under-resourced, and the educator ends up maintaining 30 slightly different copies of the same config. Name that. -->
+<!-- Keep this slide on the concept — raw YAML compounding errors. Save the educator angle for the Superpower slide and your own words. -->
 
 ---
 
-## The faculty version of this problem
+## This was never a typing problem
 
-- You design a lab. It needs a working 3-tier environment — **now**, not after a ticket queue.
-- IT is under-resourced and often running a Kubernetes version or two behind.
-- You are caught in the middle: students need a running stack, IT can not provision 30 of them overnight.
-- Hand-editing YAML is not a solution — it is a second job on top of your real one.
+- You could be more careful with the YAML. It wouldn't help — the problem is structural, not human error.
+- One definition, copied thirty times, is thirty things to keep in sync — forever.
+- The fix is to stop copying and start **templating**: write the stack once, generate the rest.
 
 > There is a better way. Her name is **Hazel**.
 
-<!-- Frame this with the IT-bottleneck lens. The audience is educators squeezed between students and an overwhelmed IT department. Hazel is the route around both. -->
+<!-- This is the bridge into Helm — keep it concept-focused. Connect it to the room in your own words if you like; the Superpower slide carries the educator payoff. -->
 
 ---
 
@@ -118,11 +114,12 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Master Blueprint"
 # Meet Hazel
 
 ```text
-        .-"-.
-      .' .|. '.
-      |--( + )--|
-      '. '|' .'
-        '-.-'
+        _.-=-=-=-=-._
+      .'  $   $   $  '.
+     /   .-=-=-=-.    \
+    |===|  $   $  |====|
+    |   |_________|    |
+    '.________________.'
 ```
 
 > *"Hazel don't build ships one plank at a time. She drafts once, stamps a thousand."* — the Boatswain
@@ -241,15 +238,15 @@ frontend:
 # One Blueprint, Many Ships
 
 ```text
-          |
-         /|\
-        / | \
-       '--+--'
-         )_)
-        )___)
-      __)_____)__
-      \_________/
-    ~~~~~~~~~~~~~~~
+          |\          |\
+          | \         | \
+          |  \        |  \
+          |   \       |   \
+       ___|____\______|____\___
+       \                      /
+        \   A D M I R A L     /
+         \____________________/
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
 > *"Same hull, same mold — different name on the bow each time she launches."* — the Boatswain
@@ -379,12 +376,13 @@ helm template ./island-stack
 # Launching & Upgrading the Fleet
 
 ```text
-       _~
-    _~ )_)_~
-    )_))_))_)
-    _!__!__!_
-    \______t/
-  ~~~~~~~~~~~~~
+          .-"|"-.
+        .'  _|_  '.
+       /  .-'|'-.  \
+      |---(   O   )---|
+       \  '-.|.-'  /
+        '.  "|"  .'
+          '-"|"-'
 ```
 
 > *"One order launches a fleet. One order brings it home. That's why we have a harbour-master."* — the Boatswain
@@ -546,11 +544,9 @@ helm uninstall my-stack -n blackbeard
 
 - **One chart + one `values.yaml` per student** = 30 identical, isolated lab environments.
 - Or: one chart + `--set studentName=...` in a loop = the whole class provisioned from one terminal.
-- The structural squeeze flips: **you do not need IT to provision 30 environments**. You provision them yourself, in seconds, without a ticket queue and without touching each student's machine.
-- A student's environment is broken? `helm uninstall`, `helm install`. Clean state, 10 seconds.
-- You stop being a YAML typist. **You become the shipwright.**
-
-<!-- This is the destination slide for a room of educators. The IT-bottleneck lens: faculty are squeezed between students who need a working environment now and an IT department that is under-resourced and often a version or two behind. Helm is the route around both. Slow down and let it land. -->
+- A student's environment is broken? `helm uninstall`, `helm install`. Clean state in ten seconds.
+- You don't ask IT to provision thirty environments and wait. You define the stack once and stand up a lesson, a project, or a whole course yourself.
+<!-- This is the destination slide for a room of educators. The hook is agency: the environments you can choose to support have radically expanded — Helm is how you build them. Slow down. If you want a closer, ask them yourself: concept, or maintenance? -->
 
 ---
 
@@ -573,12 +569,14 @@ helm uninstall my-stack -n blackbeard
 # To the shipyard.
 
 ```text
-        __
-       |==|
-      /----\
-     | .--. |
-     | |  | |
-     |_|__|_|
+           ___
+          |   |
+         .'   '.
+        /  ~~~  \
+       |  | S | |
+       |  | OS| |
+        \ |   | /
+         '-----'
 ```
 
 *One blueprint. Hazel handles the rest.*

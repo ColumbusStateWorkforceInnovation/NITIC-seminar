@@ -6,8 +6,11 @@ set -e
 
 echo "🏴‍☠️ Injecting the 'CrashLoopBackOff' virus into all student namespaces..."
 
-# Get all namespaces except system ones
-NAMESPACES=$(kubectl get ns -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -vE 'kube-|default|admin|argocd|local')
+# Target ONLY student namespaces (student-<username>, created by
+# provision-students.sh). A positive match is safer than an exclude-list,
+# which missed cattle-system / cert-manager and would inject the broken
+# Deployment into Rancher's own infrastructure namespaces.
+NAMESPACES=$(kubectl get ns -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E '^student-' || true)
 
 for NS in $NAMESPACES; do
   echo "Injecting into namespace: $NS"
@@ -33,9 +36,13 @@ spec:
       - name: leaky-container
         image: alpine
         command: ["/bin/sh", "-c"]
-        # The deliberate bug: missing a semicolon before 'done' or trying to run a bad command
+        # The deliberate bug: the LAST command is 'cat' on a missing file, so the
+        # container exits non-zero (status Error) and the Deployment keeps
+        # restarting it -> CrashLoopBackOff. Keep 'cat' last: if anything (e.g.
+        # an echo) runs after it, the shell exits 0 and the pod reads
+        # "Completed" instead of looking broken.
         args:
-        - "echo 'Starting ship engines...'; sleep 2; cat /nonexistent/config.txt; echo 'This will never print because cat failed!'"
+        - "echo 'Starting ship engines...'; sleep 2; cat /nonexistent/config.txt"
         resources:
           limits:
             memory: "32Mi"

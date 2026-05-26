@@ -44,15 +44,15 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 # Meet Captain Kube
 
 ```text
-          |
-         /|\
-        / | \
-       '--+--'
-         )_)
-        )___)
-      __)_____)__
-      \_________/
-    ~~~~~~~~~~~~~~~
+          |\          |\
+          | \         | \
+          |  \        |  \
+          |   \       |   \
+       ___|____\______|____\___
+       \                      /
+        \   A D M I R A L     /
+         \____________________/
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
 > *"The harbour-master sees every ship, every berth, every tide. That's not power — that's paperwork done right."* — the Boatswain
@@ -210,11 +210,15 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 # From Pod to Deployment
 
 ```text
-     .-=-=-.
-    | | | | |
-    | | | | |
-    | | | | |
-     '-=-=-'
+            .---.
+            ( o )
+            '-+-'
+              |
+          .   |   .
+           \  |  /
+         '. \ | / .'
+           '.\|/.'
+         ~~~~~'~~~~~
 ```
 
 > *"One crate afloat is a start. A standing order that keeps three afloat is a fleet."* — the Boatswain
@@ -324,12 +328,12 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 # Config Lives Off the Ship
 
 ```text
-        __
-       |==|
-      /----\
-     | .--. |
-     | |  | |
-     |_|__|_|
+        .-=======-.
+       / | | | | | \
+       | | | | | | |
+       | | | | | | |
+       \ | | | | | /
+        '-=======-'
 ```
 
 > *"A sailor who paints his orders on the hull can't change course without a chisel."* — the Boatswain
@@ -348,7 +352,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
   - wait for a rolling restart
 - One config line change. Full rebuild pipeline.
 
-<!-- This is the structural squeeze made concrete: "I need to change one environment variable and I have to touch five systems to do it." -->
+<!-- This is the concept made concrete: changing one environment variable should not mean touching five systems. That is the pain ConfigMaps remove. -->
 
 ---
 
@@ -420,7 +424,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 
 *The lesson is a standing order. The parameters live off the ship.*
 
-<!-- This is the educator superpower hidden inside Part III. The structural squeeze eases here: you control the config without touching the image, without touching IT. -->
+<!-- This is the educator payoff hidden inside Part III: you control the config yourself — no image rebuild, no waiting on IT. -->
 
 ---
 
@@ -431,13 +435,9 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 # The Radar Room
 
 ```text
-       . * .
-      [=====]
-       |   |
-       | + |
-      /|   |\
-     /_|___|_\
-   ~~~~~~~~~~~~~
+       .---------------.____
+      [ :::::::::::::::: ]__ )
+       '---------------'
 ```
 
 > *"A good navigator doesn't squint at every rope. He climbs the lighthouse and reads the whole harbour."* — the Boatswain
@@ -557,11 +557,9 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 - Once students know k9s, the instructor gains something more valuable: **full visibility from the podium**.
 - Type `/` then a student's namespace name — their Pods, status, and logs appear instantly.
 - No walking the room. No leaning over shoulders. No "can you share your screen?"
-- The structural squeeze in the classroom: one shared cluster, one IT conversation, **total visibility across every namespace** from a single terminal.
-- A student's Pod in `CrashLoopBackOff`? You see it before they raise their hand.
-- Spot a pattern — three students with the same error — address it once for the room.
-
-<!-- This is the destination for a room of educators. Slow down. The IT-bottleneck lens: you asked IT for a cluster, not for per-student tooling. k9s gives you everything on top of that one shared resource. -->
+- A student's Pod in `CrashLoopBackOff`? You see it before they raise their hand. Spot the same error on three screens — address it once, for the room.
+- This kind of visibility used to be a request to IT. Now it's one terminal on a cluster you already run.
+<!-- This is the destination for a room of educators. Slow down. You asked IT for a cluster, not for per-student tooling — k9s gives you everything on top of that one shared resource. If you want a closer, ask them yourself: concept, or maintenance? -->
 
 ---
 
@@ -591,13 +589,14 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 # To the radar room.
 
 ```text
-       . * .
-      [=====]
-       |   |
-       | + |
-      /|   |\
-     /_|___|_\
-   ~~~~~~~~~~~~~
+         \  .  /
+        '-.[O].-'
+           |=|
+          /| |\
+         / |#| \
+        /  | |  \
+       /___|_|___\
+     ~~~~~~~~~~~~~~~~
 ```
 
 *The harbour is alive. Open k9s and read the water.*

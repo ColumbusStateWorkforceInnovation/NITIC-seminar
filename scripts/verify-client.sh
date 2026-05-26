@@ -134,6 +134,18 @@ if [ -f "$AICHAT_CFG" ]; then
     pass "aichat config present"
     info "model:    $(grep -E '^model:'  "$AICHAT_CFG" | head -1 | sed 's/^model: *//')"
     info "endpoint: $(grep -E 'api_base:' "$AICHAT_CFG" | head -1 | sed 's/.*api_base: *//')"
+    # Probe the AI endpoint so a wrong/placeholder key is caught HERE, not later
+    # when aichat fails in Lab 00 Part 6. Auth-only check (-k: TLS trust is
+    # verified separately above).
+    _ai_base="$(grep -E 'api_base:' "$AICHAT_CFG" | head -1 | sed 's/.*api_base: *//' | tr -d ' "')"
+    _ai_key="$(grep -E 'api_key:'  "$AICHAT_CFG" | head -1 | sed 's/.*api_key: *//' | tr -d ' "')"
+    _ai_code="$(curl -sS -k -o /dev/null -w '%{http_code}' --max-time 10 "${_ai_base%/}/models" -H "Authorization: Bearer ${_ai_key}" 2>/dev/null || echo 000)"
+    case "$_ai_code" in
+        200)         pass "AI endpoint reachable and key accepted" ;;
+        400|401|403) fail "AI key rejected (HTTP ${_ai_code}) — export the AI_API_KEY from the board and re-run setup-client.sh" ;;
+        000)         warn "couldn't reach the AI endpoint (cluster may not be reachable from here yet)" ;;
+        *)           warn "AI endpoint returned HTTP ${_ai_code}" ;;
+    esac
 else
     fail "aichat config not found at ${AICHAT_CFG}"
 fi

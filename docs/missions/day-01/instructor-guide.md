@@ -34,7 +34,7 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 - **Action (The Trap):** Let them struggle to figure out the `Dockerfile` syntax. Monitor the room.
 - **Action (The Save):** Interrupt and introduce the Socratic Boatswain (`aichat`). Have them create `AGENTS.md` and paste the Boatswain rules from the lab doc. *(This is where the AI persona is introduced — there is no longer a standalone AI Connect block.)*
 - **Talking Point:** "This is how you govern AI in your classroom. Don't ban it; shape it. The Boatswain refuses to give them the answer, but it acts as a 24/7 TA."
-- **Gamification:** Keep an eye on your Harbor dashboard (`harbor.{{ lab_domain }}`). The first student image that pops up into the `raft-fleet` project gets a book copy!
+- **Gamification:** Keep an eye on your Harbor dashboard (`harbor.{{ lab_domain }}`). Call out the first student image that pops up into the `raft-fleet` project!
 
 ## 03:00 - 03:15 | Break
 
@@ -48,7 +48,7 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 - **Action (Cluster onboarding — do this first):** Lab 02 is the first time students need live cluster access. Each student needs a **Rancher** login ready — have those accounts set up — then the lab's opening section walks them through copying their kubeconfig from the Rancher UI into `~/.kube/config`. Until they're in Rancher, `kubectl` has nothing to talk to.
 - **Action:** Have them follow `lab-02-paddling-out.md`.
 - **Action (The Ghost Ship Demo):** Early in the lab, stop the class and project your terminal. Exec into a running Nginx pod, change the `index.html` manually, show it working — then delete the pod and show the edits are gone when it respawns. *This visual permanently cements infrastructure immutability.*
-- **Action (Scavenger Hunt):** Around 4:25 PM, secretly run `./scripts/day-01-scavenger-hunt.sh` from your terminal. Announce a Treasure Chest has been hidden; first student to find it and read the logs wins.
+- **Action (Scavenger Hunt):** Around 4:25 PM, secretly run `./scripts/day-01-scavenger-hunt.sh` from your terminal. Announce a Treasure Chest has been hidden; first student to find it and read the logs calls out the code.
 - **Debrief (last ~10 min):** Ask the faculty how they feel about the Socratic Boatswain — did it help or hinder? Optionally run the **Mutiny Challenge** (prompt injection): who can trick the Boatswain into emitting a raw code block *without* editing `AGENTS.md`? Close by projecting the PDF and reading the "Day 1 Afternoon" passage from `book-readings.md`.
 
 ---

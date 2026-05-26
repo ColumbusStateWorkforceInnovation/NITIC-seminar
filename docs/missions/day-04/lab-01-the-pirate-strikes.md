@@ -4,7 +4,7 @@ The theory lecture is over. Something is wrong.
 
 Pods in your namespace are dying and respawning. Your 3-tier app flickers — the frontend loads, then 502s, then loads again. A **Pirate** has boarded the cluster and is running an active Chaos Engineering attack against the whole fleet.
 
-This is the Admiral's Challenge. Everything you have learned this week — `k9s`, logs, events, Services, NetworkPolicies, GitOps — you need all of it now. **The first alliance to trace the root cause and stabilize their logistics pipeline wins.**
+This is the Admiral's Challenge. Everything you have learned this week — `k9s`, logs, events, Services, NetworkPolicies, GitOps — you need all of it now. **Be the first alliance to trace the root cause and stabilize your logistics pipeline.**
 
 ## 🧑‍🏫 Instructor Superpower: Chaos as the Exam
 
@@ -60,7 +60,7 @@ Pod-kills you can survive. The `NetworkChaos` packet loss is harder — you must
 
 ## Step 5: Stabilize and Report
 
-You win when your 3-tier pipeline serves traffic **reliably** for 60 straight seconds while the attack is still running.
+You succeed when your 3-tier pipeline serves traffic **reliably** for 60 straight seconds while the attack is still running.
 
 1. Hammer your frontend in a loop and confirm clean responses:
    ```bash

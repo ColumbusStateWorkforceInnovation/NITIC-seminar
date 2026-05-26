@@ -63,6 +63,16 @@ echo "📦 Installing prerequisites..."
 apt-get update
 apt-get install -y curl wget git jq ufw
 
+# Rancher + Fleet + Turtles + CAPI + the NVIDIA device-plugin all open inotify
+# watchers. Ubuntu's default fs.inotify.max_user_instances=128 gets exhausted on
+# this controller-heavy single node, which makes the device-plugin's FS watcher
+# fail ("too many open files") so the GPU is never advertised and Ollama hangs
+# Pending. Raise + persist the limits before anything starts.
+echo "🔧 Raising inotify limits for the controller-heavy cluster..."
+printf 'fs.inotify.max_user_instances = 1024\nfs.inotify.max_user_watches = 1048576\n' \
+    > /etc/sysctl.d/99-nitic-inotify.conf
+sysctl -p /etc/sysctl.d/99-nitic-inotify.conf
+
 echo "⎈ Installing Helm..."
 curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 

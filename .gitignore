@@ -5,6 +5,10 @@ temp-context/
 # Institution-specific lab config (copy from lab.env.example and fill in)
 lab.env
 
+# Harbor push-robot creds — written by `just bootstrap-harbor`, staged for the
+# setup-client.sh fetch path. A push-only token, but never commit it.
+harbor-robot.env
+
 # Student roster — holds real names + emails (PII). Copy from
 # students.csv.example and fill in. Never commit to a public repo.
 scripts/students.csv

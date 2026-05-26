@@ -65,4 +65,4 @@
 | **1:00 - 2:30** | AI Connect | **The Paradigm Shift**: Rewrite `AGENTS.md` into the Incident Commander to trace the morning attack. |
 | **2:30 - 2:45** | Break | *15 Minute Afternoon Break* |
 | **2:45 - 4:15** | Discussion | **Educator's Strategic Roundtable:** "Start, Stop, Continue" Matrix exercise to map modern pedagogy. |
-| **4:15 - 5:00** | Wrap-up | K8s / Pedagogy Trivia and Swag Distribution! |
+| **4:15 - 5:00** | Wrap-up | K8s / Pedagogy Trivia and Seminar Send-Off! |

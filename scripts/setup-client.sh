@@ -15,7 +15,22 @@
 #                      Must match the `model_name` exposed by LiteLLM (templated
 #                      from AI_MODEL in k8s/core-tools/ai-engine.yaml at deploy).
 #   AI_API_KEY       — API key for aichat to authenticate to LiteLLM.
-#                      Default: sk-nitic-admin. Must match lab.env on the server.
+#                      No real default — pass it from the board, or via
+#                      'just test-client' (which injects it from lab.env). Must
+#                      equal LiteLLM's master_key (AI_API_KEY in lab.env).
+#   HARBOR_ROBOT_USER / HARBOR_ROBOT_SECRET
+#                    — Harbor push-robot creds for Day 1 Lab 01. When both are
+#                      set, the script logs Docker into harbor.${LAB_DOMAIN} so
+#                      the student's first `docker push` just works (Harbor
+#                      requires auth to push — there is no anonymous push). The
+#                      instructor mints these with 'just bootstrap-harbor', which
+#                      writes them to lab.env; 'just test-client' injects them.
+#   HARBOR_CREDS_URL — Where to fetch the shared robot creds when they aren't
+#                      already in the environment (the normal student path — so
+#                      nobody hand-types the '$'-laden robot username). Defaults
+#                      to https://docs.${LAB_DOMAIN}/creds/harbor-robot.env,
+#                      matching the KUBECONFIG_URL convention. The instructor
+#                      stages that file before class (see 'just bootstrap-harbor').
 #   KUBECONFIG_URL   — If set, fetch the student kubeconfig from this URL into
 #                      ~/.kube/config. Useful on headless VMs where students
 #                      cannot use the Rancher UI to copy/paste their kubeconfig.
@@ -46,7 +61,12 @@ LAB_DOMAIN="${LAB_DOMAIN:-wagbiz.org}"
 # `${AI_MODEL}` after envsubst at deploy time). API key must match LiteLLM's
 # master_key. Both defaults mirror lab.env.example.
 AI_MODEL="${AI_MODEL:-gemma3:4b}"
-AI_API_KEY="${AI_API_KEY:-sk-nitic-admin}"
+AI_API_KEY="${AI_API_KEY:-sk-change-me}"
+
+# Where to fetch the shared Harbor push-robot creds if they weren't passed in
+# the environment. Same /creds/ convention as KUBECONFIG_URL. Instructor stages
+# the file with `just bootstrap-harbor`. Override or blank-out to disable.
+HARBOR_CREDS_URL="${HARBOR_CREDS_URL:-https://docs.${LAB_DOMAIN}/creds/harbor-robot.env}"
 
 echo "🌊 Ahoy! Preparing your vessel for Admiral Bash's DevOps Intensive..."
 echo "   Lab Server IP : ${SERVER_IP}"
@@ -283,6 +303,69 @@ if [[ "${INSTALL_LAB_CA:-0}" == "1" ]]; then
     fi
 else
     echo "🔐 TLS: cluster serves a real Let's Encrypt cert — no CA install needed."
+fi
+
+# ── Harbor push creds: fetch (optional) ──────────────────────
+# Normal student path: the robot creds aren't in the environment, so pull them
+# from the URL the instructor pre-staged (HARBOR_CREDS_URL). This means nobody
+# hand-types the awkward '$'-laden robot username. Skipped when the creds are
+# already set (e.g. `just test-client` injects them) or no URL is configured.
+# The file is plain `KEY=value` lines; we parse them LITERALLY (grep + prefix
+# strip) so the '$' in the robot name is never shell-expanded.
+if [[ -z "${HARBOR_ROBOT_USER:-}" && -n "${HARBOR_CREDS_URL:-}" ]]; then
+    echo "🔑 Fetching Harbor push creds from ${HARBOR_CREDS_URL}..."
+    if _hc="$(curl -fsSL "${HARBOR_CREDS_URL}" 2>/dev/null)"; then
+        _ru_line="$(printf '%s\n' "$_hc" | grep -E '^HARBOR_ROBOT_USER='   | head -1)"
+        _rs_line="$(printf '%s\n' "$_hc" | grep -E '^HARBOR_ROBOT_SECRET=' | head -1)"
+        HARBOR_ROBOT_USER="${_ru_line#HARBOR_ROBOT_USER=}"
+        HARBOR_ROBOT_SECRET="${_rs_line#HARBOR_ROBOT_SECRET=}"
+        # Tolerate a quoted file (bootstrap-harbor writes the plain form, but the
+        # instructor may have staged the single-quoted lab.env lines verbatim).
+        HARBOR_ROBOT_USER="${HARBOR_ROBOT_USER#[\"\']}";   HARBOR_ROBOT_USER="${HARBOR_ROBOT_USER%[\"\']}"
+        HARBOR_ROBOT_SECRET="${HARBOR_ROBOT_SECRET#[\"\']}"; HARBOR_ROBOT_SECRET="${HARBOR_ROBOT_SECRET%[\"\']}"
+        if [[ -n "${HARBOR_ROBOT_USER}" && -n "${HARBOR_ROBOT_SECRET}" ]]; then
+            echo "   ✅ Got push creds for ${HARBOR_ROBOT_USER}."
+        else
+            echo "   ⚠️  Fetched the file but couldn't parse robot creds from it."
+        fi
+    else
+        echo "   ·  No creds staged at that URL (yet) — skipping. Lab 01 push will need a manual login."
+    fi
+fi
+
+# ── Harbor login (optional) ───────────────────────────────────
+# Day 1 Lab 01 pushes to harbor.${LAB_DOMAIN}/raft-fleet. Harbor ALWAYS requires
+# auth to push (a public project only grants anonymous PULL), so we log Docker in
+# here with the shared push-robot the instructor minted via `just bootstrap-harbor`.
+# Skipped cleanly if the creds weren't passed — the lab just needs a manual login.
+HARBOR_HOST="harbor.${LAB_DOMAIN}"
+if [[ -n "${HARBOR_ROBOT_USER:-}" && -n "${HARBOR_ROBOT_SECRET:-}" ]]; then
+    echo "🔑 Logging Docker into ${HARBOR_HOST} as ${HARBOR_ROBOT_USER}..."
+    if docker info > /dev/null 2>&1; then
+        # Daemon reachable in this shell — log in directly.
+        if echo "${HARBOR_ROBOT_SECRET}" | docker login "${HARBOR_HOST}" -u "${HARBOR_ROBOT_USER}" --password-stdin; then
+            echo "   ✅ Docker logged in to Harbor."
+        else
+            echo "   ⚠️  Harbor login failed — double-check the robot creds."
+        fi
+    elif command -v sg > /dev/null 2>&1; then
+        # Fresh install: $USER was just added to the 'docker' group but THIS shell
+        # predates that membership. Run the login with the group active via `sg`
+        # so it succeeds now, before the log-out/back-in the next step needs anyway.
+        if sg docker -c "echo '${HARBOR_ROBOT_SECRET}' | docker login '${HARBOR_HOST}' -u '${HARBOR_ROBOT_USER}' --password-stdin" 2>/dev/null; then
+            echo "   ✅ Docker logged in to Harbor."
+        else
+            echo "   ⚠️  Harbor login deferred — after you log out and back in, run:"
+            echo "       echo '<robot-secret>' | docker login ${HARBOR_HOST} -u '${HARBOR_ROBOT_USER}' --password-stdin"
+        fi
+    else
+        echo "   ⚠️  Docker daemon not reachable yet — after you log out and back in, run:"
+        echo "       echo '<robot-secret>' | docker login ${HARBOR_HOST} -u '${HARBOR_ROBOT_USER}' --password-stdin"
+    fi
+else
+    echo "🔑 No HARBOR_ROBOT_USER/SECRET passed — skipping Harbor login."
+    echo "   (Lab 01's 'docker push' needs it. Instructor: run 'just bootstrap-harbor',"
+    echo "    then re-run this script with the printed creds — or 'just test-client'.)"
 fi
 
 # ── Kubeconfig Fetch (optional) ───────────────────────────────

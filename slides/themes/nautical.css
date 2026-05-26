@@ -216,7 +216,7 @@ section.lead h4, section.chapter h4 { color: var(--brass); }
 section.lead p,  section.chapter p  { color: var(--rope); }
 section.lead strong, section.chapter strong { color: var(--brass); }
 section.lead em, section.chapter em { color: var(--rope); }
-section.lead code, section.chapter code {
+section.lead :not(pre) > code, section.chapter :not(pre) > code {
   background: rgba(255,255,255,0.10);
   color: var(--foam);
   border-color: rgba(216,164,60,0.40);
@@ -243,6 +243,7 @@ section.lead pre, section.chapter pre {
 }
 section.lead pre code, section.chapter pre code {
   color: var(--rope);
+  background: transparent;
   font-size: 18px;
-  line-height: 1.28;
+  line-height: 1.3;
 }

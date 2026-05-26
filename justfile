@@ -49,6 +49,12 @@ AI_MODEL       := env_var_or_default("AI_MODEL",       "gemma3:4b")
 SECRET_PLACEHOLDER         := "CHANGE_ME_IN_lab.env"
 AI_API_KEY                 := env_var_or_default("AI_API_KEY",                 SECRET_PLACEHOLDER)
 HARBOR_ADMIN_PASSWORD      := env_var_or_default("HARBOR_ADMIN_PASSWORD",      SECRET_PLACEHOLDER)
+# Harbor push robot for Day 1 Lab 01 — created and written to lab.env by
+# `just bootstrap-harbor`. The username contains a literal '$' (Harbor names
+# project robots `robot$<project>+<name>`), so lab.env stores it single-quoted
+# and every recipe MUST reference it single-quoted too, or the shell eats it.
+HARBOR_ROBOT_USER          := env_var_or_default("HARBOR_ROBOT_USER",          "")
+HARBOR_ROBOT_SECRET        := env_var_or_default("HARBOR_ROBOT_SECRET",        "")
 RANCHER_BOOTSTRAP_PASSWORD := env_var_or_default("RANCHER_BOOTSTRAP_PASSWORD", SECRET_PLACEHOLDER)
 GRAFANA_ADMIN_PASSWORD     := env_var_or_default("GRAFANA_ADMIN_PASSWORD",     SECRET_PLACEHOLDER)
 GITEA_ADMIN_PASSWORD       := env_var_or_default("GITEA_ADMIN_PASSWORD",       SECRET_PLACEHOLDER)
@@ -134,8 +140,10 @@ init: check-config check-tools
     @echo "    6.  just deploy-dex          — single sign-on (OIDC)"
     @echo "    7.  just deploy-gitea / deploy-harbor / deploy-loki / deploy-argocd / deploy-rancher"
     @echo "    8.  just harbor-sso          — wire Harbor to Dex"
-    @echo "    9.  just pull-model          — pull the AI model into Ollama"
-    @echo "    10. just provision           — create student accounts (needs RANCHER_TOKEN)"
+    @echo "    9.  just bootstrap-harbor    — create the raft-fleet project + push robot (Day 1 Lab 01)"
+    @echo "    10. just deploy-harbor-creds — publish the push token so student VMs auto-login"
+    @echo "    11. just pull-model          — pull the AI model into Ollama"
+    @echo "    12. just provision           — create student accounts (needs RANCHER_TOKEN)"
     @echo ""
     @echo "  Next steps (LOCAL k3d test loop):"
     @echo "    1. just bootstrap-k3d  — create local k3d cluster + Gateway API"
@@ -320,6 +328,42 @@ pull-model MODEL=AI_MODEL:
     @echo "🤖 Pulling model '{{MODEL}}' into Ollama..."
     {{SSH}} "kubectl exec -n admin-tools deploy/ollama -- ollama pull {{MODEL}}"
 
+# The docs-hub pod's git-sync sidecar clones admiral/nitic-seminar @ branch
+# `maindeck` from the in-cluster Gitea; if that repo is missing/empty the pod
+# CrashLoops (empty /docs/repo → mkdocs can't find mkdocs.yml). This recipe
+# creates the repo (idempotent) and pushes THIS repo's current commit to
+# maindeck, then nudges the pod. Run it once after `just deploy-gitea`, and
+# again whenever you want the live site to catch up to this repo.
+# REMOTE only: it pushes over https://gitea.{{LAB_DOMAIN}}, which must resolve
+# (LOCAL k3d has no public DNS — port-forward Gitea and push manually instead).
+# Seed/refresh the internal Gitea repo that powers docs.{{LAB_DOMAIN}} (run after deploy-gitea)
+seed-docs: (_require "GITEA_ADMIN_PASSWORD" GITEA_ADMIN_PASSWORD)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    GP=$(grep -E '^GITEA_ADMIN_PASSWORD=' lab.env | cut -d= -f2-)
+    BASE="https://gitea.{{LAB_DOMAIN}}"
+    REPO="admiral/nitic-seminar"
+    echo "📖 Seeding ${BASE}/${REPO} (branch maindeck) from $(git rev-parse --short HEAD)..."
+    # 1. Create the repo if absent (201 = created, 409 = already there — both OK).
+    code=$(curl -s -o /dev/null -w '%{http_code}' -u "admiral:${GP}" \
+      -X POST "${BASE}/api/v1/user/repos" -H 'Content-Type: application/json' \
+      -d '{"name":"nitic-seminar","private":false,"auto_init":false,"description":"MkDocs source for docs.{{LAB_DOMAIN}} (synced by git-sync)"}')
+    case "$code" in
+      201) echo "   ✓ repo created" ;;
+      409) echo "   ✓ repo already exists" ;;
+      *)   echo "   ❌ repo create failed (HTTP $code)" >&2; exit 1 ;;
+    esac
+    # 2. Push this repo's current commit to maindeck (creds scrubbed from output).
+    EP=$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=""))' "$GP")
+    git push "https://admiral:${EP}@gitea.{{LAB_DOMAIN}}/${REPO}.git" HEAD:refs/heads/maindeck \
+      2>&1 | sed -E 's#//admiral:[^@]*@#//admiral:***@#g'
+    # 3. Make maindeck the default branch (no-op if already set).
+    curl -s -o /dev/null -u "admiral:${GP}" -X PATCH "${BASE}/api/v1/repos/${REPO}" \
+      -H 'Content-Type: application/json' -d '{"default_branch":"maindeck"}'
+    # 4. Nudge the docs-hub pod so it re-syncs now (best-effort; no-op if undeployed).
+    {{SSH}} "kubectl rollout restart deploy/docs-hub -n admin-tools" 2>/dev/null || true
+    echo "✅ Docs seeded — git-sync pulls within ~10s. Visit https://docs.{{LAB_DOMAIN}}"
+
 # ============================================================
 # 🪝 HELM DEPLOY RECIPES
 # ============================================================
@@ -358,6 +402,96 @@ deploy-harbor: (_require "HARBOR_ADMIN_PASSWORD" HARBOR_ADMIN_PASSWORD)
       envsubst < k8s/core-tools/harbor-values.yaml \
       | {{SSH}} "helm upgrade --install harbor harbor/harbor -n admin-tools --create-namespace -f -"
 
+# Pre-create the Harbor `raft-fleet` project (public) + a push robot for Day 1
+# Lab 01. Without this, every student's `docker push` fails with "project
+# raft-fleet not found" — and Harbor never allows anonymous PUSH regardless
+# (public projects only grant anonymous PULL). The robot creds are written to
+# lab.env (gitignored) so `just test-client` and the student bootstrap can
+# auto-`docker login`; the public project lets the cluster pull the image with
+# no creds in Lab 02. Idempotent — a re-run refreshes the robot secret. Curls
+# https://harbor.{{LAB_DOMAIN}} directly, so that host must resolve from where
+# you run this (production DNS, not k3d).
+# Create the raft-fleet Harbor project + push robot for Day 1 Lab 01 (after deploy-harbor)
+bootstrap-harbor: (_require "HARBOR_ADMIN_PASSWORD" HARBOR_ADMIN_PASSWORD)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    BASE="https://harbor.{{LAB_DOMAIN}}"
+    PROJECT="raft-fleet"; ROBOT="raft-pusher"
+    AUTH=(-u "admin:${HARBOR_ADMIN_PASSWORD}")   # dotenv-load exposes the env var
+    echo "⚓ Bootstrapping Harbor project '${PROJECT}' on ${BASE}..."
+    # 1. Public project (201 = created, 409 = already there — both fine).
+    code=$(curl -sSk -o /dev/null -w '%{http_code}' "${AUTH[@]}" \
+      -X POST "${BASE}/api/v2.0/projects" -H 'Content-Type: application/json' \
+      -d "{\"project_name\":\"${PROJECT}\",\"metadata\":{\"public\":\"true\"},\"storage_limit\":-1}")
+    case "$code" in
+      201) echo "   ✓ project '${PROJECT}' created (public)" ;;
+      409) echo "   ✓ project '${PROJECT}' already exists" ;;
+      *)   echo "   ❌ project create failed (HTTP $code)" >&2; exit 1 ;;
+    esac
+    # Force public even if it pre-existed as private (no-op otherwise).
+    curl -sSk "${AUTH[@]}" -X PUT "${BASE}/api/v2.0/projects/${PROJECT}" \
+      -H 'Content-Type: application/json' -d '{"metadata":{"public":"true"}}' >/dev/null || true
+    # 2. (Re)create the push robot. Harbor reveals a robot's secret ONLY at
+    #    creation, so delete any existing one first to guarantee a usable secret.
+    #    Project robots are NOT in the system-level /robots list — listing them
+    #    requires a `Level=project,ProjectID=<id>` query, so fetch the id first.
+    PID=$(curl -sSk "${AUTH[@]}" "${BASE}/api/v2.0/projects?name=${PROJECT}" \
+      | jq -r --arg p "$PROJECT" '.[]? | select(.name==$p) | .project_id' | head -1)
+    [[ -n "${PID:-}" ]] || { echo "   ❌ couldn't resolve project id for ${PROJECT}" >&2; exit 1; }
+    existing=$(curl -sSk "${AUTH[@]}" --get "${BASE}/api/v2.0/robots" \
+      --data-urlencode "q=Level=project,ProjectID=${PID}" --data-urlencode "page_size=100" \
+      | jq -r --arg r "$ROBOT" '.[]? | select(.name | endswith("+" + $r)) | .id' | head -1)
+    if [[ -n "${existing:-}" ]]; then
+      echo "   ↪ refreshing existing robot (id ${existing})"
+      curl -sSk "${AUTH[@]}" -X DELETE "${BASE}/api/v2.0/robots/${existing}" >/dev/null
+    fi
+    resp=$(curl -sSk "${AUTH[@]}" -X POST "${BASE}/api/v2.0/robots" \
+      -H 'Content-Type: application/json' \
+      -d "{\"name\":\"${ROBOT}\",\"description\":\"Day 1 Lab 01 push token for ${PROJECT}\",\"duration\":-1,\"level\":\"project\",\"permissions\":[{\"kind\":\"project\",\"namespace\":\"${PROJECT}\",\"access\":[{\"resource\":\"repository\",\"action\":\"push\"},{\"resource\":\"repository\",\"action\":\"pull\"}]}]}")
+    ROBOT_USER=$(echo "$resp" | jq -r '.name // empty')
+    ROBOT_SECRET=$(echo "$resp" | jq -r '.secret // empty')
+    [[ -n "$ROBOT_USER" && -n "$ROBOT_SECRET" ]] || { echo "   ❌ robot create failed: $resp" >&2; exit 1; }
+    echo "   ✓ robot account: ${ROBOT_USER}"
+    # 3. Persist creds to lab.env (gitignored). Single-quoted — the robot name
+    #    has a literal '$' that dotenv + the shell must NOT expand. Replace any
+    #    prior HARBOR_ROBOT_* lines so re-runs don't pile up.
+    touch lab.env
+    grep -vE '^HARBOR_ROBOT_(USER|SECRET)=' lab.env > lab.env.tmp 2>/dev/null || true
+    printf "HARBOR_ROBOT_USER='%s'\nHARBOR_ROBOT_SECRET='%s'\n" "$ROBOT_USER" "$ROBOT_SECRET" >> lab.env.tmp
+    mv lab.env.tmp lab.env
+    echo "   ✏️  Wrote HARBOR_ROBOT_USER / HARBOR_ROBOT_SECRET to lab.env"
+    # 4. Also emit the stageable artifact (plain KEY=value) for the fetch path:
+    #    students' setup-client.sh pulls this from HARBOR_CREDS_URL so nobody
+    #    hand-types the '$'-laden robot name. harbor-robot.env is gitignored.
+    printf "HARBOR_ROBOT_USER=%s\nHARBOR_ROBOT_SECRET=%s\n" "$ROBOT_USER" "$ROBOT_SECRET" > harbor-robot.env
+    echo "   ✏️  Wrote harbor-robot.env (the file to stage for the fetch path)"
+    echo ""
+    echo "✅ Harbor ready for Lab 01 — students push to ${BASE}/${PROJECT}/<name>:v1."
+    echo "   Next: 'just deploy-harbor-creds' publishes harbor-robot.env so each VM"
+    echo "   auto-logs-in (setup-client.sh fetches it). Re-run this recipe after the"
+    echo "   seminar to rotate the (push-only, throwaway) token."
+
+# Publish the Harbor push-robot creds so student VMs auto-`docker login`. Builds
+# the `harbor-creds` ConfigMap from the gitignored harbor-robot.env (NO token in
+# Git) and deploys a tiny nginx that serves it at
+# https://docs.{{LAB_DOMAIN}}/creds/harbor-robot.env — the URL setup-client.sh
+# fetches. Run AFTER `just bootstrap-harbor`. Honors LOCAL/REMOTE.
+deploy-harbor-creds:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [[ -f harbor-robot.env ]] || { echo "❌ harbor-robot.env not found — run 'just bootstrap-harbor' first." >&2; exit 1; }
+    echo "📤 Publishing creds at https://docs.{{LAB_DOMAIN}}/creds/harbor-robot.env ..."
+    # Build the ConfigMap YAML LOCALLY from the file (kubectl handles escaping, so
+    # the '$' in the robot name is safe — no envsubst on the content), then apply
+    # it to the target cluster. --dry-run=client doesn't contact a cluster.
+    kubectl create configmap harbor-creds \
+      --from-file=harbor-robot.env=harbor-robot.env -n admin-tools \
+      --dry-run=client -o yaml | {{SSH}} "kubectl apply -f -"
+    LAB_DOMAIN={{LAB_DOMAIN}} envsubst < k8s/core-tools/harbor-creds.yaml | {{SSH}} "kubectl apply -f -"
+    # Pick up refreshed creds on a re-run (ConfigMap volume updates can lag).
+    {{SSH}} "kubectl rollout restart deploy/harbor-creds -n admin-tools" >/dev/null 2>&1 || true
+    echo "✅ Published. Verify: curl https://docs.{{LAB_DOMAIN}}/creds/harbor-robot.env"
+
 # Deploy Loki + Grafana via Helm (envsubst injects LAB_DOMAIN + Grafana admin pw)
 deploy-loki: (_require "GRAFANA_ADMIN_PASSWORD" GRAFANA_ADMIN_PASSWORD)
     @echo "📊 Deploying loki-stack (Grafana: grafana.{{LAB_DOMAIN}})..."
@@ -383,6 +517,13 @@ deploy-gpu-plugin:
     {{SSH}} "helm upgrade --install nvdp nvdp/nvidia-device-plugin \
       --namespace nvidia-device-plugin --create-namespace \
       --set runtimeClassName=nvidia"
+    # The chart's default nodeAffinity expects Node-Feature-Discovery labels
+    # (nvidia.com/gpu.present, feature.node.kubernetes.io/pci-10de.present) — but
+    # we don't run NFD, so without a matching label the DaemonSet schedules 0 pods
+    # and never advertises the GPU, leaving GPU pods (Ollama) stuck Pending. Label
+    # the node so the chart's `nvidia.com/gpu.present` affinity term matches.
+    @echo "🏷️  Labeling node(s) nvidia.com/gpu.present=true so the DaemonSet schedules..."
+    {{SSH}} "kubectl label nodes --all nvidia.com/gpu.present=true --overwrite"
 
 # ============================================================
 # 🔐 SSO / IDENTITY RECIPES (Dex)
@@ -583,11 +724,22 @@ check-access USERNAME:
 
 # Test setup-client.sh on a target student VM (via SSH)
 test-client TARGET_IP:
-    @echo "🧪 Running setup-client.sh on {{TARGET_IP}}..."
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🧪 Running setup-client.sh on {{TARGET_IP}}..."
     scp -i {{SERVER_SSH_KEY}} scripts/setup-client.sh ubuntu@{{TARGET_IP}}:/tmp/setup-client.sh
     scp -i {{SERVER_SSH_KEY}} -r certs ubuntu@{{TARGET_IP}}:/tmp/certs
-    ssh -i {{SERVER_SSH_KEY}} ubuntu@{{TARGET_IP}} \
-        "SERVER_IP={{SERVER_IP}} LAB_DOMAIN={{LAB_DOMAIN}} bash /tmp/setup-client.sh"
+    # Capture the secrets into bash vars first (just fills placeholders inside
+    # single quotes → literal, so the '$' in the robot username survives). Then
+    # build the remote command with the values single-quoted IN the string, so the
+    # remote shell also keeps the '$' literal. ssh "$remote" passes it as one arg
+    # without re-expanding (a variable's value isn't recursively expanded). This
+    # nesting is why test-client is a script recipe and not a one-line ssh.
+    ai='{{AI_API_KEY}}'; ru='{{HARBOR_ROBOT_USER}}'; rs='{{HARBOR_ROBOT_SECRET}}'
+    remote="SERVER_IP='{{SERVER_IP}}' LAB_DOMAIN='{{LAB_DOMAIN}}' AI_API_KEY='${ai}'"
+    remote="${remote} HARBOR_ROBOT_USER='${ru}' HARBOR_ROBOT_SECRET='${rs}'"
+    remote="${remote} bash /tmp/setup-client.sh"
+    ssh -i {{SERVER_SSH_KEY}} ubuntu@{{TARGET_IP}} "$remote"
 
 # ============================================================
 # 🔁 UTILITY RECIPES
@@ -676,6 +828,16 @@ creds:
     echo "  ──────────────────────────────────────────────────────────────"
     echo "  SSO/Dex logins (all password '{{DEX_DEMO_PASSWORD}}'):"
     echo "    admiral, blackbeard, annebonny, calicojack, testcrew1, testcrew2, testcrew3"
+    echo ""
+    echo "  Harbor push robot (Day 1 Lab 01 — created by 'just bootstrap-harbor'):"
+    # Single-quoted: the robot username has a literal '$' that bash (set -u) would
+    # otherwise try to expand. just fills the placeholder in regardless of quoting.
+    if [[ -n '{{HARBOR_ROBOT_USER}}' ]]; then
+        echo '    user:   {{HARBOR_ROBOT_USER}}'
+        echo '    secret: {{HARBOR_ROBOT_SECRET}}'
+    else
+        echo "    (not provisioned yet — run 'just bootstrap-harbor')"
+    fi
     echo ""
 
 # Show the /etc/hosts block students need (for manual distribution)
