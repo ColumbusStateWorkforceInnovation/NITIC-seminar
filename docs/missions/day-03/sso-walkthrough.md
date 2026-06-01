@@ -30,8 +30,23 @@ roster — was the part Hydra *didn't* provide.
 
 I switched to **Dex**. Dex is the CNCF OIDC broker, and it has one feature that
 makes it perfect here: a built-in password database (`staticPasswords`). The
-roster lives **inside Dex's config file** — which means it lives in Git, which
-means it is exactly the "students as code" we wanted.
+roster lives **inside Dex's config file** — a plain, version-controllable file,
+which is exactly the "students as code" we wanted.
+
+!!! warning "Two files: a committed template and a gitignored live roster"
+    The live roster — `k8s/core-tools/dex.yaml` — holds **real student names and
+    emails (PII)**, so it is **gitignored**, exactly like `lab.env` and
+    `students.csv`. What ships in Git is `dex.yaml.example`, a pirate-themed
+    placeholder (a `test` user + a few pirates). Stand up SSO for a class with:
+
+    ```bash
+    cp k8s/core-tools/dex.yaml.example k8s/core-tools/dex.yaml
+    # edit dex.yaml: swap the pirates for the real roster
+    just deploy-dex
+    ```
+
+    "Roster as code" still holds — it's a file you edit, diff, and deploy. We
+    just keep the copy with real identities out of the public repo.
 
 **The lesson for the room:** picking infrastructure is not about which tool is
 "best" in the abstract. Hydra is arguably the more powerful OAuth2 server. But
@@ -45,8 +60,9 @@ build. Match the tool to the problem, not to the hype.
         │  https://sso.{{ lab_domain }}
         ▼
    ┌─────────┐   reads roster from   ┌──────────────────────┐
-   │   DEX   │◄──────────────────────│  dex.yaml (in Git)   │
+   │   DEX   │◄──────────────────────│ dex.yaml (gitignored)│
    └────┬────┘   staticPasswords     │  = the student roster│
+        │                           │ (template: .example) │
         │                           └──────────────────────┘
         │  OIDC tokens
         ▼
@@ -58,7 +74,7 @@ roster is one list in one file, version-controlled like everything else.
 
 ## Where The Changes Were Made
 
-### 1. New file — `k8s/core-tools/dex.yaml`
+### 1. New files — `k8s/core-tools/dex.yaml.example` (committed) + `dex.yaml` (gitignored)
 
 The whole identity service: a Deployment, a Service, an HTTPRoute for
 `sso.{{ lab_domain }}`, and a ConfigMap holding two lists:
@@ -119,6 +135,25 @@ config* (Gitea, ArgoCD, Grafana), *API call* (Harbor), *manual UI* (Rancher).
 Knowing which tier a tool is in **before** you start is what separates a
 half-day of work from a surprise.
 
+!!! tip "The same tiers show up again — wiring Mailpit"
+    The stack ships a mock SMTP sink, **Mailpit** (<https://mailpit.{{ lab_domain }}>),
+    so the apps can "send mail" with nowhere real for it to go. Pointing every
+    app at it lands in the *exact same three tiers* as SSO did:
+
+    - **Pure config** — Gitea (`mailer` block), Grafana (`grafana.ini [smtp]`),
+      and ArgoCD (`notifications`) take it straight from their Helm values. Just
+      (re)deploy; nothing else to do.
+    - **API call** — Harbor has no mail values either, so `just harbor-mail`
+      PUTs the SMTP settings to `/api/v2.0/configurations` — the same recipe
+      shape as `harbor-sso`.
+    - **Manual UI** — Rancher's SMTP notifier is added by hand (server
+      `mailpit.admin-tools.svc.cluster.local`, port `1025`, no TLS, no auth).
+
+    The SMTP endpoint is plain (no TLS, no auth) on `:1025`, and the in-cluster
+    address is the Service FQDN above — Rancher lives in `cattle-system`, so the
+    short `mailpit` name won't resolve from there. Same lesson, second time:
+    know the tier **before** you start.
+
 ### 4. The TLS wrinkle
 
 !!! note "Update — the cluster now serves a real certificate"
@@ -160,8 +195,9 @@ is a good reminder that `envsubst` substitutes *everything* by default.)
 This is the demo to run for the room. It ties straight back to Day 3's GitOps
 commandment, *Git is Truth*:
 
-1. Open `k8s/core-tools/dex.yaml`. Show the `staticPasswords` list — *"this is
-   our entire roster."*
+1. Open `k8s/core-tools/dex.yaml` (the live roster) — or `dex.yaml.example` if
+   you're demoing from a fresh clone. Show the `staticPasswords` list — *"this
+   is our entire roster."*
 2. Add a new pirate. Generate the hash with `just dex-hash`, paste in a new
    entry.
 3. Commit and push. `just deploy-dex`.
@@ -176,7 +212,8 @@ commandment, *Git is Truth*:
 ## Recap: The Files That Changed
 
 ```text
-NEW   k8s/core-tools/dex.yaml              # Dex + the student roster
+NEW   k8s/core-tools/dex.yaml.example      # Dex + a pirate placeholder roster (committed)
+NEW   k8s/core-tools/dex.yaml              # the live roster — gitignored (real PII)
 EDIT  k8s/core-tools/gitea-values.yaml     # oauth source
 EDIT  k8s/core-tools/argocd-values.yaml    # oidc.config + rbac
 EDIT  k8s/core-tools/loki-stack-values.yaml# Grafana generic_oauth

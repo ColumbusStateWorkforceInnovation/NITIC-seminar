@@ -23,7 +23,7 @@
       ]
     },
     {
-      "text": "You summon the Socratic Boatswain by typing `aichat`. To hand it a persona and rules, you drop a file in your working directory for it to read. What is that file called?",
+      "text": "You summon the Socratic Boatswain by typing `hail` (a wrapper that runs `aichat -r boatswain`). To hand the Boatswain a persona and rules, you edit one file in your `~/lab/` working directory and re-run `hail`. What is that file called?",
       "image": null,
       "answer_time": 30000,
       "bonus_score_time": 15000,

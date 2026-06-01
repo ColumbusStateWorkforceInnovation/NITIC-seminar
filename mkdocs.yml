@@ -71,6 +71,8 @@ nav:
     - "Day 2 - Meet the Crew":
       - "Briefing": missions/day-02-meet-the-crew.md
       - "Instructor Guide": missions/day-02/instructor-guide.md
+      - "Groups & Namespace Sweep": missions/day-02/groups-and-sweep.md
+      - "Demo - Kustomize (operator's tool)": missions/day-02/demo-kustomize.md
       - "Lab 01 - The Radar Room": missions/day-02/lab-01-the-radar-room.md
       - "Lab 02 - Deploying the Fleet": missions/day-02/lab-02-deploying-the-fleet.md
       - "Lab 03 - Fleet Logistics": missions/day-02/lab-03-fleet-logistics.md
@@ -82,11 +84,13 @@ nav:
       - "Lab 01 - Drafting the Blueprint": missions/day-03/lab-01-drafting-the-blueprint.md
       - "Lab 02 - The Automated Shipyard": missions/day-03/lab-02-the-automated-shipyard.md
       - "Lab 03 - Wiring the Archipelago": missions/day-03/lab-03-wiring-the-archipelago.md
+      - "Demo - Gitea Actions (in-cluster CI)": missions/day-03/demo-gitea-actions.md
       - "One-Pager": missions/day-03/one-pager.md
     - "Day 4 - The Admiral's Challenge":
       - "Briefing": missions/day-04-admirals-challenge.md
       - "Instructor Guide": missions/day-04/instructor-guide.md
       - "Lab 01 - The Pirate Strikes": missions/day-04/lab-01-the-pirate-strikes.md
+      - "Salvage Report Template + Rubric": missions/day-04/incident-report-template.md
       - "One-Pager": missions/day-04/one-pager.md
     - "Book Readings (Storytime)": missions/book-readings.md
     - "Expanded Labs": missions/expanded-labs.md

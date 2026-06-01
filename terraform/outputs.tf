@@ -36,3 +36,20 @@ output "open_ports" {
   description = "Inbound ports opened on the NSG."
   value       = [for r in var.nsg_rules : "${r.name}: ${r.destination_port_range}/${r.protocol}"]
 }
+
+# ── Agent (worker) VM outputs ───────────────────────────────────────────────
+
+output "agent_vm_name" {
+  description = "Name of the k3s agent VM."
+  value       = azurerm_linux_virtual_machine.agent.name
+}
+
+output "agent_public_ip" {
+  description = "Public IP of the k3s agent VM — feeds AGENT_IP in lab.env."
+  value       = azurerm_public_ip.agent.ip_address
+}
+
+output "agent_ssh_command" {
+  description = "Ready-to-paste SSH command for the agent VM."
+  value       = "ssh -i ${replace(pathexpand(var.ssh_public_key_path), ".pub", "")} ${var.admin_username}@${azurerm_public_ip.agent.ip_address}"
+}

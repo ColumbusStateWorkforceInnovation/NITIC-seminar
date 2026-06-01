@@ -28,9 +28,11 @@
 
 | Time | Type | Topic & Activity |
 | :--- | :--- | :--- |
-| **09:00 - 10:30** | Lecture | Introduction to K8s Architecture, Deployments, and ConfigMaps. `k9s` intro. |
+| **09:00 - 09:10** | Storytime | Day 2 morning passage from `book-readings.md`. |
+| **09:10 - 09:20** | Demo | **Kustomize:** 10-min opening demo — instructor bumps every student's Day 1 raft Pod from `:v1` to `:v2` with one overlay file. Lands the operate-vs-publish frame before Helm. |
+| **09:20 - 10:30** | Lecture | Introduction to K8s Architecture, Deployments, and ConfigMaps. `k9s` intro. |
 | **10:30 - 10:45** | Break | *15 Minute Morning Break* |
-| **10:45 - 12:00** | Lab | **Mission:** Deploying the Fleet. The `k9s` CrashLoopBackOff Speed Round. |
+| **10:45 - 12:00** | Lab | **Mission:** Deploying the Fleet. CrashLoopBackOff triage with `k9s`. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
 | **1:00 - 2:30** | Lecture | Introduction to Networking, Services, and internal DNS. |
 | **2:30 - 2:45** | Break | *15 Minute Afternoon Break* |
@@ -39,30 +41,30 @@
 
 ---
 
-## Day 3: Automated Shipyards (Helm & GitOps)
+## Day 3: Automated Shipyards (Helm, GitOps & Gitea Actions)
 
 | Time | Type | Topic & Activity |
 | :--- | :--- | :--- |
-| **09:00 - 10:30** | Lecture | The problem with raw YAML. Intro to Helm, `values.yaml`, and Go-templating. |
+| **09:00 - 09:30** | Demo | **Gitea Actions (in-cluster CI):** 30-min opening demo — `git push` to tagged image in Harbor. Argo Workflows / Tekton sidebars. (Close-the-loop callback to ArgoCD lives in the afternoon.) |
+| **09:30 - 10:30** | Lecture | The problem with raw YAML. Intro to Helm, `values.yaml`, and Go-templating. (60 min — opens with callback to Tuesday's Kustomize demo: operator vs. publisher.) |
 | **10:30 - 10:45** | Break | *15 Minute Morning Break* |
 | **10:45 - 12:00** | Lab | **Mission:** Drafting the Blueprint. Templatize the Day 2 app into a Helm Chart. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
 | **1:00 - 2:30** | Lecture | Introduction to GitOps (ArgoCD & Gitea). "Git is truth" mentality. |
 | **2:30 - 2:45** | Break | *15 Minute Afternoon Break* |
-| **2:45 - 4:15** | Lab & Demo | **Mission:** Stand up ArgoCD & Wiring the Archipelago (Clabernetes). **Demo:** JupyterLab deployment. |
-| **4:15 - 5:00** | AI Connect | **Curiosity Side-Quest:** Update `AGENTS.md` rules for GitOps/Helm. |
+| **2:45 - 4:15** | Lab & Demo | **Mission:** Stand up ArgoCD & Wiring the Archipelago (Clabernetes). **Demo:** JupyterLab deployment. **Closing-loop callback:** ArgoCD picks up the morning's Gitea-Actions-built image — under 60 seconds. |
+| **4:15 - 5:00** | AI Connect | **Curiosity Side-Quest:** Update `AGENTS.md` rules for GitOps/Helm; kubectl-delete-pod game; storytime close. |
 
 ---
 
-## Day 4: The Admiral's Challenge
+## Day 4: The Admiral's Challenge (Gradable Capstone) — ends 14:30 for airport logistics
 
 | Time | Type | Topic & Activity |
 | :--- | :--- | :--- |
-| **09:00 - 10:30** | Lecture & Demo | **Cloud-Native Classrooms**: Virtualizing clusters (vCluster), deploying legacy VMs natively (KubeVirt), and an intro to Chaos Engineering. |
-| **10:30 - 10:45** | Break | *15 Minute Morning Break* |
-| **10:45 - 12:00** | Lab / Game | **Mission:** The Pirate Strikes! Chaos Mesh is injected. Students must survive. |
+| **09:00 - 10:00** | Lecture & Demo | **Cloud-Native Classrooms**: vCluster (5-min named demo), KubeVirt (5-min named demo), Chaos Engineering theory (~50 min). |
+| **10:00 - 10:15** | Break | *15 Minute Morning Break (instructor installs Chaos Mesh + applies experiments)* |
+| **10:15 - 12:00** | Lab / Game | **Capstone:** The Pirate Strikes! Chaos Mesh is injected. Instructor calls the **Incident Commander persona shift** ~30 min in, when packet loss is most painful. Last ~30 min is Salvage Report drafting with the new persona. Instructor runs `grade-cluster-recovery.sh` per alliance as they declare stability. |
+| **12:00** | Submit | **Salvage Reports due** — verified against the rubric in `incident-report-template.md`. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
-| **1:00 - 2:30** | AI Connect | **The Paradigm Shift**: Rewrite `AGENTS.md` into the Incident Commander to trace the morning attack. |
-| **2:30 - 2:45** | Break | *15 Minute Afternoon Break* |
-| **2:45 - 4:15** | Discussion | **Educator's Strategic Roundtable:** "Start, Stop, Continue" Matrix exercise to map modern pedagogy. |
-| **4:15 - 5:00** | Wrap-up | K8s / Pedagogy Trivia and Seminar Send-Off! |
+| **1:00 - 2:15** | Discussion | **Educator's Strategic Roundtable:** "Start, Stop, Continue" Matrix exercise to map modern pedagogy. Includes the AI-context-for-urgency debrief from the morning's persona shift. (75 min — gets the time freed by the shorter trivia.) |
+| **2:15 - 2:30** | Wrap-up | K8s / Pedagogy Trivia and Seminar Send-Off (15 min). |

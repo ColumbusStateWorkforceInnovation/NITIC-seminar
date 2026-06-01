@@ -179,6 +179,21 @@ fi
 echo "Wait for nodes to be ready..."
 k3s kubectl wait --for=condition=Ready nodes --all --timeout=120s
 
+# --- Label this node as the GPU node (if it has NVIDIA hardware) ------------
+# `deploy-gpu-plugin` and `ai-engine.yaml` both target `-l node-role=gpu` to
+# avoid the old `--all` labeling that broke once we added a CPU worker. We set
+# the label HERE (during server bootstrap) so it exists even on single-node
+# setups where bootstrap-agent never runs. Idempotent: --overwrite is safe.
+if lspci | grep -qi nvidia; then
+    # k3s defaults the node name to the system hostname — since this script
+    # runs ON the GPU server, $(hostname) is always THIS node, regardless of
+    # how many other nodes may already be in the cluster (agent re-bootstrap
+    # scenarios). Don't use .items[0] — that's alphabetically-first, not us.
+    NODE_NAME="$(hostname)"
+    echo "🏷️  Labeling ${NODE_NAME} node-role=gpu (NVIDIA hardware detected)..."
+    k3s kubectl label node "${NODE_NAME}" node-role=gpu --overwrite
+fi
+
 # --- Kubernetes Gateway API ---
 # The core-tools manifests route every service through the Gateway API. On
 # modern k3s the Gateway API CRDs are shipped by k3s's OWN `traefik-crd`

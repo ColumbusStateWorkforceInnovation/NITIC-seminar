@@ -32,6 +32,16 @@ grafana:
   "grafana.ini":
     server:
       root_url: https://grafana.${LAB_DOMAIN}
+    # ── Alert mail → Mailpit ──────────────────────────────────
+    # Grafana alert notifications go to Mailpit (same admin-tools namespace; FQDN
+    # used for uniformity). Plain SMTP on :1025 — no TLS, no auth. skip_verify is
+    # belt-and-suspenders since there's no TLS to verify anyway.
+    smtp:
+      enabled: true
+      host: "mailpit.admin-tools.svc.cluster.local:1025"
+      from_address: "noreply@${LAB_DOMAIN}"
+      from_name: "Grafana (Lab)"
+      skip_verify: true
     "auth.generic_oauth":
       enabled: true
       name: Dex

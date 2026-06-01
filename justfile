@@ -26,6 +26,13 @@ SERVER_IP      := env_var_or_default("SERVER_IP",      "")
 SERVER_USER    := env_var_or_default("SERVER_USER",    "ubuntu")
 SERVER_SSH_KEY := env_var_or_default("SERVER_SSH_KEY", "~/.ssh/id_rsa")
 
+# ── Agent (CPU worker) node ──────────────────────────────────
+# Populated from `tofu output -raw agent_public_ip` after the agent VM is up.
+# Used only by `just bootstrap-agent`; every other recipe still targets the
+# server (the agent has no kubeconfig or admin role).
+AGENT_IP       := env_var_or_default("AGENT_IP",       "")
+AGENT_USER     := env_var_or_default("AGENT_USER",     SERVER_USER)
+
 ORG_NAME       := env_var_or_default("ORG_NAME",       "National Information Technology Innovation Center")
 ORG_UNIT       := env_var_or_default("ORG_UNIT",       "ITIN Working Connections Fleet")
 ORG_LOCALITY   := env_var_or_default("ORG_LOCALITY",   "Columbus")
@@ -133,6 +140,8 @@ init: check-config check-tools
     @echo ""
     @echo "  Next steps (REMOTE server) — see README.md for the full guide:"
     @echo "    1.  just bootstrap-server    — install K3s (+ GPU driver) on the server"
+    @echo "    1b. just bootstrap-agent     — OPTIONAL: join a CPU worker VM (set AGENT_IP first;"
+    @echo "                                    see terraform/agent.tf for the worker VM definition)"
     @echo "    2.  just deploy-gpu-plugin   — advertise the GPU to the scheduler (GPU servers only)"
     @echo "    3.  just deploy-cert-manager — install cert-manager"
     @echo "    4.  just deploy-letsencrypt  — issue the Let's Encrypt wildcard cert"
@@ -140,6 +149,7 @@ init: check-config check-tools
     @echo "    6.  just deploy-dex          — single sign-on (OIDC)"
     @echo "    7.  just deploy-gitea / deploy-harbor / deploy-loki / deploy-argocd / deploy-rancher"
     @echo "    8.  just harbor-sso          — wire Harbor to Dex"
+    @echo "    8b. just harbor-mail         — point Harbor's mailer at Mailpit"
     @echo "    9.  just bootstrap-harbor    — create the raft-fleet project + push robot (Day 1 Lab 01)"
     @echo "    10. just deploy-harbor-creds — publish the push token so student VMs auto-login"
     @echo "    11. just pull-model          — pull the AI model into Ollama"
@@ -261,6 +271,48 @@ bootstrap-server:
     {{SCP}} scripts/setup-remote-k3s-server.sh {{SERVER_USER}}@{{SERVER_IP}}:/tmp/setup-server.sh
     {{SSH}} "sudo env K3S_VERSION='{{K3S_VERSION}}' bash /tmp/setup-server.sh && rm /tmp/setup-server.sh"
 
+# Join a CPU worker node to the cluster (runs setup-remote-k3s-agent.sh via SSH).
+# Prereqs:
+#   - SERVER_IP set in lab.env and the server already bootstrapped.
+#   - AGENT_IP set in lab.env. After `cd terraform && tofu apply`, grab it with:
+#       echo "AGENT_IP=\"$(cd terraform && tofu output -raw agent_public_ip)\"" >> lab.env
+# Effect: agent joins, server is labeled node-role=gpu, worker is labeled
+# workload=student. Re-apply ai-engine.yaml after this so Ollama picks up its
+# nodeSelector and lands on the GPU node.
+bootstrap-agent:
+    @if [ -z "{{AGENT_IP}}" ]; then \
+        echo "❌ AGENT_IP is not set. After 'tofu apply', add to lab.env:"; \
+        echo '   AGENT_IP="$(cd terraform && tofu output -raw agent_public_ip)"'; \
+        exit 1; \
+    fi
+    @if [ -z "{{SERVER_IP}}" ]; then \
+        echo "❌ SERVER_IP must be set in lab.env so the agent can find the cluster."; \
+        exit 1; \
+    fi
+    @echo "🔑 Fetching node-token from server {{SERVER_IP}}..."
+    @TOKEN=$(ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} 'sudo cat /var/lib/rancher/k3s/server/node-token'); \
+        if [ -z "$TOKEN" ]; then echo "❌ Got empty token from server."; exit 1; fi; \
+        echo "🚣 Bootstrapping agent on {{AGENT_IP}}..."; \
+        scp -i {{SERVER_SSH_KEY}} scripts/setup-remote-k3s-agent.sh {{AGENT_USER}}@{{AGENT_IP}}:/tmp/setup-agent.sh; \
+        ssh -i {{SERVER_SSH_KEY}} {{AGENT_USER}}@{{AGENT_IP}} \
+            "sudo env K3S_URL='https://{{SERVER_IP}}:6443' K3S_TOKEN=\"$TOKEN\" K3S_VERSION='{{K3S_VERSION}}' bash /tmp/setup-agent.sh && rm /tmp/setup-agent.sh"
+    @echo "⏳ Waiting for the new node to register (15s)..."
+    @sleep 15
+    @{{SSH}} "kubectl get nodes -o wide"
+    @echo "🏷️  Labeling nodes (node-role=gpu on server, workload=student on agent)..."
+    @SERVER_HOST=$(ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} hostname); \
+        AGENT_HOST=$(ssh -i {{SERVER_SSH_KEY}} {{AGENT_USER}}@{{AGENT_IP}} hostname); \
+        ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} \
+            "kubectl label node $SERVER_HOST node-role=gpu --overwrite && \
+             kubectl label node $AGENT_HOST workload=student --overwrite && \
+             { kubectl label node $AGENT_HOST nvidia.com/gpu.present- 2>/dev/null || true; }"
+    @echo "✅ Agent joined and nodes labeled."
+    @echo "   (Any stale nvidia.com/gpu.present label was stripped from the worker"
+    @echo "    so the device plugin DaemonSet stays on the GPU node.)"
+    @echo ""
+    @echo "   NEXT: re-apply core manifests so Ollama picks up its nodeSelector:"
+    @echo "     just deploy-core"
+
 # [LOCAL] Bootstrap a local k3d cluster for the test loop.
 # Runs setup-k3d-cluster.sh: creates the cluster and enables the Traefik
 # Gateway API provider. Then run:
@@ -311,7 +363,7 @@ deploy-core: ensure-namespaces (_require "AI_API_KEY" AI_API_KEY)
       envsubst < k8s/core-tools/gateway-routes.yaml | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} AI_MODEL={{AI_MODEL}} AI_API_KEY={{AI_API_KEY}} \
       envsubst < k8s/core-tools/ai-engine.yaml \
-      | {{ if LOCAL == "1" { "grep -vE 'runtimeClassName: nvidia|nvidia.com/gpu:'" } else { "cat" } }} \
+      | {{ if LOCAL == "1" { "grep -vE 'runtimeClassName: nvidia|nvidia.com/gpu:|nodeSelector:|node-role: gpu'" } else { "cat" } }} \
       | {{SSH}} "kubectl apply -f -"
     @LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} \
       envsubst < k8s/core-tools/adminer.yaml        | {{SSH}} "kubectl apply -f -"
@@ -520,10 +572,20 @@ deploy-gpu-plugin:
     # The chart's default nodeAffinity expects Node-Feature-Discovery labels
     # (nvidia.com/gpu.present, feature.node.kubernetes.io/pci-10de.present) — but
     # we don't run NFD, so without a matching label the DaemonSet schedules 0 pods
-    # and never advertises the GPU, leaving GPU pods (Ollama) stuck Pending. Label
-    # the node so the chart's `nvidia.com/gpu.present` affinity term matches.
-    @echo "🏷️  Labeling node(s) nvidia.com/gpu.present=true so the DaemonSet schedules..."
-    {{SSH}} "kubectl label nodes --all nvidia.com/gpu.present=true --overwrite"
+    # and never advertises the GPU, leaving GPU pods (Ollama) stuck Pending.
+    #
+    # Target ONLY the GPU node so the DaemonSet doesn't try (and fail) to start
+    # on the CPU worker. `node-role=gpu` is set by setup-remote-k3s-server.sh
+    # when it detects NVIDIA hardware, and re-asserted by bootstrap-agent. If
+    # neither has run yet (rare — fresh cluster, no GPU detected), we fall back
+    # to labeling all nodes so legacy single-node deploys keep working.
+    @echo "🏷️  Labeling GPU node(s) nvidia.com/gpu.present=true so the DaemonSet schedules..."
+    {{SSH}} "if kubectl get nodes -l node-role=gpu -o name | grep -q .; then \
+        kubectl label nodes -l node-role=gpu nvidia.com/gpu.present=true --overwrite; \
+    else \
+        echo '   ⚠️  No node has node-role=gpu — falling back to labeling all nodes.'; \
+        kubectl label nodes --all nvidia.com/gpu.present=true --overwrite; \
+    fi"
 
 # ============================================================
 # 🔐 SSO / IDENTITY RECIPES (Dex)
@@ -535,6 +597,14 @@ deploy-gpu-plugin:
 deploy-dex: (_require "DEX_DEMO_PASSWORD" DEX_DEMO_PASSWORD)
     #!/usr/bin/env bash
     set -euo pipefail
+    # The live roster (k8s/core-tools/dex.yaml) is gitignored — it holds real
+    # student names/emails (PII). Only dex.yaml.example (pirates) is committed.
+    if [[ ! -f k8s/core-tools/dex.yaml ]]; then
+        echo "❌ k8s/core-tools/dex.yaml not found (it's gitignored — holds the real roster)."
+        echo "   Create it from the template, then edit in the real roster:"
+        echo "     cp k8s/core-tools/dex.yaml.example k8s/core-tools/dex.yaml"
+        exit 1
+    fi
     echo "🔐 Deploying Dex SSO (domain: sso.{{LAB_DOMAIN}})..."
     # Bcrypt the one demo password at apply time so no hash is committed; every
     # staticPassword in dex.yaml references ${DEX_PASSWORD_HASH}. (Needs Docker.)
@@ -568,6 +638,21 @@ harbor-sso: (_require "HARBOR_ADMIN_PASSWORD" HARBOR_ADMIN_PASSWORD)
       -d '{"auth_mode":"oidc_auth","oidc_name":"Dex","oidc_endpoint":"https://sso.{{LAB_DOMAIN}}","oidc_client_id":"harbor","oidc_client_secret":"harbor-oidc-secret","oidc_scope":"openid,profile,email,groups","oidc_groups_claim":"groups","oidc_auto_onboard":true,"oidc_user_claim":"name","oidc_verify_cert":false}'
     echo
     echo "✅ Harbor OIDC configured — students sign in via 'LOGIN VIA OIDC PROVIDER'."
+
+# Point Harbor's mailer at Mailpit — POST-INSTALL (the chart has no mail values,
+# same config-API story as harbor-sso). Run AFTER `just deploy-harbor`. Harbor is
+# in admin-tools alongside Mailpit, but we use the Service FQDN for uniformity.
+# Plain SMTP on :1025 — no TLS (email_ssl=false), no auth, skip cert verify.
+harbor-mail: (_require "HARBOR_ADMIN_PASSWORD" HARBOR_ADMIN_PASSWORD)
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "📧 Pointing Harbor's mailer at Mailpit via the config API..."
+    curl -fsS -k -u "admin:{{HARBOR_ADMIN_PASSWORD}}" -X PUT \
+      "https://harbor.{{LAB_DOMAIN}}/api/v2.0/configurations" \
+      -H "Content-Type: application/json" \
+      -d '{"email_host":"mailpit.admin-tools.svc.cluster.local","email_port":1025,"email_from":"Harbor Lab <noreply@{{LAB_DOMAIN}}>","email_username":"","email_password":"","email_ssl":false,"email_insecure":true,"email_identity":""}'
+    echo
+    echo "✅ Harbor mail → Mailpit. Test it: Administration → Configuration → Email → 'Test Email'."
 
 # Deploy cert-manager via Helm
 deploy-cert-manager:
@@ -827,7 +912,13 @@ creds:
     printf "  %-8s  %-26s  %-9s  %s\n" "ArgoCD"  "https://argocd.$D"  "admin"    "$ARGO"
     echo "  ──────────────────────────────────────────────────────────────"
     echo "  SSO/Dex logins (all password '{{DEX_DEMO_PASSWORD}}'):"
-    echo "    admiral, blackbeard, annebonny, calicojack, testcrew1, testcrew2, testcrew3"
+    # Read the live roster straight from dex.yaml so this never drifts from the
+    # source of truth — the staticPasswords `username:` lines, comma-joined.
+    # The live file is gitignored (real names); fall back to the committed
+    # pirate template on a fresh clone where it hasn't been created yet.
+    DEXF=k8s/core-tools/dex.yaml; [[ -f $DEXF ]] || DEXF=$DEXF.example
+    USERS=$(grep -E '^\s+username:' "$DEXF" | sed -E 's/.*username:[[:space:]]*"?([^"]+)"?.*/\1/' | paste -sd, - | sed 's/,/, /g')
+    echo "    ${USERS:-(none — check k8s/core-tools/dex.yaml)}"
     echo ""
     echo "  Harbor push robot (Day 1 Lab 01 — created by 'just bootstrap-harbor'):"
     # Single-quoted: the robot username has a literal '$' that bash (set -u) would

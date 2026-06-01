@@ -1,0 +1,30 @@
+# The Day 1 raft Pod — written once, lives in base/.
+# Each student already deployed a Pod named `my-raft` in their namespace
+# during Day 1 Lab 02 (`kubectl run my-raft --image=harbor.wagbiz.org/raft-fleet/<their-name>:v1`).
+#
+# The Day 2 morning Kustomize demo bumps every student's raft from v1 to v2
+# in-place: the apply loop runs `kustomize edit set image` once per student
+# to point the overlay at that student's image, then `kubectl apply -k`.
+# Pod name stays `my-raft` so the apply hits the *existing* Day-1 Pod and
+# triggers an in-place image update.
+#
+# The image below is a placeholder. The overlay rewrites both the repo path
+# and the tag at apply time via `kustomize edit set image`.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-raft
+  labels:
+    app: raft
+spec:
+  containers:
+    - name: raft
+      image: harbor.wagbiz.org/raft-fleet/raft:v1
+      ports:
+        - containerPort: 80
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+        initialDelaySeconds: 2
+        periodSeconds: 5

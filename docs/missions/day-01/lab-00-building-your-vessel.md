@@ -17,10 +17,23 @@ You need **one value** from your instructor — write it down now, you'll need i
 
 | You need | Looks like | Where to get it |
 | :--- | :--- | :--- |
-| **`SERVER_IP`** | `20.12.34.56` | On the whiteboard |
+| **`AI_API_KEY`** | `sk-...` | On the whiteboard |
 
 !!! note "Instructor — do this first"
-    Write **`SERVER_IP`** on the board before 9:00, and tell the class **where the Ubuntu ISO file lives** — a USB drive, a network share, or each desktop's `Downloads` folder. Staging the ISO locally (rather than 30 students downloading 6 GB at once) keeps the morning smooth. The [Setup Troubleshooting](setup-troubleshooting.md) sheet has the full pre-flight checklist.
+    Write **`AI_API_KEY`** on the board before 9:00. You'll walk the class through downloading the Ubuntu ISO in Part 0. The [Setup Troubleshooting](setup-troubleshooting.md) sheet has the full pre-flight checklist.
+
+---
+
+## Part 0 — Start the Ubuntu Download (do this first!)
+
+The Ubuntu installer is a ~6 GB file. Kick the download off **right now** so it finishes in the background while you build the VM in Part 1.
+
+1. Open a browser on the Windows desktop and go to **<https://releases.ubuntu.com/24.04/>**.
+2. Click **`ubuntu-24.04.4-desktop-amd64.iso`** (the desktop ISO) to start the download. It saves to your `Downloads` folder.
+3. **Leave the download running** and continue with Part 1 below. You'll point VirtualBox at the file in a moment — if it's still downloading when you reach the ISO step, just wait for it to finish before continuing.
+
+!!! note "Instructor"
+    Kick the class off here right at 09:15. Everyone hits Download together, then we walk Part 1 (VirtualBox VM creation) while the ISO comes down. By the time you reach Part 1 step 2 (attach the ISO), most students' downloads will have finished or be close to it.
 
 ---
 
@@ -31,7 +44,7 @@ Oracle VirtualBox is already installed on your classroom desktop — it's the so
 1. In VirtualBox Manager, click the **New** button (top toolbar).
 2. **Name and Operating System:**
     - **Name:** `island-vessel`
-    - **ISO Image:** click the dropdown → **Other...** → browse to the Ubuntu `.iso` file your instructor staged.
+    - **ISO Image:** click the dropdown → **Other...** → browse to **`Downloads\ubuntu-24.04.4-desktop-amd64.iso`** (the file you started downloading in Part 0). If it isn't there yet, wait for the download to finish before continuing this step.
     - VirtualBox should auto-detect **Type: Linux** and **Version: Ubuntu (64-bit)**.
     - ✅ **Tick the box "Skip Unattended Installation."** This is important — it lets you run the real Ubuntu installer yourself in Part 2.
 3. Click **Next**. **Hardware:**
@@ -97,7 +110,7 @@ The VM reboots into a fresh Ubuntu desktop. **You've launched your ship.** 🚢
 
 ## Part 4 — Board the Shipyard (Bootstrap Script)
 
-This is the step that does the heavy lifting. One script installs **Docker, git, kubectl, Helm, k9s, the Fish shell, Starship, and aichat**, and wires up your `/etc/hosts` so the island's services resolve.
+This is the step that does the heavy lifting. One script installs **Docker, git, kubectl, Helm, k9s, VS Code, the Fish shell, Starship, and aichat** — everything you need to sail through the next four days.
 
 1. Clone the seminar repository:
 
@@ -106,17 +119,18 @@ This is the step that does the heavy lifting. One script installs **Docker, git,
     cd NITIC-seminar
     ```
 
-2. Copy the **`SERVER_IP` and `AI_API_KEY` from the whiteboard**, then run the bootstrap script. Replace both placeholders with the real values:
+2. Copy the **`AI_API_KEY` from the whiteboard**, then run the bootstrap script. Replace the placeholder with the real value:
 
     ```bash
-    export SERVER_IP=<SERVER_IP>
     export AI_API_KEY=<AI_KEY>
     bash scripts/setup-client.sh
     ```
 
     The `AI_API_KEY` is what wires `aichat` to the island's AI engine (Part 6) — if you skip it, `aichat` won't be able to log in.
 
-3. The script prints its progress with ⚓ emoji. It takes **5–15 minutes** depending on the network. Along the way it also logs Docker into the island's **Harbor** registry for you (you'll see a `🔑 ... logged in to Harbor` line) so your first `docker push` in Lab 01 just works — no login to memorize. When you see **"⚓ Setup Complete! The shipyard is ready,"** you're almost there.
+3. **Early prompt — don't walk away yet!** A few seconds in, the script asks **"🏴 What's your first name, sailor?"** Type your first name and press Enter — it personalises your crew credential card at the end and seeds your git identity. After that one prompt the rest is unattended.
+
+4. The script prints its progress with ⚓ emoji. It takes **5–15 minutes** depending on the network. Along the way it also logs Docker into the island's **Harbor** registry for you (you'll see a `🔑 ... logged in to Harbor` line) so your first `docker push` in Lab 01 just works — no login to memorize. When you see **"⚓ Setup Complete! The shipyard is ready,"** you're almost there.
 
 !!! warning "Log out and back in"
     The script adds you to the `docker` group, but that change only takes effect on a fresh login. **Log out of Ubuntu and log back in** (or just reboot the VM) before the next part — otherwise `docker` will complain about permissions in Lab 01.
@@ -164,9 +178,15 @@ aichat "Ahoy! In one short sentence, what is a Linux container?"
 A one-sentence reply means `aichat` is wired to the island's AI engine and ready for duty. A couple more things worth knowing:
 
 - Run `aichat` with **no arguments** to open an interactive session. Inside it, type `.info` to see exactly which model you're connected to, and `.exit` to leave.
-- You don't have an `AGENTS.md` file yet — that's deliberate. In **Lab 01** you'll create one to turn `aichat` into the **Socratic Boatswain**, your in-class teaching assistant that gives hints instead of answers.
+- You don't have an `~/lab/AGENTS.md` file yet — that's deliberate. In **Lab 01** you'll create one to turn the AI into the **Socratic Boatswain**, your in-class teaching assistant that gives hints instead of answers. You'll summon him with the `hail` command (a tiny wrapper `setup-client.sh` installed for you).
 
 If those three tools run, your vessel is seaworthy. Open **Day 1 → Lab 01 — The First Raft** and wait for the class. 🏴‍☠️
+
+!!! tip "Two directories — know which is which"
+    From here on, two directories sit side-by-side in your home:
+
+    - **`~/NITIC-seminar/`** — the lab's **toolbox** (the cloned repo). The setup script, the verifier, and reference materials live here. You won't edit anything in it.
+    - **`~/lab/`** — your **workshop**. Every file you create across the next four days (Dockerfiles, YAML, `AGENTS.md`, Helm charts) belongs here. Lab 01 opens it as a VS Code workspace.
 
 ---
 

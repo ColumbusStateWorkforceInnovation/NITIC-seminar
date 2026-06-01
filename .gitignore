@@ -13,6 +13,10 @@ harbor-robot.env
 # students.csv.example and fill in. Never commit to a public repo.
 scripts/students.csv
 
+# Dex SSO roster — the live class file holds real names + emails (PII). Copy
+# from dex.yaml.example (pirate placeholders) and fill in. Never commit.
+k8s/core-tools/dex.yaml
+
 # Project-local kubeconfig — written by `just bootstrap-k3d`; holds k3d
 # cluster admin credentials. Never commit.
 .kube/
@@ -43,3 +47,5 @@ terraform/*.tfplan
 terraform/crash.log
 terraform/terraform.tfvars
 terraform/.ssh/
+.claude/settings.local.json
+scripts/.claude/settings.local.json

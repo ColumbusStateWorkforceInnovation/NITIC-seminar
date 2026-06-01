@@ -1,0 +1,4 @@
+# Remove the readinessProbe to make the "harder mode" variant — students have to
+# notice that pods report Ready immediately even when the app isn't actually up.
+- op: remove
+  path: /spec/template/spec/containers/0/readinessProbe

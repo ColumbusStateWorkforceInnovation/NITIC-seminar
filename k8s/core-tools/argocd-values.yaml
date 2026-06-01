@@ -53,3 +53,41 @@ configs:
     policy.default: role:readonly
     policy.csv: |
       g, instructors, role:admin
+
+# ── Notifications → Mailpit ───────────────────────────────────
+# argocd-notifications ships disabled. Enable the controller, point its email
+# service at Mailpit (admin-tools NS — cross-namespace, hence the Service FQDN),
+# and register two standard triggers/templates + a default subscription so
+# sync/health events actually land in the Mailpit inbox without per-app
+# annotations. The {{...}} are Go templates evaluated by ArgoCD, NOT shell vars —
+# envsubst leaves them alone (only ${LAB_DOMAIN} is substituted at deploy time).
+notifications:
+  enabled: true
+  notifiers:
+    service.email: |
+      host: mailpit.admin-tools.svc.cluster.local
+      port: 1025
+      from: noreply@${LAB_DOMAIN}
+      insecure_skip_verify: true
+  templates:
+    template.app-sync-succeeded: |
+      email:
+        subject: "ArgoCD: {{.app.metadata.name}} synced"
+      message: "Application {{.app.metadata.name}} is now running a new version."
+    template.app-health-degraded: |
+      email:
+        subject: "ArgoCD: {{.app.metadata.name}} health degraded"
+      message: "Application {{.app.metadata.name}} health is degraded."
+  triggers:
+    trigger.on-sync-succeeded: |
+      - when: app.status.operationState.phase in ['Succeeded']
+        send: [app-sync-succeeded]
+    trigger.on-health-degraded: |
+      - when: app.status.health.status == 'Degraded'
+        send: [app-health-degraded]
+  subscriptions:
+    - recipients:
+        - email:admiral@${LAB_DOMAIN}
+      triggers:
+        - on-sync-succeeded
+        - on-health-degraded

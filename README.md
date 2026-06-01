@@ -156,6 +156,13 @@ A few things to watch for:
   `kubectl get certificate -n admin-tools -w` before moving to step 6.
 - **No Cloudflare?** You can skip steps 4–5 and use a self-signed cert instead:
   run `just cert` and `just push-cert`, then have students trust the lab CA.
+- **Rancher SSO is a manual step.** Unlike the other tools, Rancher's auth
+  provider can't be set via Helm or a recipe — after step 11, enable *Generic
+  OIDC* by hand in the Rancher UI (client `rancher` / secret
+  `rancher-oidc-secret`). It's the one piece of "click-ops" in the stack; the
+  [Day 3 SSO walkthrough](docs/missions/day-03/sso-walkthrough.md) has the exact
+  form fields. Optional — students log into Rancher with the local accounts
+  `just provision` creates, so you only need this if you want Dex SSO there too.
 
 The justfile's built-in `init` help text only lists steps 1–6; the SSO and
 Helm-deployed tools (Dex, Gitea, Harbor, ArgoCD, Rancher) are separate recipes.
@@ -169,25 +176,28 @@ The lab has **two rosters**, and a student normally belongs in both:
 
 1. **Dex SSO roster** — `k8s/core-tools/dex.yaml`, the `staticPasswords` list.
    This is the single sign-on identity used to log into Gitea, Harbor, ArgoCD,
-   and Grafana. To add someone: generate a password hash with
-   `just dex-hash 'their-password'`, add an entry, then run `just deploy-dex`.
+   and Grafana. (Rancher is *not* on this list by default — students log into it
+   with the local accounts below, not Dex; see the manual OIDC note in §2.) To
+   add someone: generate a password hash with `just dex-hash 'their-password'`,
+   add an entry, then run `just deploy-dex`.
 
 2. **Rancher provisioner roster** — `scripts/students.csv`, in
    `username,display_name,email` format. `just provision` reads this file and
-   creates each student's Rancher account, project, namespace, and resource
-   quota, then writes a printable credential card to `/tmp/creds/`.
+   creates each student's local Rancher account, project, namespace, and
+   resource quota, then writes a printable credential card to `/tmp/creds/`.
 
-`scripts/students.csv` is gitignored — it holds real names and emails — so
-create your working copy from the tracked template:
+**Both rosters are gitignored** — they hold real names and emails — so create
+your working copies from the tracked templates:
 
 ```sh
-cp scripts/students.csv.example scripts/students.csv
+cp k8s/core-tools/dex.yaml.example   k8s/core-tools/dex.yaml
+cp scripts/students.csv.example      scripts/students.csv
 ```
 
-The template ships with three `testcrew` rows (mirrored in the Dex roster), so
-a fresh copy is ready to dry-run immediately — replace them with your real
-roster before go-live. Keep each `username` identical across `students.csv`
-and `dex.yaml`.
+Each template ships with a `test` user plus a small pirate crew (`blackbeard`,
+`annebonny`, `calicojack`), mirrored across both files, so a fresh copy is ready
+to dry-run immediately — replace the pirates with your real roster before
+go-live. Keep each `username` identical across `students.csv` and `dex.yaml`.
 
 ```sh
 just provision-dry        # preview — no changes made
@@ -195,26 +205,65 @@ just provision            # create every student in scripts/students.csv
 just provision-one alice  # provision a single student
 ```
 
-`just provision` needs `RANCHER_TOKEN` in `lab.env`. Generate it after Rancher
-is running: log into the Rancher UI, set the admin password, then create an API
-key under **Account → API Keys**.
+### Generating `RANCHER_TOKEN`
 
-> **Note:** `scripts/students.csv` is gitignored because it holds student PII.
-> The tracked `scripts/students.csv.example` is the shareable template.
+`just provision` needs `RANCHER_TOKEN` in `lab.env` — a Rancher API key with
+**admin, cluster-wide** rights (it creates users, assigns global roles, and
+makes projects/namespaces). Generate it *after* Rancher is up:
+
+1. Log into the Rancher UI as the **`admin`** (bootstrap) user and set the admin
+   password if prompted. The token inherits your permissions, so it must be the
+   admin account — a `sailor-*` student token can't create users.
+2. Go to **profile menu (top-right) → Account & API Keys → Create API Key**, and
+   fill the form:
+
+   | Field | Value | Why |
+   |---|---|---|
+   | **Description** | e.g. `provision-students (lab setup)` | Just a label so you can find/revoke it later. |
+   | **Scope** | **No Scope** | "Scope" pins a token to one downstream cluster; provisioning uses Rancher's *global* management API (`/v3/users`, `/v3/projects`), so it must stay unscoped. |
+   | **Automatically expire** | 30 days (or no expiry) | The 8-day default can lapse mid-seminar if you re-provision or reset students. A stale/expired token is the #1 `just provision` failure. |
+
+3. Click **Create**. Rancher shows the secret **once** — copy the **Bearer
+   Token** (the full `token-xxxxx:yyyyy` form, *not* just the Access Key) into
+   `lab.env`:
+
+   ```sh
+   RANCHER_TOKEN=token-xxxxx:yyyyy
+   ```
+
+4. Verify before the real run: `just provision-dry` should list every student
+   with no errors. A `401`/`403` means the token is scoped, expired, or not an
+   admin token; `no available server` means Rancher itself is down (see
+   Troubleshooting).
+
+> **Note:** both `scripts/students.csv` and `k8s/core-tools/dex.yaml` are
+> gitignored because they hold student PII. The tracked `*.example` files
+> (`students.csv.example`, `dex.yaml.example`) are the shareable templates.
 
 ---
 
 ## 4. Students join the island
 
 Each student works inside their own Linux VM. They run one script to install
-the toolkit, wire up `/etc/hosts`, and load their kubeconfig:
+the toolkit and load their kubeconfig. On the production path (real public DNS
+for `LAB_DOMAIN`) no `SERVER_IP` is needed — DNS does the resolution:
 
 ```sh
-bash setup-client.sh <SERVER_IP>
+export AI_API_KEY=<key from the board>
+bash setup-client.sh
 ```
 
-`just show-hosts` prints the `/etc/hosts` block for manual distribution, and
-the credential cards from step 3 walk each student through first login.
+Self-hosters running k3d on a laptop, or any setup without public DNS for the
+lab domain, opt in to `/etc/hosts` pinning by also exporting `SERVER_IP`:
+
+```sh
+export AI_API_KEY=<key from the board>
+export SERVER_IP=<your lab server IP>
+bash setup-client.sh
+```
+
+`just show-hosts` prints the `/etc/hosts` block for that fallback path, and the
+credential cards from step 3 walk each student through first login.
 
 ---
 
@@ -249,6 +298,7 @@ just serve-docs           # serves at http://localhost:8000
 |---|---|
 | `envsubst: command not found` | Install GNU gettext (`brew install gettext`). |
 | `just provision` fails on auth | `RANCHER_TOKEN` is missing or stale — regenerate it from the Rancher UI. A freshly redeployed Rancher invalidates old tokens. |
+| Rancher returns `{"data":"no available server"}` / 503; pod in `CrashLoopBackOff` | The `v1.ext.cattle.io` APIService is `False (MissingEndpoints)`, stalling cluster API discovery so Rancher's `/healthz` times out and the kubelet keeps killing it (a restart loop that doesn't self-heal). Fix: `kubectl delete apiservice v1.ext.cattle.io` then `kubectl -n cattle-system rollout restart deploy/rancher`. Rancher re-registers the APIService once it reaches Ready. See the Day 3 instructor guide. |
 | Ollama pod stuck `Pending` | Server has no GPU but `ai-engine.yaml` requests one — see the AI engine section above. |
 | Certificate never goes `Ready` | Check `CLOUDFLARE_API_TOKEN`, or fall back to the self-signed `just cert` flow. |
 | `bootstrap-server` seems to hang | It rebooted to load the GPU driver — wait ~60s and run it again. |

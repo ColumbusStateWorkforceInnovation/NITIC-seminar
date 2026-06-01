@@ -55,6 +55,14 @@ spec:
       labels:
         app: ollama
     spec:
+      # Pin to the GPU node. After `just bootstrap-agent` adds a CPU worker,
+      # this nodeSelector is what stops Ollama from drifting onto a node
+      # without a T4 (where it would fall back to CPU inference and tank).
+      # The label is applied by `just bootstrap-agent`. In LOCAL k3d mode the
+      # `deploy-core` recipe also strips this (along with runtimeClassName)
+      # since there's only one node.
+      nodeSelector:
+        node-role: gpu
       runtimeClassName: nvidia   # GPU node (1× Tesla T4); `deploy-core` strips this in LOCAL k3d mode
       containers:
       - name: ollama

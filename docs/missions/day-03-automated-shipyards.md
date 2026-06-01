@@ -1,14 +1,17 @@
 # Day 3: Automated Blueprints & Shipping Lanes
 
 **Date**: June 3, 2026
-**Theme**: Transitioning from manual steering to mass production and automated shipping with Hazel (Helm) and GitOps (ArgoCD).
+**Theme**: Transitioning from manual steering to mass production and automated shipping with Hazel (Helm), GitOps (ArgoCD), and in-cluster CI (Gitea Actions).
 
-## 🌅 Morning: Automated Blueprints (Meet Hazel)
+## 🌅 Morning: CI to Image, then Meet Hazel
 
-Writing raw YAML manifests takes too long. Hazel handles the templates on the island, turning hardcoded manifests into reusable blueprints.
+Day 3 opens with the **build half** of CI/CD — the 30-min Gitea Actions demo that closes the gap between "code edit" and "image in the registry." Then Hazel (Helm) takes the floor to template what we just learned to build.
 
 ### Key Objectives
 
+- See a complete `git push → image in Harbor` loop running entirely inside the lab cluster.
+- Understand that **Gitea Actions** is byte-for-byte GitHub Actions YAML — the same workflow file runs on github.com unchanged.
+- Hear the names **Argo Workflows** and **Tekton** for when the room outgrows Gitea Actions.
 - Understand the value of templating with Helm.
 - Package existing manifests into a reusable format.
 - Replace manual `kubectl apply` with Helm deployments.
@@ -16,8 +19,14 @@ Writing raw YAML manifests takes too long. Hazel handles the templates on the is
 
 ### Activities & Missions
 
-1. **The Problem with Raw YAML**
-   - (Optional Reference: Helm Overview slides).
+1. **Gitea Actions (30-min opening demo)**
+   - (Reference: [`demo-gitea-actions.md`](day-03/demo-gitea-actions.md), slides at [`slides/day-03/gitea-actions.md`](../../slides/day-03/gitea-actions.md), example workflow at [`gitea-actions-demo/.gitea/workflows/ci.yaml`](day-03/gitea-actions-demo/.gitea/workflows/ci.yaml).)
+   - Instructor pushes a one-character change to a Gitea repo; the room watches the **act_runner** pod pick up the workflow, build the image, and push a new tag to Harbor — under 60 seconds. ArgoCD picks up this image in the afternoon as a callback.
+   - **🧑‍🏫 Instructor Superpower (One YAML, Two Homes)**: the same `.gitea/workflows/ci.yaml` that ran in our cluster runs unchanged on `github.com` under `.github/workflows/`. Teach the syntax once; it ports.
+   - **Sidebar slides** for Argo Workflows and Tekton are part of the deck — name them, don't demo them. The decision matrix lives on slide 11.
+2. **The Problem with Raw YAML** (Hazel takes the floor, 60 min)
+   - (Optional Reference: Helm Overview slides.)
+   - Open with the callback to Tuesday's Kustomize demo: *operator vs. publisher, different jobs.*
    - Discuss how difficult it is to duplicate an application structure for different environments (e.g., Staging vs. Production) using only standard YAML.
 2. **Drafting the Blueprint (Mission)**
    - Take the 3-Tier application components built on Day 2 and templatize them so that _each_ individual student can deploy the _entire_ stack independently into their own namespace.
@@ -47,6 +56,10 @@ No more manual deployments to the cluster. We are turning our Helm blueprints ov
    - Watch changes automatically sync whenever you push to Gitea.
    - **🧑‍🏫 Instructor Superpower (The Live Classroom Demo)**: Deliver the "JupyterLab GitOps" demo! Have the instructor (or a brave student) commit a Helm chart containing a **JupyterLab** deployment to the local Gitea instance. ArgoCD spots it and deploys the data science environment. The "Aha!" Moment: Prove to instructors that by adding `pandas` to a `requirements.txt` and pushing to Git, ArgoCD instantly sinks the new Python library to every student's Jupyter environment without them ever having to type `pip install` locally! You just distributed a heavy data science lab via a URL.
 
+## 🪢 Late Afternoon Callback: Close the Loop
+
+Around 16:00, after the ArgoCD lab, run a 2-minute callback to the morning's Gitea Actions demo: *"Remember the tag we pushed to Harbor at 09:15? Watch."* ArgoCD syncs, the image rolls out, the live URL shows the morning's edit. That's the moment students see the full `git push → live app` story land in their cluster.
+
 ## 🌉 Late Afternoon: Wiring the Archipelago (Network as Code)
 
 While deploying apps via GitOps is great, true production environments need deep-sea networking. Standard web pods aren't rugged enough for routing.
@@ -72,6 +85,6 @@ While deploying apps via GitOps is great, true production environments need deep
 _Evolving the Socratic Boatswain `AGENTS.md` context for automation._
 
 - **Mission**: GitOps relies entirely on a mental model: "Git is Truth." Let's force the AI to ensure students understand this before it helps them.
-- Append `Rule Update 3` to your `AGENTS.md` file:
+- Append `Rule Update 3` to `~/lab/AGENTS.md`, then `.exit` and re-run `hail` so the new rule loads:
   > *"1. If I ask about Helm Go-Template syntax (like `{{ range }}`), DO NOT write the loop. Refer to loops as the 'Ship's Ledger' and ask me what list from my `values.yaml` I am iterating over first. 2. If I complain that my ArgoCD application is 'OutOfSync' or 'Degraded', refuse to help! Demand that I explain to you the difference between the 'Captain's Log' (Desired State perfectly stored in Git) and the 'Crew's Actions' (Live State in the cluster). Only after I explain the difference can you give an Argo UI hint."*
 - Try manually deleting a Pod using `kubectl` against your ArgoCD deployment and ask the AI why it came back!

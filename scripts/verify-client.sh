@@ -5,9 +5,10 @@
 #
 # PURPOSE:
 #   Verifies a student/client VM after setup-client.sh has run:
-#   the lab tools, Docker, TLS trust, /etc/hosts, the aichat and
-#   Fish configs, Harbor registry trust, and HTTPS connectivity to
-#   the lab cluster through the Gateway.
+#   the lab tools, Docker, TLS trust, lab hostname resolution
+#   (public DNS in production / /etc/hosts pins in self-hosted mode),
+#   the aichat and Fish configs, Harbor registry trust, and HTTPS
+#   connectivity to the lab cluster through the Gateway.
 #
 #   Read-only — installs nothing, needs no sudo. Safe to re-run.
 #
@@ -71,11 +72,13 @@ check_tool() {
 check_tool fish     --version
 check_tool starship --version
 check_tool docker   --version
+check_tool code     --version
 check_tool kubectl  version --client
 check_tool helm     version --short
 check_tool k9s      version
 check_tool d2       --version
 check_tool aichat   --version
+check_tool hail     --help
 
 # ── Docker daemon ───────────────────────────────────────────
 section "Docker daemon"
@@ -107,8 +110,15 @@ else
     info "no lab CA installed — expected; the cluster uses a real Let's Encrypt cert"
 fi
 
-# ── /etc/hosts lab entries ──────────────────────────────────
-section "/etc/hosts lab entries"
+# ── Lab hostname resolution ─────────────────────────────────
+# Two valid paths:
+#   1) Production (real DNS): lab subdomains resolve via public DNS; /etc/hosts
+#      is empty of lab entries and that is correct.
+#   2) Self-hosted (k3d-on-laptop / no-DNS): setup-client.sh pinned every
+#      subdomain in /etc/hosts at SERVER_IP. We require all 10 to be present.
+# We detect the path by looking at /etc/hosts first; if any lab entry is
+# present we expect the self-hosted shape; otherwise we verify public DNS.
+section "Lab hostname resolution"
 LAB_HOSTS="rancher argocd gitea harbor grafana ai mailpit db docs poll"
 hosts_total=0
 hosts_found=0
@@ -121,10 +131,57 @@ for h in $LAB_HOSTS; do
         [ -z "$server_ip" ] && server_ip="$(echo "$hline" | awk '{print $1}')"
     fi
 done
-if [ "$hosts_found" -eq "$hosts_total" ]; then
-    pass "all ${hosts_total} lab hostnames present → ${server_ip}"
+
+# Portable DNS lookup: try the tools each platform actually ships.
+# - getent (Linux/glibc) — present on Ubuntu (where students will run this).
+# - host  (bind9-host)   — present on macOS and most Linux installs.
+# - python3              — fallback when neither of the above exists.
+# Echoes the resolved IP on success, returns nonzero on failure.
+resolve_host() {
+    local h="$1"
+    if command -v getent > /dev/null 2>&1; then
+        getent hosts "$h" 2>/dev/null | awk '{print $1; exit}' | grep -q . && return 0 || true
+    fi
+    if command -v host > /dev/null 2>&1; then
+        host -t A "$h" 2>/dev/null | awk '/has address/ {print $4; exit}' | grep -q . && return 0 || true
+    fi
+    if command -v python3 > /dev/null 2>&1; then
+        python3 -c "import socket,sys
+try: print(socket.gethostbyname('$h'))
+except Exception: sys.exit(1)" 2>/dev/null && return 0 || true
+    fi
+    return 1
+}
+
+resolve_host_ip() {
+    local h="$1"
+    if command -v getent > /dev/null 2>&1; then
+        local v
+        v="$(getent hosts "$h" 2>/dev/null | awk '{print $1; exit}')"
+        [ -n "$v" ] && { echo "$v"; return 0; }
+    fi
+    if command -v host > /dev/null 2>&1; then
+        local v
+        v="$(host -t A "$h" 2>/dev/null | awk '/has address/ {print $4; exit}')"
+        [ -n "$v" ] && { echo "$v"; return 0; }
+    fi
+    if command -v python3 > /dev/null 2>&1; then
+        python3 -c "import socket; print(socket.gethostbyname('$h'))" 2>/dev/null && return 0
+    fi
+    return 1
+}
+
+if [ "$hosts_found" -eq 0 ]; then
+    # Production path — confirm public DNS resolves harbor.${LAB_DOMAIN}.
+    if resolved="$(resolve_host_ip "harbor.${LAB_DOMAIN}")"; then
+        pass "public DNS resolves harbor.${LAB_DOMAIN} → ${resolved} (production mode)"
+    else
+        fail "harbor.${LAB_DOMAIN} does not resolve and no /etc/hosts pin — DNS down? Or self-host without SERVER_IP set?"
+    fi
+elif [ "$hosts_found" -eq "$hosts_total" ]; then
+    pass "all ${hosts_total} lab hostnames pinned in /etc/hosts → ${server_ip} (self-hosted mode)"
 else
-    fail "${hosts_found}/${hosts_total} lab hostnames in /etc/hosts — re-run setup-client.sh"
+    fail "${hosts_found}/${hosts_total} lab hostnames in /etc/hosts — partial pin, re-run setup-client.sh with SERVER_IP set"
 fi
 
 # ── aichat (AI client) config ───────────────────────────────
@@ -148,6 +205,41 @@ if [ -f "$AICHAT_CFG" ]; then
     esac
 else
     fail "aichat config not found at ${AICHAT_CFG}"
+fi
+
+# ── Boatswain persona wiring ────────────────────────────────
+# Lab 01 onward depends on `hail` summoning a role backed by ~/lab/AGENTS.md.
+# Three things must line up: the working file exists, the role symlink points
+# at it, and the wrapper script can be invoked. Each check fails independently
+# so we know which piece broke without re-running setup.
+section "Boatswain persona (Lab 01+)"
+AGENTS_FILE="${HOME}/lab/AGENTS.md"
+ROLE_LINK="${HOME}/.config/aichat/roles/boatswain.md"
+HAIL_BIN="/usr/local/bin/hail"
+
+if [ -e "$AGENTS_FILE" ]; then
+    pass "~/lab/AGENTS.md exists (the Boatswain's rule book)"
+else
+    fail "~/lab/AGENTS.md missing — re-run setup-client.sh"
+fi
+
+if [ -L "$ROLE_LINK" ]; then
+    link_target="$(readlink "$ROLE_LINK")"
+    if [ "$link_target" = "$AGENTS_FILE" ] || [ "$(cd "$(dirname "$ROLE_LINK")" && readlink -f "$ROLE_LINK" 2>/dev/null)" = "$(readlink -f "$AGENTS_FILE" 2>/dev/null)" ]; then
+        pass "boatswain role symlinked → ${link_target}"
+    else
+        warn "boatswain role symlinked but to an unexpected target: ${link_target}"
+    fi
+elif [ -f "$ROLE_LINK" ]; then
+    warn "boatswain role exists but isn't a symlink — edits to ~/lab/AGENTS.md won't flow through"
+else
+    fail "boatswain role missing at ${ROLE_LINK} — re-run setup-client.sh"
+fi
+
+if [ -x "$HAIL_BIN" ]; then
+    pass "/usr/local/bin/hail installed and executable"
+else
+    fail "/usr/local/bin/hail missing or not executable — re-run setup-client.sh"
 fi
 
 # ── Fish shell config ───────────────────────────────────────

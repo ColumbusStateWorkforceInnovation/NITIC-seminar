@@ -73,22 +73,45 @@ fi
 mkdir -p "$OUTPUT_DIR"
 
 # ── Helper: Rancher API call ─────────────────────────────────
+# Captures the HTTP status separately from the body so auth/HTTP
+# failures surface a clear message instead of a cryptic curl exit
+# code. (Note: `curl -f` over HTTP/2 reports exit 56 — not 22 — on
+# any >=400 status, and `-s` hides the body, so the old `-sf` form
+# died here with no explanation when a token was rejected.)
 rancher_api() {
   local method="$1"
   local path="$2"
   local data="${3:-}"
-  
+  local url="${RANCHER_URL}/v3${path}"
+  local body http_code
+
+  # --http1.1 keeps curl's error reporting sane; we read the status
+  # ourselves rather than relying on -f.
   if [[ -n "$data" ]]; then
-    curl -sf -X "$method" \
+    body=$(curl -s --http1.1 -w $'\n%{http_code}' -X "$method" \
       -H "Authorization: Bearer ${RANCHER_TOKEN}" \
       -H "Content-Type: application/json" \
-      "${RANCHER_URL}/v3${path}" \
-      -d "$data"
+      "$url" -d "$data")
   else
-    curl -sf -X "$method" \
+    body=$(curl -s --http1.1 -w $'\n%{http_code}' -X "$method" \
       -H "Authorization: Bearer ${RANCHER_TOKEN}" \
-      "${RANCHER_URL}/v3${path}"
+      "$url")
   fi
+
+  http_code="${body##*$'\n'}"   # last line = status code
+  body="${body%$'\n'*}"          # everything before it = response body
+
+  if [[ ! "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+    echo "   ❌ Rancher API ${method} ${path} → HTTP ${http_code:-no-response}" >&2
+    case "$http_code" in
+      401|403) echo "      Token rejected. Check RANCHER_TOKEN is a valid, unexpired API key." >&2 ;;
+      000|"")  echo "      No HTTP response — check RANCHER_URL (${RANCHER_URL}) and connectivity." >&2 ;;
+    esac
+    [[ -n "$body" ]] && echo "      Response: ${body}" >&2
+    return 1
+  fi
+
+  printf '%s' "$body"
 }
 
 # ── Helper: Get local cluster ID ────────────────────────────
@@ -190,7 +213,7 @@ provision_student() {
       \"containerDefaultResourceLimit\": {
         \"limitsCpu\": \"100m\",
         \"limitsMemory\": \"96Mi\",
-        \"requestsCpu\": \"50m\",
+        \"requestsCpu\": \"25m\",
         \"requestsMemory\": \"64Mi\"
       }
     }" | jq -r '.id')
@@ -220,7 +243,33 @@ provision_student() {
     echo "   🔗 Role binding already exists — skipping."
   fi
 
-  # 6. Write credential card
+  # 6. Create the student's namespace and bind it to their Rancher project.
+  # The `field.cattle.io/projectId` annotation is how Rancher associates a
+  # namespace with a project — without it, the project-member role binding
+  # above doesn't reach into the namespace and the student gets 'Forbidden'
+  # on `kubectl get pods`. Idempotent.
+  # The annotation value is the fully-qualified project ref `<clusterId>:<projectId>`;
+  # Rancher's /v3/projects POST returns just the short form in `.id`, so we
+  # prepend the cluster ID. We handle the (rare) case where PROJECT_ID was
+  # already returned fully-qualified.
+  local ns_project_ref
+  if [[ "$PROJECT_ID" == *":"* ]]; then
+    ns_project_ref="$PROJECT_ID"
+  else
+    ns_project_ref="${CLUSTER_ID}:${PROJECT_ID}"
+  fi
+  if kubectl get namespace "$namespace" > /dev/null 2>&1; then
+    echo "   📦 Namespace '${namespace}' already exists — skipping create."
+  else
+    kubectl create namespace "$namespace" > /dev/null
+    echo "   📦 Namespace '${namespace}' created."
+  fi
+  kubectl annotate namespace "$namespace" \
+    "field.cattle.io/projectId=${ns_project_ref}" \
+    --overwrite > /dev/null
+  echo "   ✅ Namespace bound to project ${ns_project_ref}."
+
+  # 7. Write credential card
   local cred_file="${OUTPUT_DIR}/credentials-${username}.txt"
   local kubeconfig_hint=""
   if [[ -n "${KUBECONFIG_URL_TEMPLATE:-}" ]]; then
@@ -228,8 +277,10 @@ provision_student() {
     kubeconfig_hint=$(cat <<EOF
 
   HEADLESS VM SHORTCUT (no browser needed):
+    export STUDENT='${username}'
     export KUBECONFIG_URL='${resolved_url}'
     bash setup-client.sh \$SERVER_IP
+  (setup-client.sh fetches your kubeconfig and reprints this card on your VM.)
 EOF
 )
   fi

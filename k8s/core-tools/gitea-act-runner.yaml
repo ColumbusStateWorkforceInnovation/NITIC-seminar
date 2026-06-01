@@ -1,0 +1,95 @@
+# Gitea Actions runner (act_runner) — the in-cluster CI worker for the Day 3
+# closing demo. Deploy after `just deploy-gitea` and after registering the
+# runner with Gitea to obtain a registration token.
+#
+# Registration:
+#   1. In Gitea admin UI → Site Administration → Actions → Runners → Create
+#      new Runner. Copy the registration token.
+#   2. kubectl -n gitea create secret generic act-runner-token \
+#        --from-literal=token='PASTE_TOKEN_HERE'
+#   3. kubectl apply -f k8s/core-tools/gitea-act-runner.yaml
+#   4. Verify: kubectl -n gitea logs -l app=act-runner --tail=20 should show
+#      "runner registered successfully" within ~5s, then poll loop.
+#
+# Why a separate file (not Helm values): Gitea's chart manages only the
+# server. The runner is its own image (gitea/act_runner) with its own
+# config + token. Treating it as a discrete manifest mirrors how a
+# production deployment would scale runners independently of the server.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: act-runner-config
+  namespace: gitea
+data:
+  config.yaml: |
+    log:
+      level: info
+    runner:
+      capacity: 2
+      labels:
+        - "ubuntu-latest:docker://node:20-bookworm"
+        - "ubuntu-22.04:docker://node:20-bookworm"
+    container:
+      # Privileged is required for docker-in-docker builds (docker/build-push-action).
+      # Acceptable in the classroom cluster — do NOT copy this to production.
+      privileged: true
+      network: "host"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: act-runner
+  namespace: gitea
+  labels:
+    app: act-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: act-runner
+  template:
+    metadata:
+      labels:
+        app: act-runner
+    spec:
+      containers:
+        - name: runner
+          image: gitea/act_runner:0.2.11
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: GITEA_INSTANCE_URL
+              value: "https://gitea.${LAB_DOMAIN}"
+            - name: GITEA_RUNNER_REGISTRATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: act-runner-token
+                  key: token
+            - name: GITEA_RUNNER_NAME
+              value: "in-cluster-runner-01"
+            - name: CONFIG_FILE
+              value: /config/config.yaml
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+      volumes:
+        - name: config
+          configMap:
+            name: act-runner-config
+        - name: data
+          emptyDir: {}
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket

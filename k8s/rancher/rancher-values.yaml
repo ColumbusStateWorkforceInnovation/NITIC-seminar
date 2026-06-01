@@ -66,3 +66,17 @@ resources:
 #   Scopes:           openid profile email groups
 # This is the one "click-ops" integration in the stack — see the Day 3 SSO
 # walkthrough for the exact form fields and the AuthConfig alternative.
+
+# ── Email notifier → Mailpit (UI / click-ops STEP) ────────────
+# Rancher's SMTP notifier is NOT configurable through Helm values either. After
+# `just deploy-rancher`, add an SMTP Notifier so cluster alerts reach Mailpit:
+#   Cluster → Monitoring/Alerting → Notifiers → Add → SMTP, with:
+#     SMTP Server:   mailpit.admin-tools.svc.cluster.local
+#     Port:          1025
+#     Sender:        noreply@${LAB_DOMAIN}
+#     Default Recipient: admiral@${LAB_DOMAIN}
+#     Use TLS:       OFF        (Mailpit speaks plain SMTP on :1025)
+#     Auth:          none       (no username/password)
+# Rancher runs in cattle-system; Mailpit is in admin-tools, so the cross-namespace
+# Service FQDN above is required — the short `mailpit` name won't resolve here.
+# Hit "Test" in the notifier dialog to drop a message straight into the inbox.

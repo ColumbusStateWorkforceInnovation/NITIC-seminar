@@ -1,5 +1,6 @@
 ---
 marp: true
+auto-scaling: false
 theme: nautical
 paginate: true
 size: 16:9
@@ -10,7 +11,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 <!-- _paginate: false -->
 <!-- _footer: "" -->
 
-#### Day 2 · Lecture 1 · 90 minutes
+#### Day 2 · Lecture 1 · 70 minutes
 
 # The Radar Room
 
@@ -25,7 +26,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 ## Where we are
 
 - Yesterday you launched a **bare Pod** into the cluster — the smallest thing Kubernetes can run.
-- The next 90 minutes: the full picture of what keeps that Pod alive, and the tools to see it.
+- The next 70 minutes: the full picture of what keeps that Pod alive, and the tools to see it.
 - Four parts:
   - **Part I** — Meet Captain Kube (Kubernetes architecture)
   - **Part II** — From Pod to Deployment (resilience and self-healing)
@@ -285,7 +286,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
   kubectl get pods                     <- three are running again
 ```
 
-<!-- This is the live demo moment in Lab 01's CrashLoop Speed Round. They will see self-healing happen in real time. Plant the vocabulary now. -->
+<!-- This is the live demo moment in Lab 01's CrashLoop triage. They will see self-healing happen in real time. Plant the vocabulary now. -->
 
 ---
 
@@ -461,7 +462,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 
 ```text
   +--------------------------------------------------+
-  |  k9s  |  Cluster: k3d-island  |  NS: your-name  |
+  |  k9s  |  Cluster: uss-nitic   |  NS: your-name  |
   +--------------------------------------------------+
   |  NAME             READY  STATUS   RESTARTS  AGE  |
   |  my-fleet-abc12   1/1    Running  0         2m   |
@@ -508,7 +509,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 - k9s colour-codes these. `CrashLoopBackOff` stands out immediately.
 - When you see it: press `l` and read the logs — the answer is almost always there.
 
-<!-- This table is the triage guide for the CrashLoop Speed Round coming up in Lab 01. Make sure every person in the room has this in their head before they open k9s. -->
+<!-- This table is the triage guide for the CrashLoop diagnosis coming up in Lab 01. Make sure every person in the room has this in their head before they open k9s. -->
 
 ---
 
@@ -568,9 +569,9 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 **Lab 01 — The Radar Room** *(right after this)*
 
 - Open k9s. Navigate to your namespace.
-- A rogue wave has hit the fleet — a broken Deployment is waiting in your namespace.
+- A rogue wave has hit the fleet — a broken Pod is waiting in your namespace.
 - Find it, read the logs, identify the exact error.
-- Clean up the wreckage with `Ctrl-d`.
+- Then try to delete it with `Ctrl-d`. See what happens.
 
 **Lab 02 — Deploying the Fleet** *(after the break)*
 
@@ -579,7 +580,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 - Create a ConfigMap with `MESSAGE_OF_THE_DAY`, inject it into the Deployment.
 - Verify inside the running Pod with `env | grep MESSAGE`.
 
-<!-- Send them in with energy. The Speed Round is competitive and concrete — they'll know immediately if they're succeeding. Lab 02 builds on every concept from today's lecture. -->
+<!-- Send them in with energy. The CrashLoop triage is concrete — they'll know immediately whether they've read the logs right. Lab 02 builds on every concept from today's lecture. -->
 
 ---
 
@@ -601,4 +602,4 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 
 *The harbour is alive. Open k9s and read the water.*
 
-<!-- Hand off to Lab 01. Point them at lab-01-the-radar-room.md on the docs site. The Speed Round starts the moment they open k9s. -->
+<!-- Hand off to Lab 01. Point them at lab-01-the-radar-room.md on the docs site. Triage starts the moment they open k9s. -->

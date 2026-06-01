@@ -44,6 +44,27 @@ variable "admin_username" {
   default     = "azureuser"
 }
 
+# ── Agent (worker) VM — see agent.tf ────────────────────────────────────────
+# A second VM that joins the k3s cluster as an agent. Exists to give student
+# workloads CPU/RAM headroom without touching the GPU VM's NCASv3_T4 quota.
+
+variable "agent_vm_name" {
+  description = "Name of the k3s agent (worker) VM. Used as the prefix for its NIC/PIP/OS disk."
+  type        = string
+  default     = "uss-nitic-worker"
+}
+
+variable "agent_vm_size" {
+  description = <<-EOT
+    Azure VM SKU for the k3s agent. Default Standard_D8s_v3 (8 vCPU / 32 GB RAM,
+    Intel, ~$0.38/hr North Central US). Draws from the Standard DSv3 Family
+    vCPU quota — confirm headroom:
+      az vm list-usage --location northcentralus -o json | jq '.[] | select(.localName | test("DSv3"))'
+  EOT
+  type        = string
+  default     = "Standard_D8s_v3"
+}
+
 variable "ssh_public_key_path" {
   description = <<-EOT
     Path to the SSH PUBLIC key planted on the VM. Normally set automatically by

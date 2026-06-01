@@ -1,0 +1,39 @@
+{
+    "folders": [
+        {
+            "name": "Island Lab",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "files.trimTrailingWhitespace": true,
+        "editor.tabSize": 2,
+        "editor.detectIndentation": false,
+        "editor.renderWhitespace": "boundary",
+        "editor.minimap.enabled": false,
+        "[dockerfile]": {
+            "editor.tabSize": 4
+        },
+        "[yaml]": {
+            "editor.tabSize": 2,
+            "editor.defaultFormatter": "redhat.vscode-yaml"
+        },
+        "yaml.format.enable": true,
+        "yaml.schemas": {
+            "kubernetes": "*.yaml"
+        },
+        "redhat.telemetry.enabled": false,
+        "telemetry.telemetryLevel": "off"
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-azuretools.vscode-docker",
+            "ms-kubernetes-tools.vscode-kubernetes-tools",
+            "redhat.vscode-yaml",
+            "oderwat.indent-rainbow",
+            "esbenp.prettier-vscode"
+        ]
+    }
+}

@@ -8,7 +8,7 @@
     \______t/
   ~~~~~~~~~~~~~
 ```
-*Welcome to the island. Earning survival skills and exploring the raw elements of the new world.*
+*Day 1 — the ship sank. Today we build a new one from scratch: Linux fundamentals and your first containers.*
 
 ## 🕘 The Schedule
 - **09:00 - 09:15** | Welcome & Storytime

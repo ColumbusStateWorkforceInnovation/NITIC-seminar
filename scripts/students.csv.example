@@ -9,12 +9,12 @@
 # scripts/students.csv is gitignored — it holds real names + emails.
 # ============================================================
 
-# TEST CREW — disposable shakedown accounts, mirrored in the Dex SSO
-# roster (k8s/core-tools/dex.yaml). Use them to dry-run provisioning;
-# delete them when you add your real students.
-testcrew1,Test Crew One,testcrew1@wagbiz.org
-testcrew2,Test Crew Two,testcrew2@wagbiz.org
-testcrew3,Test Crew Three,testcrew3@wagbiz.org
+# PIRATE CREW — disposable shakedown accounts, mirrored in the Dex SSO
+# roster template (k8s/core-tools/dex.yaml.example). Use them to dry-run
+# provisioning; delete them when you add your real students.
+blackbeard,Edward Teach,blackbeard@wagbiz.org
+annebonny,Anne Bonny,annebonny@wagbiz.org
+calicojack,Jack Rackham,calicojack@wagbiz.org
 
 # ── Real roster (example format — uncomment and edit) ─────────
 # tanaka,Hiroshi Tanaka,h.tanaka@nitic.ac.jp

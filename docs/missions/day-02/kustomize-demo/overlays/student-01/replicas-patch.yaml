@@ -1,0 +1,5 @@
+# JSON-6902 patch: replace one field, leave the rest of the manifest alone.
+# Note this is YAML-flavoured JSON Patch — `op` + `path` + `value`.
+- op: replace
+  path: /spec/replicas
+  value: 3

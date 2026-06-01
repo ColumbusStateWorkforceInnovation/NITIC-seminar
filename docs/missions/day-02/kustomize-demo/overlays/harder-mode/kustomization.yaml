@@ -1,0 +1,21 @@
+# "Harder mode" — a variant lab track for students who finish early.
+# Same base, but: broken image tag, fewer replicas, no readiness probe.
+# This whole folder is "the advanced section" of the class.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: harder-mode
+namePrefix: harder-
+
+resources:
+  - ../../base
+
+images:
+  - name: harbor.lab.local/raft-fleet/raft
+    newTag: v0.9-broken
+
+patches:
+  - path: strip-probe-patch.yaml
+    target:
+      kind: Deployment
+      name: raft

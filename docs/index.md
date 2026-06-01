@@ -36,7 +36,7 @@ You'll be using these services constantly — they're all served from this same 
 | **Harbor** (container registry, Day 1+) | <https://harbor.{{ lab_domain }}> |
 | **AI Engine** (Socratic Boatswain) | <https://ai.{{ lab_domain }}/v1> |
 | **Flash Poll** (in-class quizzes) | <https://poll.{{ lab_domain }}> |
-| **Mailpit** (mock SMTP, Day 3 demo) | <https://mailpit.{{ lab_domain }}> |
+| **Mailpit** (mock SMTP — catches mail from Gitea, Grafana, Harbor & ArgoCD) | <https://mailpit.{{ lab_domain }}> |
 | **Grafana** (logs & metrics) | <https://grafana.{{ lab_domain }}> |
 
 ## 🚢 If This Is Your First Boarding

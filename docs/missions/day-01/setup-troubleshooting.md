@@ -9,11 +9,10 @@ The setup path — VirtualBox → Ubuntu install → `setup-client.sh` → `veri
 ## Pre-Flight Checklist (before June 1)
 
 1. **Test one classroom desktop.** Confirm VirtualBox is installed, then check that a 64-bit Ubuntu VM boots at normal speed (no 🐢 turtle icon). If 64-bit options are missing or the VM crawls, it's a Hyper-V/BIOS issue — see [below](#only-32-bit-options-or-the-vm-is-slow) — and the fix needs administrator rights, so loop in CSCC IT early.
-2. **Stage the Ubuntu ISO locally.** Pre-copy `ubuntu-24.04-desktop-amd64.iso` to each desktop's `Downloads` folder, a USB drive, or a fast local share. Thirty students downloading a ~6 GB ISO at once will saturate the campus link — easy to avoid.
-3. **Confirm VirtualBox is installed** on every desktop (7.1 or newer). If a desktop is missing it, stage the installer so you can add it before class.
-4. **Run the whole path once on a classroom desktop, on the classroom network.** `setup-client.sh` reaches `download.docker.com`, `github.com`, `dl.k8s.io`, `get.helm.sh`, `starship.rs`, and `raw.githubusercontent.com`. Confirm the campus firewall/proxy allows them.
-5. **Confirm `SERVER_IP`** and write it on the board. The lab domain (`wagbiz.org`) is now the built-in default, so students only need the IP.
-6. **Stage the Harbor push token.** Run `just bootstrap-harbor` (creates the public `raft-fleet` project + push robot, writes `harbor-robot.env`) then `just deploy-harbor-creds` (publishes it at `https://docs.wagbiz.org/creds/harbor-robot.env`). `setup-client.sh` fetches it automatically so every VM is logged in for Lab 01's `docker push` — no login step in class. Skip this and the push fails with *"project raft-fleet not found"* / *"unauthorized."*
+2. **Confirm VirtualBox is installed** on every desktop (7.1 or newer). If a desktop is missing it, stage the installer so you can add it before class.
+3. **Run the whole path once on a classroom desktop, on the classroom network.** `setup-client.sh` reaches `download.docker.com`, `github.com`, `dl.k8s.io`, `get.helm.sh`, `starship.rs`, `raw.githubusercontent.com`, `packages.microsoft.com` (VS Code apt repo), and `marketplace.visualstudio.com` (VS Code extensions). Also confirm `releases.ubuntu.com` is reachable — students download the ISO themselves at the start of Lab 00.
+4. **Write `AI_API_KEY` on the board.** That's the one value students need — the lab domain (`wagbiz.org`) is the built-in default and resolves via real public DNS, so `setup-client.sh` doesn't need a `SERVER_IP` on the production path. Skip `AI_API_KEY` and `aichat` fails authentication in Lab 01. (Self-hosters running k3d on their own laptop set `SERVER_IP` to opt in to `/etc/hosts` pinning instead.)
+5. **Stage the Harbor push token.** Run `just bootstrap-harbor` (creates the public `raft-fleet` project + push robot, writes `harbor-robot.env`) then `just deploy-harbor-creds` (publishes it at `https://docs.wagbiz.org/creds/harbor-robot.env`). `setup-client.sh` fetches it automatically so every VM is logged in for Lab 01's `docker push` — no login step in class. Skip this and the push fails with *"project raft-fleet not found"* / *"unauthorized."*
 
 ---
 
@@ -48,25 +47,18 @@ The setup path — VirtualBox → Ubuntu install → `setup-client.sh` → `veri
 
 **Fix:** Press **Enter** — it usually proceeds. If not: power off, **Settings → Storage**, remove the ISO from the optical drive, and start again.
 
-### `setup-client.sh` exits immediately: "SERVER_IP is not set"
-
-**Cause:** The script was run without `SERVER_IP`.
-
-**Fix:** Re-run with the IP **and AI key** from the board. (Re-running rewrites your aichat config, so the AI key must be set too — otherwise aichat stops authenticating.)
-
-```bash
-export SERVER_IP=<the IP on the board>
-export AI_API_KEY=<the AI key on the board>
-bash scripts/setup-client.sh
-```
-
 ### Lab services won't load in the browser
 
 **Symptom:** `harbor.wagbiz.org` / `docs.wagbiz.org` won't open in Firefox inside the VM.
 
-**Cause:** `setup-client.sh` didn't finish, so the lab subdomains were never added to `/etc/hosts`.
+**Cause:** DNS isn't resolving the lab subdomains — either the VM has no internet egress, the campus resolver is blocking the domain, or you're on a self-hosted setup that needs `/etc/hosts` pins and `setup-client.sh` was run without `SERVER_IP`.
 
-**Fix:** Re-run `setup-client.sh` (it's idempotent — safe to run again) and watch it report the `/etc/hosts` entries. To check by hand: `grep wagbiz /etc/hosts`. If you're running a domain other than the `wagbiz.org` default, students must `export LAB_DOMAIN=<your domain>` before running the script.
+**Fix:** First check basic reachability: `getent hosts harbor.wagbiz.org` should print a public IP. If it does and the browser still won't load, the issue is upstream (cluster/Gateway). If DNS doesn't resolve, the VM has a network issue — check `ping -c2 1.1.1.1` and the desktop's network config. **Self-hosters only:** if you're running k3d on your laptop with no public DNS, re-run with `SERVER_IP` set to opt into `/etc/hosts` pinning:
+
+```bash
+export SERVER_IP=<your lab server IP>
+bash scripts/setup-client.sh
+```
 
 ### `aichat` won't answer / "authentication" / "invalid api key"
 
@@ -75,12 +67,32 @@ bash scripts/setup-client.sh
 **Fix:** Export the key from the board and re-run (it's idempotent):
 
 ```bash
-export SERVER_IP=<the IP on the board>
 export AI_API_KEY=<the AI key on the board>
 bash scripts/setup-client.sh
 ```
 
 `bash scripts/verify-client.sh` catches this — a healthy run reports **"AI endpoint reachable and key accepted."**
+
+### One or more VS Code extensions failed to install
+
+**Symptom:** `setup-client.sh` printed `⚠️  Failed: <extension>` and a final `⚠️  N extension(s) failed` line.
+
+**Cause:** The marketplace (`marketplace.visualstudio.com`) was unreachable or rate-limited at install time.
+
+**Fix:** The editor still works — students can install the missing extensions from inside VS Code (View → Extensions → search for the extension name). Or re-run `setup-client.sh` — the extension block is idempotent and will retry only the missing ones.
+
+### `code --install-extension` lands extensions in `/root/.vscode` (script run as root)
+
+**Symptom:** `setup-client.sh` printed `🧩 Skipping VS Code extensions — script is running as root`.
+
+**Cause:** The script was invoked as `sudo bash setup-client.sh` instead of `bash setup-client.sh`. The lab script expects to run as the student's normal user (and uses `sudo` only for the system-level installs).
+
+**Fix:** Re-run as the normal user — no leading `sudo`:
+
+```bash
+export AI_API_KEY=<the AI key on the board>
+bash scripts/setup-client.sh
+```
 
 ### `docker: permission denied` in Lab 01
 

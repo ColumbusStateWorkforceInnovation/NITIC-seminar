@@ -10,7 +10,7 @@ Just like yesterday, we aren't going to type out YAML from memory. We will ask K
 
 1. Run the dry-run command to generate a Deployment for an Nginx web server:
    `kubectl create deployment my-fleet --image=nginx:alpine --dry-run=client -o yaml > deployment.yaml`
-2. Open `deployment.yaml` in your editor. 
+2. Open `deployment.yaml` in VS Code (click it in your `~/lab` workspace explorer panel). 
 3. Find the `replicas: 1` line and change it to `replicas: 3`. You are commanding the cluster to ensure 3 identical ships are always sailing.
 4. Apply the manifest:
    `kubectl apply -f deployment.yaml`

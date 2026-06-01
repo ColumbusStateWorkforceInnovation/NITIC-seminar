@@ -1,5 +1,6 @@
 ---
 marp: true
+auto-scaling: false
 theme: nautical
 paginate: true
 size: 16:9

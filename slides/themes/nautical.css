@@ -112,7 +112,8 @@ code { font-family: "SF Mono", "JetBrains Mono", Consolas, "DejaVu Sans Mono", m
   border-radius: 4px;
   font-size: 0.86em;
 }
-pre {
+pre,
+pre[is="marp-pre"] {
   background: var(--ocean-deep);
   border-radius: 6px;
   border-left: 6px solid var(--brass);
@@ -122,13 +123,29 @@ pre {
   max-width: 100%;
   text-align: left;
   box-shadow: 0 4px 14px rgba(12,39,51,0.28);
+  /* Marp imports GitHub Primer's `pre { font-size: 12px }` — override it here
+   * so child <code> elements (which inherit at 100%) come out at our target. */
+  font-size: 24px !important;
+  line-height: 1.4 !important;
 }
-pre code {
+pre code,
+pre > code,
+pre code.hljs,
+pre[is="marp-pre"] > code {
   color: var(--foam);
   background: transparent;
-  font-size: 20px;
-  line-height: 1.32;
+  font-size: 100% !important;
+  line-height: inherit !important;
   text-align: left;
+}
+
+/* Defeat Marp's "downscale-only" auto-shrink on code blocks — it kicks in
+ * even on short snippets and crushes them below our 24px target. */
+pre[is="marp-pre"] {
+  transform: none !important;
+}
+pre[is="marp-pre"] > code {
+  transform: none !important;
 }
 
 /* ---------------------------------------------------------------- */

@@ -1,5 +1,6 @@
 ---
 marp: true
+auto-scaling: false
 theme: nautical
 paginate: true
 size: 16:9
@@ -385,11 +386,11 @@ kubectl exec -it <pod> -- sh  board the Pod and look around
   - board the live cluster with your Rancher kubeconfig
   - claim your **namespace**
   - **generate** `pod.yaml`, then `apply` it
-  - practise the spyglass: `logs` and `exec`
+  - practice the spyglass: `logs` and `exec`
 
 > Outcome: your raft afloat in the live cluster — and you, able to tell why when it isn't.
 
-<!-- The flash poll is a comprehension gauge, not a contest — read the results to decide how much to demo before the lab. Then point them at lab-02-paddling-out.md on the docs site. -->
+<!-- Run the poll, then point them at lab-02-paddling-out.md on the docs site. -->
 
 ---
 

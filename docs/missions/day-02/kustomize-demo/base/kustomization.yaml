@@ -1,0 +1,10 @@
+# Day 2 morning demo base. Just the Day 1 raft Pod.
+# Overlays patch the image tag from v1 → v2 across every student namespace.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - raft-pod.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: raft-fleet

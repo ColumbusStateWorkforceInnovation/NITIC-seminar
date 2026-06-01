@@ -10,7 +10,9 @@
 *Expanding our view. Meeting Captain Kube, organizing the cluster, and connecting our fleet with internal Services.*
 
 ## 🕘 The Schedule
-- **09:00 - 10:30** | Lecture: The Radar Room (K8s Architecture, Deployments, & ConfigMaps)
+- **09:00 - 09:10** | 📖 Storytime: Meet Captain Kube
+- **09:10 - 09:20** | Demo: Kustomize (the operator's tool)
+- **09:20 - 10:30** | Lecture: The Radar Room (K8s Architecture, Deployments, & ConfigMaps)
 - **10:30 - 10:45** | ☕ Break
 - **10:45 - 12:00** | Lab: The Radar Room & Deploying the Fleet (k9s intro)
 - **12:00 - 01:00** | 🥪 Lunch

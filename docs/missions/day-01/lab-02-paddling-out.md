@@ -10,16 +10,18 @@ Up to now everything ran on your own VM. Lab 02 is the first time you steer the 
 
 1. In Firefox, open **Rancher** at `https://rancher.{{ lab_domain }}` and log in with the account your instructor issued you.
 2. Open the lab cluster and click **Copy KubeConfig to Clipboard** (top-right of the cluster view).
-3. Back in your terminal, create the config folder and open the file: `mkdir -p ~/.kube` then `nano ~/.kube/config`. Paste the kubeconfig, then save and exit (**Ctrl-O**, **Enter**, **Ctrl-X**).
+3. Back in your terminal, create the config folder: `mkdir -p ~/.kube`. Then open the file in your VS Code workspace (`code ~/.kube/config` — or just **File → Open File…** in your already-open VS Code window). Paste the kubeconfig, save with **Ctrl-S**, and close the tab.
 4. Confirm you can reach the ocean: `kubectl get ns`. A list of namespaces means you're connected — if it errors, flag your instructor before going on.
 
 ## Step 1: Claiming Your Territory
 
-The ocean is massive and shared by 30 other pirates. If you just throw your raft in, it will get lost. You must claim an isolated patch of water called a `Namespace`.
+The ocean is massive and shared by 30 other pirates. If you just throw your raft in, it will get lost. You need an isolated patch of water called a `Namespace`.
 
-1. Run: `kubectl create namespace <your-name>`
-2. Tell your terminal to always operate in your patch of water so you don't have to keep typing `-n <your-name>`:
-   `kubectl config set-context --current --namespace=<your-name>`
+The Admiral provisioned your namespace for you ahead of time — it's named `student-<your-name>` (as printed on your crew credentials card). Verify and claim it:
+
+1. Confirm it's yours: `kubectl get pods -n student-<your-name>` (you should see no pods yet — that's fine; you haven't deployed anything).
+2. Tell `kubectl` to always operate in your patch of water so you don't have to keep typing `-n student-<your-name>`:
+   `kubectl config set-context --current --namespace=student-<your-name>`
 
 ## Step 2: Generating the Manifest (No Raw YAML!)
 
@@ -29,7 +31,7 @@ Instead of looking up the exact YAML syntax for a Pod, we will ask Kubernetes to
 
 1. Run the generator command:
    `kubectl run my-raft --image=harbor.{{ lab_domain }}/raft-fleet/<your-name>:v1 --dry-run=client -o yaml > pod.yaml`
-2. Open `pod.yaml` in your editor. You will see a perfectly formatted declarative definition of your raft!
+2. Open `pod.yaml` in VS Code (it appears in your `~/lab` workspace from Lab 01 — click it in the explorer panel). You will see a perfectly formatted declarative definition of your raft!
 3. Apply it to the ocean:
    `kubectl apply -f pod.yaml`
 4. Check if it's floating:
@@ -60,4 +62,4 @@ Somewhere out in the cluster, Admiral Bash has hidden a `treasure-chest` Pod in 
 **Your Mission:**
 1. Find the pod. (Hint: `kubectl get pods -A` lists pods across *all* namespaces).
 2. Read the logs of that pod to extract the secret code.
-3. Be the first person to yell out the code!
+3. Share the code with the room.

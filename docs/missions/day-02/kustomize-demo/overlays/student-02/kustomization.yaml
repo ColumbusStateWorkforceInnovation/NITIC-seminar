@@ -1,0 +1,10 @@
+# Second student. Same base, different name + namespace.
+# This is what 90% of overlays look like — three meaningful lines.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: annebonny
+namePrefix: annebonny-
+
+resources:
+  - ../../base

@@ -1,5 +1,6 @@
 ---
 marp: true
+auto-scaling: false
 theme: nautical
 paginate: true
 size: 16:9
@@ -173,9 +174,10 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Drawing the Fleet"
 | **LoadBalancer** | Cloud-provided external IP | A real harbour with a public dock |
 
 - **ClusterIP is the default** — and the one you will use most.
-- NodePort works in k3d for the lab. LoadBalancer is for cloud production.
+- NodePort and LoadBalancer are the textbook external-exposure paths. On our cluster you'll use a **Gateway HTTPRoute** in front of a ClusterIP instead (next slide).
 
-<!-- Spend most time on ClusterIP. NodePort is what Lab 03 uses for the frontend. LoadBalancer is worth one sentence — it's a cloud primitive and not relevant to the lab environment. -->
+<!-- Spend most time on ClusterIP. NodePort and LoadBalancer are worth one sentence each — they are the K8s 101 primitives, but they aren't what this cluster uses for browser-facing apps. -->
+
 
 ---
 
@@ -192,7 +194,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Drawing the Fleet"
 
 ---
 
-## NodePort — the gangplank
+## NodePort — the gangplank (textbook)
 
 ```text
   External browser --> Node IP : 30080
@@ -204,10 +206,34 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Drawing the Fleet"
 
 - Opens **one fixed port** (30000–32767) on every node in the cluster.
 - Anything that can reach a node's IP can reach the Service.
-- Useful for **development and labs** — simple, no cloud account needed.
-- Lab 03 uses NodePort to expose the frontend to your browser.
+- Useful for **k3d / dev clusters** where you control the node firewall.
+- On our cluster: the VM's NSG blocks 30000–32767, so we don't use this path.
 
-<!-- NodePort is the lab's "you can see it in a browser" mechanism. Don't get into the details of external load-balancers; just validate that NodePort is the right tool for this environment. -->
+<!-- NodePort is the K8s 101 way to expose a Service. We teach it because students will see it in the field. We don't use it here because (a) Azure NSG blocks the range and (b) Gateway HTTPRoute is the production pattern we want them to leave with. -->
+
+---
+
+## Gateway HTTPRoute — what we actually use
+
+```text
+  Browser --> radar-eric.wagbiz.org
+                 |
+            [ main-gateway ]   (Traefik, in admin-tools NS)
+                 |
+            [ HTTPRoute ]      (lives with your app)
+                 |
+            [ ClusterIP Service ]   ← your normal Service
+                 |
+            [ Pods ]
+```
+
+- The cluster runs one **Gateway** (Traefik) that owns the public IP.
+- Each app owns an **HTTPRoute** that says "send hostname X to *my* ClusterIP."
+- Your **Service stays ClusterIP** — internal-only. The Gateway is the front door.
+- This is the production Kubernetes pattern. NodePort is the lab pattern.
+
+<!-- This is the slide that tells them the cluster's actual shape. Lab 03's frontend uses an HTTPRoute, not a NodePort. The HTTPRoute attaches to main-gateway in admin-tools. -->
+
 
 ---
 
@@ -425,11 +451,11 @@ spec:
 
 ## What each student writes
 
-| Student | Tier | Image | Service Type |
+| Student | Tier | Image | Exposed By |
 |---|---|---|---|
-| **A** | Redis cache | `redis:alpine` | ClusterIP |
-| **B** | Go API | `stefanprodan/podinfo` | ClusterIP |
-| **C** | Web UI | `paulbouwer/hello-kubernetes` | NodePort |
+| **A** | Redis cache | `redis:7.2-alpine` | ClusterIP |
+| **B** | Go API | `stefanprodan/podinfo:6.7.0` | ClusterIP |
+| **C** | Web UI | `paulbouwer/hello-kubernetes:1.10` | ClusterIP + HTTPRoute |
 
 - Pre-built images are provided — focus stays on **YAML, not application code**.
 - Every student writes exactly: **one Deployment + one Service**.

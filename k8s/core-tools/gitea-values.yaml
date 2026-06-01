@@ -15,6 +15,34 @@ gitea:
       DOMAIN: "gitea.${LAB_DOMAIN}"
       ROOT_URL: "https://gitea.${LAB_DOMAIN}/"
 
+    # ── Gitea Actions (in-cluster CI) ─────────────────────────
+    # Added for the Day 3 closing demo. Workflow files live at .gitea/workflows/
+    # in student repos and are picked up by an act_runner pod (deployed
+    # separately — Gitea ships the engine, not the runner). The workflow YAML
+    # is GitHub-Actions-compatible, so the same .gitea/workflows/ci.yaml runs
+    # unchanged on github.com if a student copies it under .github/workflows/.
+    #
+    # The runner itself is a separate Deployment using the gitea/act_runner
+    # image — see docs/missions/day-03/demo-gitea-actions.md → Pre-Flight for
+    # the registration token + runner deploy. Keeping the runner out of this
+    # chart means student VMs can register their own runners against the same
+    # Gitea later without re-templating.
+    actions:
+      ENABLED: true
+      DEFAULT_ACTIONS_URL: "https://gitea.${LAB_DOMAIN}"
+
+    # ── Outbound mail → Mailpit ───────────────────────────────
+    # Gitea sends account-activation, password-reset, and issue/PR notification
+    # mail here. Mailpit lives in admin-tools (same namespace as Gitea), but we
+    # use the full Service FQDN for uniformity with the cross-namespace clients.
+    # Plain SMTP, no TLS, no auth — Mailpit accepts anything on :1025.
+    mailer:
+      ENABLED: true
+      PROTOCOL: smtp
+      SMTP_ADDR: mailpit.admin-tools.svc.cluster.local
+      SMTP_PORT: 1025
+      FROM: "noreply@${LAB_DOMAIN}"
+
   # ── SSO via Dex (OIDC) ──────────────────────────────────────
   # Auto-registers a "Dex" login source on startup, so students click
   # "Sign in with Dex" instead of using a Gitea-local password. The key/secret

@@ -1,0 +1,24 @@
+# Day 2 morning demo overlay.
+# Applied to every student namespace in a shell loop — see ../../demo-kustomize.md.
+#
+# The base raft Pod ships with a placeholder image
+# (`harbor.wagbiz.org/raft-fleet/raft:v1`). The apply loop runs
+# `kustomize edit set image` once per student to rewrite this override
+# to point at THAT student's v2 image (e.g. `raft-fleet/blackbeard:v2`),
+# then `kubectl apply -k . -n student-<name>` updates the existing
+# `my-raft` Pod in-place.
+#
+# After the loop, run `kustomize edit set image
+# harbor.wagbiz.org/raft-fleet/raft=harbor.wagbiz.org/raft-fleet/raft:v2`
+# once more to reset the file back to the placeholder shape, so the next
+# demo run starts from a clean overlay.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+images:
+  - name: harbor.wagbiz.org/raft-fleet/raft
+    newName: harbor.wagbiz.org/raft-fleet/raft
+    newTag: v2

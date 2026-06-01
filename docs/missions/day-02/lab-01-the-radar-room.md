@@ -14,16 +14,16 @@ In this lab, you will learn how to use `k9s`, a Terminal UI (TUI) that gives you
 3. **Change your view:** Press `:` (colon) to open the command prompt at the bottom of the screen. Type `ns` and hit Enter. You are now looking at a list of all namespaces in the cluster.
 4. Use the arrow keys to highlight your personal namespace and hit Enter. You are now filtered to only see your ships!
 
-## Step 2: The CrashLoopBackOff Speed Round!
+## Step 2: Diagnose the CrashLoopBackOff
 
-Oh no! A rogue wave has hit the fleet! The Admiral just deployed a broken component into every single student's namespace. 
+A rogue wave has hit the fleet — the Admiral just deployed a broken component into every student's namespace.
 
 **Your Mission:**
-1. You must use `k9s` to find the broken pod in your namespace. It will have a status of `CrashLoopBackOff` or `Error`.
+1. Use `k9s` to find the broken pod in your namespace. It will have a status of `CrashLoopBackOff` or `Error`.
 2. Highlight the broken pod.
 3. Press `l` (lowercase L) to view the live logs of that pod.
 4. Read the error message in the logs to figure out exactly *why* the pod is crashing.
-5. Be the first student to stand up and yell out the exact error message!
+5. Share the exact error message with the room.
 
 *(Hint: If the logs are moving too fast, press `s` to toggle auto-scroll, or use the arrow keys to scroll up).*
 
