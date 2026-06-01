@@ -89,14 +89,18 @@ data:
 
     # ── ⚓ OAUTH2 CLIENTS — one registration per lab tool ─────────────────
     # Each app authenticates to Dex with its id + secret. The redirectURIs are
-    # exact — a trailing-slash typo here is the #1 cause of "redirect_uri
-    # mismatch" errors. Lab-default secrets; rotate for a real deployment.
+    # exact (and CASE-SENSITIVE) — a trailing-slash or wrong-case typo here is the
+    # #1 cause of "redirect_uri mismatch" errors. Lab-default secrets; rotate for
+    # a real deployment.
     staticClients:
       - id: gitea
         name: "Gitea"
         secret: gitea-oidc-secret
         redirectURIs:
-          - "https://gitea.${LAB_DOMAIN}/user/oauth2/dex/callback"
+          # The slug after /oauth2/ is Gitea's login-source NAME verbatim, set by
+          # `oauth.name: "Dex"` in gitea-values.yaml — so it's capital "Dex", NOT
+          # lowercase. Gitea sends this exact (case-sensitive) URI; Dex must match.
+          - "https://gitea.${LAB_DOMAIN}/user/oauth2/Dex/callback"
       - id: argocd
         name: "ArgoCD"
         secret: argocd-oidc-secret
