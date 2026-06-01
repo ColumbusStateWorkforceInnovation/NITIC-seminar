@@ -107,23 +107,39 @@ Pick the path that matches your `SERVER_IP` setting.
 
 ### Path A — Local k3d (laptop, no cloud account)
 
-The fastest way to try the stack or develop curriculum. Leave `SERVER_IP` blank.
+The fastest way to try the stack, develop curriculum, or **learn the lab by
+running it yourself** before standing up a real classroom server. Leave
+`SERVER_IP` blank in `lab.env` so every recipe targets your local k3d cluster.
+
+Total wall time on a 2024-era laptop: ~30 minutes, mostly waiting for image
+pulls. You can stop after `deploy-core` if you only need a smoke test.
 
 ```sh
-just bootstrap-k3d     # create the local cluster + Gateway API
+just setup-env         # cp lab.env.example → lab.env  (if you haven't yet)
+# edit lab.env: AI_API_KEY, DEX_DEMO_PASSWORD, HARBOR_ADMIN_PASSWORD,
+#               RANCHER_BOOTSTRAP_PASSWORD, GITEA_ADMIN_PASSWORD,
+#               GRAFANA_ADMIN_PASSWORD — every deploy recipe refuses to run
+#               until its corresponding placeholder is replaced.
+just init              # validate config + tools
+just bootstrap-k3d     # ~2 min — local cluster + Gateway API
 just cert              # generate a self-signed wildcard cert
 just push-cert         # load it into the cluster as the wildcard-tls secret
-just deploy-core       # gateway, AI engine (CPU), Adminer, Mailpit, MkDocs, Quizler
-just deploy-dex        # single sign-on
-just deploy-gitea
-just deploy-harbor
+just deploy-core       # ~3 min — gateway, AI engine (CPU), Adminer, Mailpit, MkDocs, Quizler
+just deploy-dex        # ~30 s — single sign-on
+just deploy-gitea      # ~2 min
+just deploy-harbor     # ~5 min — heaviest of the three
 just deploy-argocd
 just deploy-rancher    # heavy on a laptop — skip if you only need a smoke test
+just pull-model        # ~5 min — pulls gemma3:4b into Ollama (CPU)
 ```
 
 Local TLS is self-signed, so browsers will warn until you trust the lab CA in
 `certs/`. To reach the services by name, add the lab hostnames to your
-`/etc/hosts` pointed at `127.0.0.1`.
+`/etc/hosts` pointed at `127.0.0.1` (`just show-hosts` prints the block).
+
+Once you can hit `https://gitea.<your domain>`, `https://harbor.<your domain>`,
+and `https://docs.<your domain>` from your browser, the cluster is working —
+jump to **§4. Play the student role** below to walk through Lab 00 yourself.
 
 ### Path B — Remote server (the real seminar)
 
@@ -156,6 +172,9 @@ A few things to watch for:
   `kubectl get certificate -n admin-tools -w` before moving to step 6.
 - **No Cloudflare?** You can skip steps 4–5 and use a self-signed cert instead:
   run `just cert` and `just push-cert`, then have students trust the lab CA.
+- **`harbor-sso` only needs Harbor + Dex.** It's listed at step 12 for
+  readability, but you can run it as soon as both are Ready — no need to wait
+  for Rancher.
 - **Rancher SSO is a manual step.** Unlike the other tools, Rancher's auth
   provider can't be set via Helm or a recipe — after step 11, enable *Generic
   OIDC* by hand in the Rancher UI (client `rancher` / secret
@@ -244,13 +263,16 @@ makes projects/namespaces). Generate it *after* Rancher is up:
 
 ## 4. Students join the island
 
-Each student works inside their own Linux VM. They run one script to install
-the toolkit and load their kubeconfig. On the production path (real public DNS
-for `LAB_DOMAIN`) no `SERVER_IP` is needed — DNS does the resolution:
+Each student works inside their own Linux VM. They clone this repo and run one
+script that installs the toolkit (Docker, kubectl, Helm, k9s, Fish, aichat,
+…) and loads their kubeconfig. On the production path (real public DNS for
+`LAB_DOMAIN`) no `SERVER_IP` is needed — DNS does the resolution:
 
 ```sh
+git clone https://github.com/ColumbusStateWorkforceInnovation/NITIC-seminar.git
+cd NITIC-seminar
 export AI_API_KEY=<key from the board>
-bash setup-client.sh
+bash scripts/setup-client.sh
 ```
 
 Self-hosters running k3d on a laptop, or any setup without public DNS for the
@@ -259,11 +281,39 @@ lab domain, opt in to `/etc/hosts` pinning by also exporting `SERVER_IP`:
 ```sh
 export AI_API_KEY=<key from the board>
 export SERVER_IP=<your lab server IP>
-bash setup-client.sh
+bash scripts/setup-client.sh
 ```
+
+> **The `AI_API_KEY` export is mandatory.** If you skip it, the script falls
+> through to a placeholder and `aichat` will return 401 in Lab 00 Part 6 — a
+> failure that surfaces 10 minutes after the script "succeeds." The script
+> aborts up front when the key is missing or still the placeholder; if it
+> didn't (older clone), see the aichat-401 row in Troubleshooting.
 
 `just show-hosts` prints the `/etc/hosts` block for that fallback path, and the
 credential cards from step 3 walk each student through first login.
+
+---
+
+## 5. Play the student role (test the experience yourself)
+
+The fastest way to know what you're teaching is to run `setup-client.sh`
+against your own k3d cluster as if you were a student. Do this *before* the
+classroom session — it surfaces every gap you'd otherwise hit live.
+
+```sh
+# In a fresh shell (or, even better, a clean VirtualBox VM matching what
+# your students will use — Lab 00 walks through building one).
+export AI_API_KEY=<the value you set in lab.env>
+export SERVER_IP=127.0.0.1     # or your lab server IP for the remote path
+bash scripts/setup-client.sh
+```
+
+The shortcut for an already-provisioned cluster is `just test-client <ip>`,
+which sources `lab.env` and injects the right values for you.
+
+Then work through **Lab 00 → Lab 02** in the docs site yourself. Anything
+that's confusing for you will be confusing for a room of instructors.
 
 ---
 
@@ -286,9 +336,11 @@ and `nvidia.com/gpu` lines from that file**, or the Ollama pod will stay
 To read or edit the course site locally:
 
 ```sh
-pip install -r requirements.txt
 just serve-docs           # serves at http://localhost:8000
 ```
+
+The recipe installs the MkDocs plugins (`requirements.txt`) on first run, so
+you don't need a separate `pip install` step.
 
 ---
 
@@ -297,6 +349,7 @@ just serve-docs           # serves at http://localhost:8000
 | Symptom | Likely cause |
 |---|---|
 | `envsubst: command not found` | Install GNU gettext (`brew install gettext`). |
+| `aichat` returns 401 / "Invalid Authentication" on a student VM | They didn't `export AI_API_KEY=…` before `setup-client.sh`, mistyped it, or re-ran the script (which only writes the config on the *first* install). Fix on the VM without rerunning the script: open `~/.config/aichat/config.yaml` in their editor of choice (e.g. `nano ~/.config/aichat/config.yaml`) and replace the `api_key:` value with the real key from the board, then save. Verify with `aichat "ahoy"`. The `AI_API_KEY` value in your `lab.env` is the source of truth — anything else won't match LiteLLM's `master_key`. |
 | `just provision` fails on auth | `RANCHER_TOKEN` is missing or stale — regenerate it from the Rancher UI. A freshly redeployed Rancher invalidates old tokens. |
 | Rancher returns `{"data":"no available server"}` / 503; pod in `CrashLoopBackOff` | The `v1.ext.cattle.io` APIService is `False (MissingEndpoints)`, stalling cluster API discovery so Rancher's `/healthz` times out and the kubelet keeps killing it (a restart loop that doesn't self-heal). Fix: `kubectl delete apiservice v1.ext.cattle.io` then `kubectl -n cattle-system rollout restart deploy/rancher`. Rancher re-registers the APIService once it reaches Ready. See the Day 3 instructor guide. |
 | Ollama pod stuck `Pending` | Server has no GPU but `ai-engine.yaml` requests one — see the AI engine section above. |

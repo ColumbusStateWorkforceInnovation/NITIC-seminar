@@ -78,6 +78,22 @@ LAB_DOMAIN="${LAB_DOMAIN:-wagbiz.org}"
 AI_MODEL="${AI_MODEL:-gemma3:4b}"
 AI_API_KEY="${AI_API_KEY:-sk-change-me}"
 
+# Abort early if AI_API_KEY wasn't exported (or is still the placeholder).
+# Without this guard the script writes 'sk-change-me' into
+# ~/.config/aichat/config.yaml and aichat 401s ~10 minutes later in Lab 00
+# Part 6 — long after the student thinks setup succeeded. Failing here keeps
+# the failure where the fix is: re-run with the real key from the board.
+if [[ -z "${AI_API_KEY}" || "${AI_API_KEY}" == "sk-change-me" ]]; then
+    echo "❌ AI_API_KEY is not set (or is still the 'sk-change-me' placeholder)."
+    echo
+    echo "   The key is on the whiteboard. Copy it, then run:"
+    echo "     export AI_API_KEY=<key from the board>"
+    echo "     bash scripts/setup-client.sh"
+    echo
+    echo "   Skipping this step makes aichat fail with 401 in Lab 00 Part 6."
+    exit 1
+fi
+
 # Where to fetch the shared Harbor push-robot creds if they weren't passed in
 # the environment. Same /creds/ convention as KUBECONFIG_URL. Instructor stages
 # the file with `just bootstrap-harbor`. Override or blank-out to disable.
