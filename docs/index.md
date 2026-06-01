@@ -16,7 +16,6 @@ The mainframe is sunk. The rafts are being lashed together. Over the next four d
 ## 🗺️ Where to Sail Next
 
 - **[Course Agenda](course-agenda.md)** — the 4-day at-a-glance schedule.
-- **[The Syllabus](stakeholder-updates/2026-04-22-curriculum-deep-dive.md)** — the deeper "why" behind each day.
 - **Missions** — the actual mission docs for each day live in the sidebar:
   - **Day 1 — The Ship Has Sunk** (Linux, Containers, Pods)
   - **Day 2 — Meet the Crew** (Deployments, Services, the 3-tier alliance)
