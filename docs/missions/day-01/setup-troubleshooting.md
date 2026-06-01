@@ -100,6 +100,20 @@ bash scripts/setup-client.sh
 
 **Fix:** Log out of Ubuntu and back in (or reboot the VM). Quick in-place fix: `newgrp docker`.
 
+### `docker push` fails with "unauthorized" in Lab 01
+
+**Symptom:** `docker build` works but `docker push harbor.wagbiz.org/raft-fleet/<name>:v1` returns `unauthorized: unauthorized to access repository` or `no basic auth credentials`.
+
+**Cause:** This VM isn't logged in to Harbor. Either the `docker` group wasn't active when `setup-client.sh` ran (so the auto-login was deferred), or the shared push token was rotated after this VM was set up — both leave a missing/stale entry in `~/.docker/config.json`. The Harbor server, project, and token are fine; only this VM's stored login is stale. (`verify-client.sh` flags this with a ⚠️ "Docker is NOT logged in to harbor…" line.)
+
+**Fix:** Re-fetch the shared robot creds and log in — one step, copy-paste the whole thing (no need to type the `$`-laden username or the secret):
+
+```bash
+bash -c 'curl -fsSL https://docs.wagbiz.org/creds/harbor-robot.env -o /tmp/h.env && u=$(grep "^HARBOR_ROBOT_USER=" /tmp/h.env | cut -d= -f2-) && s=$(grep "^HARBOR_ROBOT_SECRET=" /tmp/h.env | cut -d= -f2-) && printf %s "$s" | docker login harbor.wagbiz.org -u "$u" --password-stdin'
+```
+
+It's wrapped in `bash -c '…'` on purpose: students run the labs in **fish**, which can't `source` a `KEY=value` file and would mishandle the literal `$` in the robot username. The wrapper makes it paste cleanly into fish *or* bash, and the creds are parsed literally (grep + `cut`, never `source`d) so the `$` survives. You should see `Login Succeeded`; re-run the `docker push`. (If `docker login` itself errors with `permission denied`, fix the group first — see the section just above — then re-run.)
+
 ### `git clone` or `apt` fails — network / proxy
 
 **Fix:** Confirm the VM has internet (`ping -c2 1.1.1.1`). If raw internet works but downloads don't, it's a campus proxy/firewall issue — this should surface in pre-flight item #4. Stopgap: share a working clone via USB.

@@ -154,6 +154,8 @@ init: check-config check-tools
     @echo "    10. just deploy-harbor-creds — publish the push token so student VMs auto-login"
     @echo "    11. just pull-model          — pull the AI model into Ollama"
     @echo "    12. just provision           — create student accounts (needs RANCHER_TOKEN)"
+    @echo "    13. just grant-explorer      — give students cluster-wide READ (get ns / pods -A / k9s)"
+    @echo "    14. just check-access <name> — verify the boundary + cluster-read before class"
     @echo ""
     @echo "  Next steps (LOCAL k3d test loop):"
     @echo "    1. just bootstrap-k3d  — create local k3d cluster + Gateway API"
@@ -752,6 +754,20 @@ reset-student USERNAME:
     RANCHER_TOKEN={{RANCHER_TOKEN}} \
     bash scripts/provision-students.sh --roster {{STUDENT_ROSTER}} --reset {{USERNAME}}
 
+# Grant students read-only cluster-wide view (namespaces + pods + pod logs).
+# Rancher's project-member role is namespace-scoped, but the labs assume students
+# can see the whole cluster: Day 1 Lab 02's `kubectl get ns` connectivity check,
+# the `kubectl get pods -A` scavenger hunt, and Day 2 Lab 01's k9s `:ns` view all
+# return Forbidden without this. Applies a ClusterRole bound to system:authenticated
+# (covers every current + future student in one shot). Grants NO secrets and NO
+# write outside the student's own namespace — the `check-access` admin boundary
+# stays intact. Idempotent; run once after `provision`. Honors LOCAL/REMOTE.
+# Grant students read-only cluster view (get ns / pods -A / k9s :ns) — Day 1 Lab 02 + Day 2 Lab 01.
+grant-explorer:
+    @echo "🔭 Granting students read-only cluster view (student-explorer)..."
+    cat k8s/rbac/student-explorer.yaml | {{SSH}} "kubectl apply -f -"
+    @echo "✅ Applied. Verify with: just check-access <student>"
+
 # Verify a student's access boundary BEFORE class. Impersonates the Rancher user
 # found in their namespace's RoleBindings, then confirms they are DENIED on the
 # admin namespaces (secrets + pod-create, the two ways to reach a secret) and
@@ -778,8 +794,11 @@ check-access USERNAME:
     echo "   Impersonating Rancher user: $SUBJECT"
     FAIL=0
     chk () {  # label verb resource namespace expected(yes|no) critical(1|0)
-        local label="$1" verb="$2" res="$3" ns="$4" want="$5" crit="$6" got mark
-        got=$({{SSH}} "kubectl auth can-i $verb $res -n $ns --as=$SUBJECT" 2>/dev/null || true)
+        # A namespace of "-A" checks cluster scope (--all-namespaces); cluster-scoped
+        # resources (e.g. namespaces) ignore the -n flag, so passing $NS is harmless.
+        local label="$1" verb="$2" res="$3" ns="$4" want="$5" crit="$6" got mark scope
+        if [[ "$ns" == "-A" ]]; then scope="--all-namespaces"; else scope="-n $ns"; fi
+        got=$({{SSH}} "kubectl auth can-i $verb $res $scope --as=$SUBJECT" 2>/dev/null || true)
         got=${got:-no}
         if [[ "$got" == "$want" ]]; then mark="✅"; else mark="❌"; [[ "$crit" == "1" ]] && FAIL=$((FAIL+1)) || mark="⚠️ "; fi
         printf "   %s  %-42s want=%-3s got=%s\n" "$mark" "$label" "$want" "$got"
@@ -791,15 +810,25 @@ check-access USERNAME:
     chk "read secrets in cattle-system"  get    secrets cattle-system no 1
     chk "read secrets in kube-system"    get    secrets kube-system   no 1
     chk "create pods in admin-tools"     create pods    admin-tools   no 1
+    chk "delete pods in another student" delete pods    student-test  no 0
     echo ""
     echo "  ── Should be ALLOWED (their own workspace) ───────────────────"
     chk "create workloads in own ns"     create deployments "$NS"     yes 0
     chk "read secrets in own ns"         get    secrets     "$NS"     yes 0
     echo ""
+    echo "  ── Cluster-wide READ (student-explorer; the labs need it) ────"
+    # Day 1 Lab 02 `kubectl get ns` + Day 2 Lab 01 k9s `:ns`. CRITICAL: if the
+    # student-explorer ClusterRole isn't applied, these fail and so do the labs.
+    chk "list namespaces (get ns / k9s :ns)" list namespaces "$NS"    yes 1
+    # Day 1 scavenger hunt `kubectl get pods -A` + reading the hidden pod's logs.
+    chk "list pods cluster-wide (-A)"    list   pods       -A         yes 1
+    echo ""
     if [[ $FAIL -eq 0 ]]; then
-        echo "✅ Boundary intact — '{{USERNAME}}' cannot reach the admin creds."
+        echo "✅ Boundary intact + cluster-read works — '{{USERNAME}}' is ready for the labs."
     else
-        echo "⚠️  $FAIL CRITICAL check(s) FAILED — this student can reach admin creds. Fix before class."
+        echo "⚠️  $FAIL CRITICAL check(s) FAILED. A DENIED→got=yes means the admin boundary leaks;"
+        echo "    a cluster-read ALLOWED→got=no means 'just grant-explorer' hasn't been applied"
+        echo "    (Day 1 Lab 02 'get ns' + Day 2 Lab 01 k9s will break). Fix before class."
         exit 1
     fi
 

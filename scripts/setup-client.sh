@@ -582,33 +582,60 @@ fi
 # here with the shared push-robot the instructor minted via `just bootstrap-harbor`.
 # Skipped cleanly if the creds weren't passed — the lab just needs a manual login.
 HARBOR_HOST="harbor.${LAB_DOMAIN}"
-if [[ -n "${HARBOR_ROBOT_USER:-}" && -n "${HARBOR_ROBOT_SECRET:-}" ]]; then
-    echo "🔑 Logging Docker into ${HARBOR_HOST} as ${HARBOR_ROBOT_USER}..."
+
+# A copy-pasteable, SELF-CONTAINED re-login the student can run any time the push
+# says "unauthorized" — most commonly after the first log-out/back-in that finally
+# activates docker-group membership, or if the instructor rotated the robot token
+# after this VM was set up. It re-fetches the shared creds from HARBOR_CREDS_URL so
+# nobody has to type the '$'-laden robot username or the secret by hand.
+#
+# Wrapped in `bash -c '…'` because students run the labs in FISH, which can't
+# `source` a KEY=value file and mangles the literal '$' in the robot username.
+# The wrapper makes it paste cleanly into fish OR bash, and the creds are parsed
+# literally (grep + cut, never sourced) so the '$' survives.
+harbor_relogin_hint() {
+    echo "   👉 Re-login in ONE step (copy-paste the whole line — works in fish or bash):"
+    sed "s|@URL@|${HARBOR_CREDS_URL}|; s|@HOST@|${HARBOR_HOST}|" <<'HINT'
+        bash -c 'curl -fsSL @URL@ -o /tmp/h.env && u=$(grep "^HARBOR_ROBOT_USER=" /tmp/h.env | cut -d= -f2-) && s=$(grep "^HARBOR_ROBOT_SECRET=" /tmp/h.env | cut -d= -f2-) && printf %s "$s" | docker login @HOST@ -u "$u" --password-stdin'
+HINT
+}
+
+# Verify the login actually PERSISTED an auth entry for Harbor. A `docker login`
+# can print "Login Succeeded" yet store nothing if a credential helper swallows
+# it, and the `sg docker` path can no-op on some VMs — so we confirm the config
+# instead of trusting the exit code. This is what stops the silent-deferral bug
+# (login appears to run, push fails later with no obvious cause).
+harbor_login_persisted() {
+    local cfg="${DOCKER_CONFIG:-$HOME/.docker}/config.json"
+    [[ -f "$cfg" ]] && grep -q "${HARBOR_HOST}" "$cfg" 2>/dev/null
+}
+
+# Attempt the login through whatever shell context can reach the daemon right now.
+do_harbor_login() {
     if docker info > /dev/null 2>&1; then
-        # Daemon reachable in this shell — log in directly.
-        if echo "${HARBOR_ROBOT_SECRET}" | docker login "${HARBOR_HOST}" -u "${HARBOR_ROBOT_USER}" --password-stdin; then
-            echo "   ✅ Docker logged in to Harbor."
-        else
-            echo "   ⚠️  Harbor login failed — double-check the robot creds."
-        fi
+        echo "${HARBOR_ROBOT_SECRET}" | docker login "${HARBOR_HOST}" -u "${HARBOR_ROBOT_USER}" --password-stdin
     elif command -v sg > /dev/null 2>&1; then
         # Fresh install: $USER was just added to the 'docker' group but THIS shell
-        # predates that membership. Run the login with the group active via `sg`
-        # so it succeeds now, before the log-out/back-in the next step needs anyway.
-        if sg docker -c "echo '${HARBOR_ROBOT_SECRET}' | docker login '${HARBOR_HOST}' -u '${HARBOR_ROBOT_USER}' --password-stdin" 2>/dev/null; then
-            echo "   ✅ Docker logged in to Harbor."
-        else
-            echo "   ⚠️  Harbor login deferred — after you log out and back in, run:"
-            echo "       echo '<robot-secret>' | docker login ${HARBOR_HOST} -u '${HARBOR_ROBOT_USER}' --password-stdin"
-        fi
+        # predates that membership. Run the login with the group active via `sg`.
+        sg docker -c "echo '${HARBOR_ROBOT_SECRET}' | docker login '${HARBOR_HOST}' -u '${HARBOR_ROBOT_USER}' --password-stdin"
     else
-        echo "   ⚠️  Docker daemon not reachable yet — after you log out and back in, run:"
-        echo "       echo '<robot-secret>' | docker login ${HARBOR_HOST} -u '${HARBOR_ROBOT_USER}' --password-stdin"
+        return 1
+    fi
+}
+
+if [[ -n "${HARBOR_ROBOT_USER:-}" && -n "${HARBOR_ROBOT_SECRET:-}" ]]; then
+    echo "🔑 Logging Docker into ${HARBOR_HOST} as ${HARBOR_ROBOT_USER}..."
+    if do_harbor_login > /dev/null 2>&1 && harbor_login_persisted; then
+        echo "   ✅ Docker logged in to Harbor (verified — your Lab 01 'docker push' will just work)."
+    else
+        echo "   ⚠️  Harbor login didn't stick yet. On a fresh VM this is normal: the 'docker'"
+        echo "       group isn't active until you log out and back in. After you do, run this once —"
+        harbor_relogin_hint
     fi
 else
     echo "🔑 No HARBOR_ROBOT_USER/SECRET passed — skipping Harbor login."
-    echo "   (Lab 01's 'docker push' needs it. Instructor: run 'just bootstrap-harbor',"
-    echo "    then re-run this script with the printed creds — or 'just test-client'.)"
+    echo "   (Lab 01's 'docker push' needs it. Instructor: run 'just bootstrap-harbor' +"
+    echo "    'just deploy-harbor-creds', then re-run this script — or 'just test-client'.)"
 fi
 
 # ── Kubeconfig Fetch (optional) ───────────────────────────────

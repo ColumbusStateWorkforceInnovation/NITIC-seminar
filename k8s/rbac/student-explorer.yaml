@@ -1,0 +1,50 @@
+# student-explorer — read-only cluster-wide view for students.
+#
+# WHY THIS EXISTS:
+#   Rancher's `project-member` role (what provision-students.sh binds) is
+#   namespace-scoped: it grants full workload management inside the student's
+#   own `student-<name>` namespace but ZERO cluster-wide read. The labs, however,
+#   assume students can see the whole ocean:
+#     - Day 1 Lab 02: `kubectl get ns` (the connectivity check) and the
+#       `kubectl get pods -A` scavenger hunt (read the treasure-chest pod's logs).
+#     - Day 2 Lab 01 "Radar Room": k9s `:ns` to browse/filter all namespaces.
+#   Without a cluster-wide read grant every one of those returns `Forbidden`,
+#   which reads to a student as "my access is broken."
+#
+# WHAT IT GRANTS (and DOESN'T):
+#   get/list/watch on namespaces, pods, and pods/log — cluster-wide, READ ONLY.
+#   It does NOT grant secrets, nor any write (create/delete/exec) outside the
+#   student's own namespace. The admin boundary asserted by `just check-access`
+#   (no secrets in admin-tools/argocd/cattle-system/kube-system, no pod-create
+#   in admin namespaces) stays fully intact.
+#
+# SCOPE: bound to the `system:authenticated` group, so it covers every current
+#   AND future student with a single binding (no per-student churn mid-seminar).
+#   Tradeoff: any authenticated user can read pod logs cluster-wide — acceptable
+#   for a short teaching cluster, and exactly what the scavenger-hunt lab needs.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: student-explorer
+  labels:
+    app.kubernetes.io/part-of: admiral-bash-lab
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: student-explorer
+  labels:
+    app.kubernetes.io/part-of: admiral-bash-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: student-explorer
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: system:authenticated
