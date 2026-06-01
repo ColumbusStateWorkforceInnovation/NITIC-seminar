@@ -8,7 +8,7 @@
     \______t/
   ~~~~~~~~~~~~~
 ```
-*Day 1 — the ship sank. Today we build a new one from scratch: Linux fundamentals and your first containers.*
+*Welcome to the island after surviving the wreck. Lets build your toolkit, then learn what a container actually is*
 
 ## 🕘 The Schedule
 - **09:00 - 09:15** | Welcome & Storytime
