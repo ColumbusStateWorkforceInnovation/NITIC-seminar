@@ -160,10 +160,10 @@ init: check-config check-tools
     @echo "    9.  just bootstrap-harbor    — create the raft-fleet project + push robot (Day 1 Lab 01)"
     @echo "    10. just deploy-harbor-creds — publish the push token so student VMs auto-login"
     @echo "    11. just pull-model          — pull the AI model into Ollama"
-    @echo "    12. just provision           — create student accounts (needs RANCHER_TOKEN)"
-    @echo "    13. just grant-explorer      — give students cluster-wide READ (get ns / pods -A / k9s)"
-    @echo "    14. just grant-gateway       — give students HTTPRoute access in their ns (Day 2 Lab 03)"
-    @echo "    15. just check-access <name> — verify the boundary + cluster-read + httproutes before class"
+    @echo "    12. just provision           — create students + auto-grant lab RBAC (needs RANCHER_TOKEN)"
+    @echo "                                    (runs grant-explorer + grant-gateway for you)"
+    @echo "    13. just check-access <name> — verify boundary + cluster-read + httproutes before class"
+    @echo "    (deploy-rancher auto-pins server-url; re-run 'just set-rancher-url' if it drifts)"
     @echo ""
     @echo "  Next steps (LOCAL k3d test loop):"
     @echo "    1. just bootstrap-k3d  — create local k3d cluster + Gateway API"
@@ -569,6 +569,32 @@ deploy-rancher: (_require "RANCHER_BOOTSTRAP_PASSWORD" RANCHER_BOOTSTRAP_PASSWOR
     LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} RANCHER_BOOTSTRAP_PASSWORD='{{RANCHER_BOOTSTRAP_PASSWORD}}' \
       envsubst < k8s/rancher/rancher-values.yaml \
       | {{SSH}} "helm upgrade --install rancher rancher-stable/rancher --version {{RANCHER_VERSION}} -n cattle-system --create-namespace -f -"
+    @echo "📌 Pinning server-url (so the kubeconfig students copy is deterministic)..."
+    @just set-rancher-url || echo "   ⚠️  Rancher not Ready in time — re-run 'just set-rancher-url' once it is."
+
+# Pin Rancher's server-url. The kubeconfig students copy from the Rancher UI
+# derives its API-server address from this setting. The Helm `hostname` value is
+# supposed to set it on a clean install, but it can drift to EMPTY (e.g. after a
+# Rancher reset / stale APIService churn — see the rancher-no-available-server
+# note), which makes the copied kubeconfigs fragile / host-dependent. This waits
+# for Rancher to create the setting, then enforces it. Idempotent; auto-run by
+# deploy-rancher, and safe to re-run any time. Honors LOCAL/REMOTE.
+set-rancher-url:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    URL="https://rancher.{{LAB_DOMAIN}}"
+    echo "⏳ Waiting for Rancher's server-url setting to exist (up to ~5 min)..."
+    ok=""
+    for i in $(seq 1 60); do
+        if {{SSH}} "kubectl get setting.management.cattle.io server-url" >/dev/null 2>&1; then ok=1; break; fi
+        sleep 5
+    done
+    if [[ "$ok" != "1" ]]; then
+        echo "⚠️  server-url setting never appeared — is Rancher Ready? Re-run 'just set-rancher-url' once it is."
+        exit 1
+    fi
+    {{SSH}} "kubectl patch setting.management.cattle.io server-url --type=merge -p '{\"value\":\"${URL}\"}'"
+    echo "✅ Rancher server-url pinned to ${URL}"
 
 # Deploy the NVIDIA device plugin so pods can request nvidia.com/gpu
 deploy-gpu-plugin:
@@ -747,6 +773,12 @@ provision:
     RANCHER_URL={{RANCHER_URL}} \
     RANCHER_TOKEN={{RANCHER_TOKEN}} \
     bash scripts/provision-students.sh --roster {{STUDENT_ROSTER}}
+    @echo ""
+    @echo "🔐 Granting the RBAC the labs actually need (so provisioning = lab-ready)..."
+    @just grant-explorer
+    @just grant-gateway
+    @echo "   ↪ If grant-gateway 'skipped' a namespace, Rancher hadn't synced its"
+    @echo "     rolebinding yet — just re-run 'just grant-gateway' in a few seconds."
 
 # Provision a single student by username
 provision-one USERNAME:
@@ -754,6 +786,9 @@ provision-one USERNAME:
     RANCHER_URL={{RANCHER_URL}} \
     RANCHER_TOKEN={{RANCHER_TOKEN}} \
     bash scripts/provision-students.sh --roster {{STUDENT_ROSTER}} --student {{USERNAME}}
+    @echo "🔐 Granting lab RBAC (cluster-read + HTTPRoute)..."
+    @just grant-explorer
+    @just grant-gateway
 
 # Reset (delete + re-create) a single student's namespace
 reset-student USERNAME:
