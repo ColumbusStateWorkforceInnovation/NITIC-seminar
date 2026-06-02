@@ -39,6 +39,13 @@ markdown_extensions:
       alternate_style: true
   - tables
   - attr_list
+  # Lets a doc page pull in an external file verbatim with `--8<-- "path"`.
+  # Used so the Boatswain persona lives in ONE place (examples/agents-md/*.md)
+  # and the Day-1 lab transcludes it instead of duplicating the whole block.
+  # base_path is the repo root; check_paths fails the build on a bad include.
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
 
 plugins:
   - search
@@ -91,5 +98,4 @@ nav:
       - "Lab 01 - The Pirate Strikes": missions/day-04/lab-01-the-pirate-strikes.md
       - "Salvage Report Template + Rubric": missions/day-04/incident-report-template.md
       - "One-Pager": missions/day-04/one-pager.md
-    - "Book Readings (Storytime)": missions/book-readings.md
     - "Expanded Labs": missions/expanded-labs.md
