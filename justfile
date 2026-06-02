@@ -1016,6 +1016,15 @@ creds:
     USERS=$(grep -E '^\s+username:' "$DEXF" | sed -E 's/.*username:[[:space:]]*"?([^"]+)"?.*/\1/' | paste -sd, - | sed 's/,/, /g')
     echo "    ${USERS:-(none — check k8s/core-tools/dex.yaml)}"
     echo ""
+    echo "  ⛵ Student Rancher login → kubeconfig (the Day 1 Lab 02 'board the cluster' flow):"
+    echo "    1. Browse to https://rancher.$D and sign in:"
+    echo "         username:  sailor-<name>             (e.g. sailor-divya)"
+    echo "         password:  {{PASSWORD_PREFIX}}-<name>    (e.g. {{PASSWORD_PREFIX}}-divya)"
+    echo "    2. Profile icon (top-right) → \"Copy KubeConfig to Clipboard\""
+    echo "    3. Paste into ~/.kube/config, then verify:  kubectl get ns"
+    echo "       (each student's workspace is the namespace  student-<name>)"
+    echo "    Per-student card with these steps:  scripts/provision-students.sh writes one to /tmp/creds/"
+    echo ""
     echo "  Harbor push robot (Day 1 Lab 01 — created by 'just bootstrap-harbor'):"
     # Single-quoted: the robot username has a literal '$' that bash (set -u) would
     # otherwise try to expand. just fills the placeholder in regardless of quoting.
