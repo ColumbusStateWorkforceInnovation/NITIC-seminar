@@ -70,6 +70,14 @@ metadata:
     app: ollama
 spec:
   replicas: 1
+  # HANDOFF NOTE (2026-06-02): Recreate (not the default RollingUpdate) because
+  # this is a single-GPU singleton. The node has ONE T4; RollingUpdate surges a
+  # new pod before terminating the old, but the new pod can't get the GPU the old
+  # one still holds → it sticks Pending "Insufficient nvidia.com/gpu" and the
+  # rollout deadlocks forever. Recreate tears down the old pod first, freeing the
+  # GPU. Costs a ~1-2 min AI-engine blip on every ollama change — fine off-class.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: ollama
@@ -99,6 +107,14 @@ spec:
         image: ollama/ollama:latest
         ports:
         - containerPort: 11434
+        # HANDOFF NOTE (2026-06-02): keep the model resident in VRAM so students
+        # never hit a cold-start. Ollama unloads a model after 5 min idle by
+        # default; the next `hail` then blocks ~60-120s reloading 5GB into the
+        # T4. KEEP_ALIVE=-1 pins it loaded indefinitely. qwen3:8b (~5.6GB) +
+        # the gemma3:4b alias (~3.3GB) both resident still fit the T4's 16GB.
+        env:
+        - name: OLLAMA_KEEP_ALIVE
+          value: "-1"
         # GPU mode: the model is offloaded to the T4's 16GB VRAM, so the pod's
         # CPU/RAM footprint stays small. The nvidia.com/gpu resource goes in
         # limits ONLY — k8s mirrors it to requests automatically. The node has
