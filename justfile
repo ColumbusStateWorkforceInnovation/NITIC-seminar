@@ -162,7 +162,8 @@ init: check-config check-tools
     @echo "    11. just pull-model          — pull the AI model into Ollama"
     @echo "    12. just provision           — create student accounts (needs RANCHER_TOKEN)"
     @echo "    13. just grant-explorer      — give students cluster-wide READ (get ns / pods -A / k9s)"
-    @echo "    14. just check-access <name> — verify the boundary + cluster-read before class"
+    @echo "    14. just grant-gateway       — give students HTTPRoute access in their ns (Day 2 Lab 03)"
+    @echo "    15. just check-access <name> — verify the boundary + cluster-read + httproutes before class"
     @echo ""
     @echo "  Next steps (LOCAL k3d test loop):"
     @echo "    1. just bootstrap-k3d  — create local k3d cluster + Gateway API"
@@ -775,6 +776,27 @@ grant-explorer:
     cat k8s/rbac/student-explorer.yaml | {{SSH}} "kubectl apply -f -"
     @echo "✅ Applied. Verify with: just check-access <student>"
 
+# Grant students HTTPRoute access in their OWN namespace — Day 2 Lab 03 Student C
+# exposes their frontend via a Gateway API HTTPRoute, but Rancher's project-member
+# role omits gateway.networking.k8s.io so the apply 403s. Applies the
+# student-gateway-editor ClusterRole, then binds it per student namespace to that
+# student's Rancher user (the same identity check-access impersonates) — so it's
+# their namespace ONLY, never the admin/infra routes. Idempotent; honors
+# LOCAL/REMOTE. Run after `provision`; re-run if you add a student.
+grant-gateway:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    echo "🛰️  Granting HTTPRoute (Gateway API) access in student namespaces..."
+    cat k8s/rbac/student-gateway.yaml | {{SSH}} "kubectl apply -f -"
+    for NS in $({{SSH}} "kubectl get ns -o name" | sed 's#namespace/##' | grep -E '^student-'); do
+        SUBJECT=$({{SSH}} "kubectl get rolebindings -n $NS -o json" \
+          | jq -r '[.items[].subjects[]? | select(.kind=="User") | .name] | unique | map(select(. != "")) | .[0] // empty')
+        if [[ -z "$SUBJECT" ]]; then echo "  ⚠️  $NS: no User subject in RoleBindings — skipped"; continue; fi
+        {{SSH}} "kubectl create rolebinding student-gateway --clusterrole=student-gateway-editor --user='$SUBJECT' -n $NS --dry-run=client -o yaml | kubectl apply -f -" >/dev/null
+        echo "  ✅ $NS → httproutes for $SUBJECT"
+    done
+    echo "✅ Done. Verify:  just check-access <student>  (create httproutes should be yes)"
+
 # Verify a student's access boundary BEFORE class. Impersonates the Rancher user
 # found in their namespace's RoleBindings, then confirms they are DENIED on the
 # admin namespaces (secrets + pod-create, the two ways to reach a secret) and
@@ -822,6 +844,9 @@ check-access USERNAME:
     echo "  ── Should be ALLOWED (their own workspace) ───────────────────"
     chk "create workloads in own ns"     create deployments "$NS"     yes 0
     chk "read secrets in own ns"         get    secrets     "$NS"     yes 0
+    # Day 2 Lab 03 Student C exposes their UI via a Gateway API HTTPRoute. Needs
+    # `just grant-gateway` (project-member omits gateway.networking.k8s.io).
+    chk "create httproutes (Lab 03 UI)"  create httproutes.gateway.networking.k8s.io "$NS" yes 0
     echo ""
     echo "  ── Cluster-wide READ (student-explorer; the labs need it) ────"
     # Day 1 Lab 02 `kubectl get ns` + Day 2 Lab 01 k9s `:ns`. CRITICAL: if the

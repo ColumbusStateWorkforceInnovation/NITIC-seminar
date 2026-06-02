@@ -1,0 +1,25 @@
+# student-gateway-editor — lets students manage HTTPRoutes in their OWN namespace.
+#
+# WHY THIS EXISTS:
+#   Day 2 Lab 03 (Fleet Logistics) Student C exposes their frontend to the
+#   browser via a Gateway API HTTPRoute (`gateway.networking.k8s.io`). Rancher's
+#   project-member / edit role does NOT cover that API group, so the student's
+#   `kubectl apply` of the HTTPRoute returns `Forbidden` — Lab 03 Step 4 fails.
+#
+# SCOPE (deliberately NOT cluster-wide):
+#   This ClusterRole only DEFINES the verbs. `just grant-gateway` binds it with a
+#   per-namespace RoleBinding into each student-<name> namespace, scoped to that
+#   student's Rancher user. So a student can create/edit HTTPRoutes ONLY in their
+#   own namespace — they cannot touch the infra routes in admin-tools / argocd.
+#   (The Gateway's allowedRoutes is `From: All`, so an HTTPRoute in the student's
+#   namespace still attaches to main-gateway — which is exactly what Lab 03 needs.)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: student-gateway-editor
+  labels:
+    app.kubernetes.io/part-of: admiral-bash-lab
+rules:
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
