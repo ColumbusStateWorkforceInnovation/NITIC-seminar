@@ -67,8 +67,11 @@ spec:
       containers:
       - name: ollama
         # Decision: Use the official Ollama image to serve the local LLM
-        # (default: gemma3:4b — see lab.env / AI_MODEL). Any Ollama-supported
+        # (default: qwen3:8b — see lab.env / AI_MODEL). Any Ollama-supported
         # tag works; just `just pull-model <tag>` after deploy.
+        # HANDOFF NOTE (2026-06-01): was gemma3:4b; upgraded to qwen3:8b — stronger
+        # model that still fits the T4's 16GB VRAM at Q4. 12-14B models also fit if
+        # you raise quality over speed; 27B+ spills to CPU. PVC below is 20Gi.
         # The ollama/ollama image is CUDA-capable — no image change for GPU.
         image: ollama/ollama:latest
         ports:

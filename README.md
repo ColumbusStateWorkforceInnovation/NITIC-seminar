@@ -130,7 +130,7 @@ just deploy-gitea      # ~2 min
 just deploy-harbor     # ~5 min — heaviest of the three
 just deploy-argocd
 just deploy-rancher    # heavy on a laptop — skip if you only need a smoke test
-just pull-model        # ~5 min — pulls gemma3:4b into Ollama (CPU)
+just pull-model        # ~5 min — pulls qwen3:8b into Ollama
 ```
 
 Local TLS is self-signed, so browsers will warn until you trust the lab CA in
@@ -319,9 +319,11 @@ that's confusing for you will be confusing for a room of instructors.
 
 ## The AI engine — CPU vs GPU
 
-The "Socratic Boatswain" runs `gemma3:4b` through Ollama + LiteLLM. The model is
-small (~3.3 GB) and **runs fine on CPU** — no GPU is required to teach the
-seminar, it is just slower to respond.
+The "Socratic Boatswain" runs `qwen3:8b` through Ollama + LiteLLM (upgraded from
+`gemma3:4b` on 2026-06-01 — see the note in `lab.env`). At Q4 it is ~5 GB and fits
+the Tesla T4's 16 GB VRAM comfortably. It **also runs on CPU** — no GPU is strictly
+required to teach the seminar, it is just slower to respond (an 8B is heavier on
+CPU than the old 4B, so GPU is preferred for a live class).
 
 For GPU acceleration, run `just deploy-gpu-plugin` so Kubernetes can schedule
 the card. Note that the remote `k8s/core-tools/ai-engine.yaml` requests a GPU

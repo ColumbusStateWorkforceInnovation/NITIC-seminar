@@ -14,7 +14,7 @@
 #                      domain has real public DNS (the default production
 #                      path) and skips /etc/hosts entirely.
 #   LAB_DOMAIN       — Override the default lab domain (wagbiz.org).
-#   AI_MODEL         — Ollama model tag the cluster is serving. Default: gemma3:4b.
+#   AI_MODEL         — Ollama model tag the cluster is serving. Default: qwen3:8b.
 #                      Must match the `model_name` exposed by LiteLLM (templated
 #                      from AI_MODEL in k8s/core-tools/ai-engine.yaml at deploy).
 #   AI_API_KEY       — API key for aichat to authenticate to LiteLLM.
@@ -75,7 +75,9 @@ LAB_DOMAIN="${LAB_DOMAIN:-wagbiz.org}"
 # AI engine — model name must match the litellm-config `model_name` (which is
 # `${AI_MODEL}` after envsubst at deploy time). API key must match LiteLLM's
 # master_key. Both defaults mirror lab.env.example.
-AI_MODEL="${AI_MODEL:-gemma3:4b}"
+# HANDOFF NOTE (2026-06-01): default bumped gemma3:4b -> qwen3:8b. Keep in sync
+# with lab.env / lab.env.example / justfile / ai-engine.yaml.
+AI_MODEL="${AI_MODEL:-qwen3:8b}"
 AI_API_KEY="${AI_API_KEY:-sk-change-me}"
 
 # Abort early if AI_API_KEY wasn't exported (or is still the placeholder).

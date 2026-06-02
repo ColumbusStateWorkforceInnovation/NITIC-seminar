@@ -83,7 +83,7 @@ The `Dockerfile`, `index.html`, and `AGENTS.md` you're about to create all belon
 
    Your prompt should change from `$` to `boatswain>` — that's how you know Silas is loaded. (`hail` is a tiny wrapper `setup-client.sh` installed at `/usr/local/bin/hail`; it runs `aichat -r boatswain` against the role file `~/.config/aichat/roles/boatswain.md`, which is symlinked to the `~/lab/AGENTS.md` you just edited. Edit AGENTS.md and re-run `hail` to pick up new rules.)
 
-3. Inside the `boatswain>` REPL, type `.info` to verify you are connected to the island's `gemma3:4b` model.
+3. Inside the `boatswain>` REPL, type `.info` to verify you are connected to the island's `qwen3:8b` model.
 
 ## Step 1: Drafting the Blueprint (Dockerfile)
 

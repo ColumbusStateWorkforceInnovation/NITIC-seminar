@@ -45,7 +45,10 @@ CERT_DAYS      := env_var_or_default("CERT_DAYS",      "20")
 # tool's default). Format: k3s channel string, e.g. v1.35.5+k3s1.
 K3S_VERSION    := env_var_or_default("K3S_VERSION",    "")
 
-AI_MODEL       := env_var_or_default("AI_MODEL",       "gemma3:4b")
+# HANDOFF NOTE (2026-06-01): default bumped gemma3:4b -> qwen3:8b (stronger, still
+# fits the Tesla T4's 16GB VRAM). Override via AI_MODEL in lab.env. See lab.env note.
+# AI_MODEL     := env_var_or_default("AI_MODEL",       "gemma3:4b")  # previous default
+AI_MODEL       := env_var_or_default("AI_MODEL",       "qwen3:8b")
 
 # ── App admin credentials (SECRETS) ──────────────────────────
 # Real values live in lab.env (gitignored) — that is the source of truth.
