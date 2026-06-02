@@ -8,15 +8,18 @@
 #     - Day 1 Lab 02: `kubectl get ns` (the connectivity check) and the
 #       `kubectl get pods -A` scavenger hunt (read the treasure-chest pod's logs).
 #     - Day 2 Lab 01 "Radar Room": k9s `:ns` to browse/filter all namespaces.
+#     - Day 2 Lab 03 "Fleet Logistics": read a TEAMMATE's services + endpoints in
+#       another namespace to get the DNS name/port right and debug the silent
+#       break (`kubectl get svc/endpoints -n student-<teammate>`).
 #   Without a cluster-wide read grant every one of those returns `Forbidden`,
 #   which reads to a student as "my access is broken."
 #
 # WHAT IT GRANTS (and DOESN'T):
-#   get/list/watch on namespaces, pods, and pods/log — cluster-wide, READ ONLY.
-#   It does NOT grant secrets, nor any write (create/delete/exec) outside the
-#   student's own namespace. The admin boundary asserted by `just check-access`
-#   (no secrets in admin-tools/argocd/cattle-system/kube-system, no pod-create
-#   in admin namespaces) stays fully intact.
+#   get/list/watch on namespaces, pods, pods/log, services, and endpoints —
+#   cluster-wide, READ ONLY. It does NOT grant secrets, nor any write
+#   (create/delete/exec) outside the student's own namespace. The admin boundary
+#   asserted by `just check-access` (no secrets in admin-tools/argocd/
+#   cattle-system/kube-system, no pod-create in admin namespaces) stays intact.
 #
 # SCOPE: bound to the `system:authenticated` group, so it covers every current
 #   AND future student with a single binding (no per-student churn mid-seminar).
@@ -31,7 +34,10 @@ metadata:
     app.kubernetes.io/part-of: admiral-bash-lab
 rules:
   - apiGroups: [""]
-    resources: ["namespaces", "pods", "pods/log"]
+    resources: ["namespaces", "pods", "pods/log", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
