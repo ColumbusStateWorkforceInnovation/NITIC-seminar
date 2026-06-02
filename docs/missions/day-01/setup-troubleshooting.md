@@ -104,15 +104,15 @@ bash scripts/setup-client.sh
 
 **Symptom:** `docker build` works but `docker push harbor.wagbiz.org/raft-fleet/<name>:v1` returns `unauthorized: unauthorized to access repository` or `no basic auth credentials`.
 
-**Cause:** This VM isn't logged in to Harbor. Either the `docker` group wasn't active when `setup-client.sh` ran (so the auto-login was deferred), or the shared push token was rotated after this VM was set up — both leave a missing/stale entry in `~/.docker/config.json`. The Harbor server, project, and token are fine; only this VM's stored login is stale. (`verify-client.sh` flags this with a ⚠️ "Docker is NOT logged in to harbor…" line.)
+**Cause:** This VM has no Harbor push token in `~/.docker/config.json` — usually because the shared token was rotated after the VM was set up, or setup-client.sh couldn't reach the creds URL at the time. The Harbor server, project, and token are fine; only this VM's stored credential is missing/stale. (`verify-client.sh` flags this with a ⚠️ "No Harbor push token…" line.)
 
-**Fix:** Re-fetch the shared robot creds and log in — one step, copy-paste the whole thing (no need to type the `$`-laden username or the secret):
+**Fix:** Run one word — it re-fetches the shared token and rewrites the docker config (no `docker login`, no daemon needed):
 
 ```bash
-bash -c 'curl -fsSL https://docs.wagbiz.org/creds/harbor-robot.env -o /tmp/h.env && u=$(grep "^HARBOR_ROBOT_USER=" /tmp/h.env | cut -d= -f2-) && s=$(grep "^HARBOR_ROBOT_SECRET=" /tmp/h.env | cut -d= -f2-) && printf %s "$s" | docker login harbor.wagbiz.org -u "$u" --password-stdin'
+harbor-login
 ```
 
-It's wrapped in `bash -c '…'` on purpose: students run the labs in **fish**, which can't `source` a `KEY=value` file and would mishandle the literal `$` in the robot username. The wrapper makes it paste cleanly into fish *or* bash, and the creds are parsed literally (grep + `cut`, never `source`d) so the `$` survives. You should see `Login Succeeded`; re-run the `docker push`. (If `docker login` itself errors with `permission denied`, fix the group first — see the section just above — then re-run.)
+`setup-client.sh` installs this command and writes the token at setup time, so a fresh VM needs nothing in class. `harbor-login` is only for re-auth after a token rotation. You should see `✅ Harbor ready…`; re-run your `docker push`.
 
 ### `git clone` or `apt` fails — network / proxy
 

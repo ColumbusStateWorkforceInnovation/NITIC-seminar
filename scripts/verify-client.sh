@@ -272,25 +272,17 @@ else
     info "no per-registry CA — Docker trusts harbor.${LAB_DOMAIN} via the system store"
 fi
 
-# ── Harbor login (Lab 01 'docker push') ─────────────────────
-# The #1 silent Lab 01 failure: the VM was never actually logged in to Harbor
-# (the docker group wasn't active when setup ran, or the robot token was rotated
-# afterward), so `docker push` dies with "unauthorized". Confirm an auth entry
-# for harbor.${LAB_DOMAIN} is persisted in the docker config — that's what push
-# uses. Warn (not fail): it's normal to be logged out before Lab 01, and there's
-# a one-step fix.
+# ── Harbor push credential (Lab 01 'docker push') ───────────
+# setup-client.sh writes the shared push token straight into the docker config
+# (no `docker login` needed). Confirm the auth entry for harbor.${LAB_DOMAIN} is
+# present — that's what `docker push` uses. Warn (not fail): there's a one-word
+# fix if it's missing (e.g. the token was rotated after this VM was set up).
 DOCKER_CFG="${DOCKER_CONFIG:-$HOME/.docker}/config.json"
-HARBOR_CREDS_URL="${HARBOR_CREDS_URL:-https://docs.${LAB_DOMAIN}/creds/harbor-robot.env}"
 if [ -f "$DOCKER_CFG" ] && grep -q "harbor.${LAB_DOMAIN}" "$DOCKER_CFG" 2>/dev/null; then
-    pass "Docker is logged in to harbor.${LAB_DOMAIN} (Lab 01 'docker push' will work)"
+    pass "Harbor push token present in docker config (Lab 01 'docker push' will work)"
 else
-    warn "Docker is NOT logged in to harbor.${LAB_DOMAIN} — Lab 01 'docker push' will say 'unauthorized'."
-    echo "      Fix it in one step (copy-paste the whole line — works in fish or bash):"
-    # bash -c wrapper: the labs run in fish (can't source a KEY=value file, mangles
-    # the '$' in the robot username). Creds parsed literally so the '$' survives.
-    sed "s|@URL@|${HARBOR_CREDS_URL}|; s|@HOST@|harbor.${LAB_DOMAIN}|" <<'HINT'
-        bash -c 'curl -fsSL @URL@ -o /tmp/h.env && u=$(grep "^HARBOR_ROBOT_USER=" /tmp/h.env | cut -d= -f2-) && s=$(grep "^HARBOR_ROBOT_SECRET=" /tmp/h.env | cut -d= -f2-) && printf %s "$s" | docker login @HOST@ -u "$u" --password-stdin'
-HINT
+    warn "No Harbor push token in docker config — Lab 01 'docker push' would say 'unauthorized'."
+    echo "      Fix it with one word:  harbor-login"
 fi
 
 # ── Lab connectivity (HTTPS via the Gateway) ────────────────
