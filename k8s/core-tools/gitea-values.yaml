@@ -50,18 +50,21 @@ gitea:
     #   ENABLE_AUTO_REGISTRATION — create the Gitea account on first SSO login.
     #   ACCOUNT_LINKING=auto      — if a local account already has the same
     #                               email, link to it instead of duplicating.
-    #   USERNAME=nickname         — derive the username from the OIDC token.
-    #                               Dex returns only the `name` claim (= the
-    #                               roster username, e.g. "divya"); goth's
-    #                               nickname mapping falls back to `name`, so
-    #                               this yields the roster username. (Dex sends
-    #                               NO preferred_username — verified by decoding
-    #                               a live id_token.)
+    #   USERNAME=email            — derive the username from the email's local
+    #                               part: eric@wagbiz.org -> "eric" (= the roster
+    #                               username, and matches their k8s namespace).
+    #                               MUST be `email`, NOT `nickname`: Dex sends only
+    #                               `name` + `email` (no `nickname`/`preferred_
+    #                               username` — verified by decoding a live id_token
+    #                               AND by reproducing the failure), and Gitea's
+    #                               `nickname` mapping reads nickname/preferred_
+    #                               username only, so it came out EMPTY and bounced
+    #                               every login to the /user/link_account prompt.
     # Requires the Dex source to request the `email` scope (see oauth.scopes).
     oauth2_client:
       ENABLE_AUTO_REGISTRATION: true
       ACCOUNT_LINKING: auto
-      USERNAME: nickname
+      USERNAME: email
       UPDATE_AVATAR: true
 
   # ── SSO via Dex (OIDC) ──────────────────────────────────────
