@@ -15,7 +15,7 @@ Day 3 is the leap from *manual* operations to *automated* ones. The students sto
 ## 09:30 - 10:30 | The Problem With Raw YAML (Lecture, 60 min)
 **Goal:** Make the students *feel* the pain of copy-pasting YAML before you sell them the cure. **60 minutes — was 90; the morning demo took 30.**
 - **Callback:** open by referencing Tuesday morning's Kustomize demo: *"Yesterday you met the operator's tool. Today you meet the publisher's tool. They are not rivals — half the field uses both."*
-- **Action (Storytime):** Project the PDF and read the "Day 3 Morning" passage from `book-readings.md`.
+- **Action (Storytime, ~2 min):** Project the *Admiral Bash's Island Adventure* PDF and read **pp. 22–23** — Hazel the Helm Hedgehog noticing the penguins were reinventing the wheel and assembling reusable charts at "No More Wheels". This is the lecture in one spread: stop hand-writing the same YAML; templatize it.
 - **Action:** Distribute the printed `one-pager.md`.
 - **Talking Point (The Pain):** Ask the room: "Yesterday you wrote a Deployment and a Service for *one* tier. Now imagine deploying that 3-tier stack for all 30 of your students. That's 180 hand-edited YAML files." Let that land.
 - **Lecture:** Introduce Helm — `Chart.yaml`, `values.yaml`, the `templates/` directory, and Go-templating ({% raw %}`{{ .Values.x }}`{% endraw %}). Frame `values.yaml` as the "ship's blueprint" and the templates as the "mass-production mold."
@@ -47,7 +47,7 @@ Day 3 is the leap from *manual* operations to *automated* ones. The students sto
 ## 04:15 - 05:00 | AI Connect & Debrief (45 min)
 - **Action:** Have students append **Rule Update 3** to `~/lab/AGENTS.md` and re-launch `hail` to pick up the new rule (see the side-quest in `day-03-automated-shipyards.md`). This makes the Boatswain refuse to debug an OutOfSync app until the student explains desired vs. live state.
 - **Game:** Have a student manually `kubectl delete` a pod from an ArgoCD-managed app and ask the Boatswain why it respawned. The AI should force them to articulate the reconciliation loop.
-- **Action (Storytime):** Project the PDF and read the "Day 3 Afternoon" passage from `book-readings.md` to close the day.
+- **Action (Storytime, ~2 min):** Project the PDF and read **pp. 28–31** to close the day — Goldie's build machine with the conveyor belt of clusters, the scorpion gatekeeper enforcing admission policy, and the Flux-bots deploying from Git. This is the perfect bridge into Day 4: the pipeline you just built is what tomorrow's pirate will try to subvert.
 
 ## 🧰 Pre-Flight Checklist (before class)
 - [ ] Helm is on every client VM (`setup-client.sh` installs it — verify with `helm version`).

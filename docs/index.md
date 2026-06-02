@@ -21,7 +21,7 @@ The mainframe is sunk. The rafts are being lashed together. Over the next four d
   - **Day 2 — Meet the Crew** (Deployments, Services, the 3-tier alliance)
   - **Day 3 — Automated Shipyards** (Helm, GitOps, Network-as-Code)
   - **Day 4 — The Admiral's Challenge** (vCluster, KubeVirt, Chaos)
-- **[Book Readings (Storytime)](missions/book-readings.md)** — the daily readings from the CNCF *Admiral Bash's Island Adventure* picture book that frame each day.
+- **Storytime** — each day opens and closes with a page range from the CNCF picture book *[Admiral Bash's Island Adventure](https://www.cncf.io/wp-content/uploads/2021/10/Admiral-Bash.pdf)*, called out inline in that day's Instructor Guide.
 
 ## ⚓ Your Island Toolbelt
 

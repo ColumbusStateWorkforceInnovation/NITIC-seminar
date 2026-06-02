@@ -4,7 +4,7 @@ The final day. **Ends at 14:30** so the room can clear for the airport. The morn
 
 ## 09:00 - 10:00 | Cloud-Native Classrooms of the Future (Lecture & Demos)
 **Goal:** Show faculty the scaling tools that make this curriculum portable to *their* college. Get to Chaos theory in time to seed the lab.
-- **Action (Storytime, ~5 min):** Project the PDF and read the "Day 4 Morning" passage from `book-readings.md`.
+- **Action (Storytime, ~5 min):** Project the *Admiral Bash's Island Adventure* PDF and read **pp. 40–43** — the returning pirates trying to slip an unsigned package onto the conveyor belt and getting rejected by the scorpion's admission policy + SBOM check. This is the live-fire exercise the students are about to face, told as bedtime story.
 - **Action:** Distribute the printed `one-pager.md`.
 - **Demo 1 — vCluster (5 min, named demo only):** Explain the bunk-vs-ship problem: a namespace is too restrictive, `cluster-admin` is too dangerous. Show — don't deep-dive — a `vCluster` already running. The point is "this exists and solves this problem," not a tutorial.
 - **Demo 2 — KubeVirt (5 min, named demo only):** Spin up (or show the already-running) traditional desktop VM *natively* inside the cluster. Land the point: faculty can keep teaching Windows Server / legacy Linux admin right next to modern containers. Move on.
@@ -49,7 +49,7 @@ The "AI Connect" block that used to live at 13:00 is **gone** in the 14:30 sched
 
 ## 14:15 - 14:30 | Wrap-Up: Trivia & Send-Off (15 min)
 - **Action (Flash Poll, ~10 min):** Open the Quiz App (`poll.{{ lab_domain }}`) and load `quiz-content.quizler` — a tight lightning round mixing K8s and pedagogy to close out the week.
-- **Action (Storytime, ~5 min):** Project the PDF and read the "Day 4 Afternoon" passage from `book-readings.md` to close the seminar.
+- **Action (Storytime, ~5 min):** Project the PDF and read **pp. 44–47** — Goldie's "Our applications match our platforms", the loosely coupled crew updating things independently, and the closing "Hooray!" cheer. The final spread is the Cloud Native Maturity Model in two sentences; end the seminar on it.
 - Thank the crew. They sailed. Hand off to the airport.
 
 ## 🧰 Pre-Flight Checklist (before class)

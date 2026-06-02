@@ -7,7 +7,7 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 
 ## 09:00 - 09:15 | Welcome & Storytime
 **Goal:** Settle the class and frame the day.
-- **Action (Storytime):** Project the PDF and read the "Day 1 Morning" passage from `book-readings.md`.
+- **Action (Storytime, ~2 min):** Project the *Admiral Bash's Island Adventure* PDF on the room screen and read **pp. 1–3** aloud — the opening spread through "To the lifeboats!". This frames the whole week: the monolith mainframe sinks, and the crew has to rebuild on the island. Linger on the illustration of the SS Legacy going down.
 - **Action:** Distribute the printed `one-pager.md`.
 - **Talking Point:** Set expectations — "The whole morning is building your ship. It feels slow, but by lunch every one of you is on an identical, fully-loaded Linux environment. That is the instructor superpower we're modeling: you debug the *setup script* once, not thirty laptops forever."
 - **Action:** Write **`AI_API_KEY`** on the board (the lab domain is built into the setup script; production runs on real DNS so no `SERVER_IP` needed). You'll walk students through downloading the Ubuntu ISO inside Lab 00 Part 0.
@@ -52,7 +52,7 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 
     **Pre-class prep:** Run `bash scripts/instructor-demo-setup.sh` before 16:00 (lunch break is fine). It creates an `instructor-demo` namespace with a `my-raft` nginx pod and prints the exact command sequence for the demo. Using a dedicated namespace keeps student work undisturbed. Teardown when class ends: `kubectl delete namespace instructor-demo`.
 - **Action (Scavenger Hunt):** Around 4:25 PM, quietly run `./scripts/day-01-scavenger-hunt.sh` from your terminal. Announce that a Treasure Chest has been hidden in the cluster; when a student finds it and reads the logs, have them share the code with the room.
-- **Debrief (last ~10 min):** Ask the faculty how they feel about the Socratic Boatswain — did it help or hinder? Optionally run the **Mutiny Challenge** (prompt injection): who can trick the Boatswain into emitting a raw code block *without* editing `~/lab/AGENTS.md`? Close by projecting the PDF and reading the "Day 1 Afternoon" passage from `book-readings.md`.
+- **Debrief (last ~10 min):** Ask the faculty how they feel about the Socratic Boatswain — did it help or hinder? Optionally run the **Mutiny Challenge** (prompt injection): who can trick the Boatswain into emitting a raw code block *without* editing `~/lab/AGENTS.md`? Close by projecting the PDF and reading **pp. 4–7** — washed ashore, "let's start, inspect and adapt as we go", and Goldie setting up the first Kubernetes install with kubeadm. Pairs perfectly with the day's lesson: you replaced the monolith with small, replaceable pieces.
 
     !!! note "Known-good mutiny attempts (instructor reserve — feed if nobody cracks it)"
         Pre-tested 2026-05-31 against `gemma3:4b` on `ai.wagbiz.org`. Each is a different *class* of attack — worth naming the technique after the room sees it work. **Project these only after letting students try their own for at least 5 minutes.**

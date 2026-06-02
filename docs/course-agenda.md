@@ -28,9 +28,10 @@
 
 | Time | Type | Topic & Activity |
 | :--- | :--- | :--- |
-| **09:00 - 09:10** | Storytime | Day 2 morning passage from `book-readings.md`. |
-| **09:10 - 09:20** | Demo | **Kustomize:** 10-min opening demo — instructor bumps every student's Day 1 raft Pod from `:v1` to `:v2` with one overlay file. Lands the operate-vs-publish frame before Helm. |
-| **09:20 - 10:30** | Lecture | Introduction to K8s Architecture, Deployments, and ConfigMaps. `k9s` intro. |
+| **09:00 - 09:10** | Storytime + Day 1 Quiz Warm-up | Read *Admiral Bash* pp. 8–11 (Captain Kube + Goldie); then run Day 1's `quiz-content.quizler` as a 5-min recap. |
+| **09:10 - 09:40** | 🚨 Day 1 Catch-Up | **Lab 01 push** (Harbor login now fixed), **Lab 02 §Board the Cluster** (Rancher → kubeconfig → `kubectl get ns`), **Ghost Ship** immutability demo, **Treasure Hunt** (`scripts/day-01-scavenger-hunt.sh`). |
+| **09:40 - 09:50** | Demo | **Kustomize:** 10-min opening demo — instructor bumps every student's Day 1 raft Pod from `:v1` to `:v2` with one overlay file. Lands the operate-vs-publish frame before Helm. |
+| **09:50 - 10:30** | Lecture | Introduction to K8s Architecture, Deployments, and ConfigMaps. `k9s` intro (trimmed 40 min — Day 1 catch-up took 30). |
 | **10:30 - 10:45** | Break | *15 Minute Morning Break* |
 | **10:45 - 12:00** | Lab | **Mission:** Deploying the Fleet. CrashLoopBackOff triage with `k9s`. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
