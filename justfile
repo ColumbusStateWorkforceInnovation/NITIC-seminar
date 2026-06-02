@@ -390,6 +390,25 @@ pull-model MODEL=AI_MODEL:
     @echo "🤖 Pulling model '{{MODEL}}' into Ollama..."
     {{SSH}} "kubectl exec -n admin-tools deploy/ollama -- ollama pull {{MODEL}}"
 
+# Test a Boatswain persona against the LIVE model in seconds — the edit-test loop
+# for AGENTS.md. Edit examples/agents-md/*.md (or any AGENTS.md), run this, read
+# the reply + auto-checks. No `hail` restart, no guessing which copy is loaded.
+# Sources lab.env for the API key. Usage:
+#   just test-boatswain
+#   just test-boatswain examples/agents-md/day-1-the-salty-boatswain.md "how do I expose a port?"
+#   just test-boatswain ~/lab/AGENTS.md "..."        # debug a student's OWN file
+test-boatswain FILE="examples/agents-md/day-1-the-salty-boatswain.md" QUESTION="How do I write a Dockerfile for nginx that copies in my index.html?":
+    #!/usr/bin/env bash
+    set -a; . ./lab.env; set +a
+    python3 scripts/test-persona.py "{{FILE}}" --ask "{{QUESTION}}"
+
+# Same, but a canned 3-turn conversation that checks opener rotation + the
+# help-vs-refuse balance across turns. Usage: just test-boatswain-convo [FILE]
+test-boatswain-convo FILE="examples/agents-md/day-1-the-salty-boatswain.md":
+    #!/usr/bin/env bash
+    set -a; . ./lab.env; set +a
+    python3 scripts/test-persona.py "{{FILE}}" --convo
+
 # The docs-hub pod's git-sync sidecar clones admiral/nitic-seminar @ branch
 # `maindeck` from the in-cluster Gitea; if that repo is missing/empty the pod
 # CrashLoops (empty /docs/repo → mkdocs can't find mkdocs.yml). This recipe
