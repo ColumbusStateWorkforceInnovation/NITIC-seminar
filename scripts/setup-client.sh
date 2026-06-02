@@ -426,7 +426,7 @@ else
     echo "D2 already installed."
 fi
 
-# Install aichat
+# Install aichat (binary only — config is (re)written below, every run)
 echo "🤖 Installing aichat..."
 if ! command -v aichat &> /dev/null; then
     AICHAT_VERSION=$(curl -s https://api.github.com/repos/sigoden/aichat/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
@@ -434,22 +434,27 @@ if ! command -v aichat &> /dev/null; then
     tar -xzf aichat.tar.gz aichat
     sudo install -o root -g root -m 0755 aichat /usr/local/bin/aichat
     rm aichat.tar.gz aichat
-    
-    # Configure aichat for the internal Gemma endpoint.
-    # The model identifier is <client>:<model_name>; the model_name half must
-    # match what LiteLLM publishes (templated from AI_MODEL at deploy time).
-    # aichat tolerates colons in model names (Ollama tags commonly contain them).
-    mkdir -p ~/.config/aichat
-    cat <<EOF > ~/.config/aichat/config.yaml
+else
+    echo "aichat already installed."
+fi
+
+# Configure aichat for the internal AI endpoint — ALWAYS (re)written, even when
+# aichat is already installed, so a `git pull` + re-run of this script rolls out
+# a model change (e.g. gemma3:4b -> qwen3:8b) to existing VMs. Without this the
+# model line is only set on first install and old VMs stay on the old tag.
+# The model identifier is <client>:<model_name>; the model_name half must match
+# what LiteLLM publishes (templated from AI_MODEL at deploy time). aichat
+# tolerates colons in model names (Ollama tags commonly contain them). The file
+# holds nothing student-authored (model + endpoint + key), so overwriting is safe.
+mkdir -p ~/.config/aichat
+cat <<EOF > ~/.config/aichat/config.yaml
 model: openai:${AI_MODEL}
 clients:
   - type: openai
     api_base: https://ai.${LAB_DOMAIN}/v1
     api_key: ${AI_API_KEY}
 EOF
-else
-    echo "aichat already installed."
-fi
+echo "   ⚓ aichat pointed at openai:${AI_MODEL} via https://ai.${LAB_DOMAIN}/v1"
 
 # ── Boatswain persona wiring ─────────────────────────────────
 # The labs introduce a Socratic Boatswain (Day 1) that evolves into an
