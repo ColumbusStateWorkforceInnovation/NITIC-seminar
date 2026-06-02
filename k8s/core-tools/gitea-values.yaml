@@ -43,6 +43,27 @@ gitea:
       SMTP_PORT: 1025
       FROM: "noreply@${LAB_DOMAIN}"
 
+    # ── OIDC sign-in behaviour (the "no duplicate accounts" knobs) ──────
+    # Without these, a first-time "Sign in with Dex" lands on Gitea's
+    # register/link screen and students hand-create a SECOND account. With
+    # them, Gitea silently provisions (or links) one account per student:
+    #   ENABLE_AUTO_REGISTRATION — create the Gitea account on first SSO login.
+    #   ACCOUNT_LINKING=auto      — if a local account already has the same
+    #                               email, link to it instead of duplicating.
+    #   USERNAME=nickname         — derive the username from the OIDC token.
+    #                               Dex returns only the `name` claim (= the
+    #                               roster username, e.g. "divya"); goth's
+    #                               nickname mapping falls back to `name`, so
+    #                               this yields the roster username. (Dex sends
+    #                               NO preferred_username — verified by decoding
+    #                               a live id_token.)
+    # Requires the Dex source to request the `email` scope (see oauth.scopes).
+    oauth2_client:
+      ENABLE_AUTO_REGISTRATION: true
+      ACCOUNT_LINKING: auto
+      USERNAME: nickname
+      UPDATE_AVATAR: true
+
   # ── SSO via Dex (OIDC) ──────────────────────────────────────
   # Auto-registers a "Dex" login source on startup, so students click
   # "Sign in with Dex" instead of using a Gitea-local password. The key/secret
@@ -56,6 +77,11 @@ gitea:
       key: "gitea"
       secret: "gitea-oidc-secret"
       autoDiscoverUrl: "https://sso.${LAB_DOMAIN}/.well-known/openid-configuration"
+      # MUST request `email` so ACCOUNT_LINKING=auto can match by email and
+      # auto-registration has an email to store; `profile`/`groups` are for the
+      # name claim + future group mapping. Default is `openid` only, which left
+      # the email blank on the link screen (the bug that spawned duplicates).
+      scopes: "openid profile email groups"
 
 redis-cluster:
   # Decision: Disable HA Redis to save resources
