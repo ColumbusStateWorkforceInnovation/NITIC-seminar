@@ -611,36 +611,16 @@ write_harbor_auth() {  # host user secret
     chmod 600 "$cfg"
 }
 
-# Install the standalone `harbor-login` command: re-fetches the shared token and
-# rewrites the docker config. The student types ONE word if a push ever 401s —
-# no '$'-laden paste, no shell quirks (it's a #!/bin/bash script, so it runs the
-# same whether invoked from fish or bash). URL/HOST are baked in at install;
-# HARBOR_CREDS_URL still overrides at runtime.
-sed "s|@URL@|${HARBOR_CREDS_URL}|g; s|@HOST@|${HARBOR_HOST}|g" <<'HARBOREOF' | sudo tee /usr/local/bin/harbor-login > /dev/null
-#!/bin/bash
-# Refresh this VM's Harbor push credential (Day 1 Lab 01). Run if 'docker push'
-# ever says "unauthorized". Writes ~/.docker/config.json directly — no daemon
-# and no `docker login` required.
-set -e
-URL="${HARBOR_CREDS_URL:-@URL@}"
-HOST="@HOST@"
-hc="$(curl -fsSL "$URL")" || { echo "harbor-login: couldn't reach $URL" >&2; exit 1; }
-u="$(printf '%s\n' "$hc" | grep -E '^HARBOR_ROBOT_USER='   | head -1 | cut -d= -f2-)"
-s="$(printf '%s\n' "$hc" | grep -E '^HARBOR_ROBOT_SECRET=' | head -1 | cut -d= -f2-)"
-u="${u#[\"\']}"; u="${u%[\"\']}"; s="${s#[\"\']}"; s="${s%[\"\']}"
-[ -n "$u" ] && [ -n "$s" ] || { echo "harbor-login: no creds found at $URL" >&2; exit 1; }
-auth="$(printf '%s' "$u:$s" | base64 | tr -d '\n')"
-cfg="${DOCKER_CONFIG:-$HOME/.docker}/config.json"; mkdir -p "$(dirname "$cfg")"
-if command -v jq > /dev/null 2>&1 && [ -s "$cfg" ]; then
-    tmp="$(mktemp)"
-    if jq --arg h "$HOST" --arg a "$auth" '.auths = ((.auths // {}) + {($h): {auth: $a}})' "$cfg" > "$tmp" 2>/dev/null; then mv "$tmp" "$cfg"; else rm -f "$tmp"; printf '{"auths":{"%s":{"auth":"%s"}}}\n' "$HOST" "$auth" > "$cfg"; fi
-else
-    printf '{"auths":{"%s":{"auth":"%s"}}}\n' "$HOST" "$auth" > "$cfg"
+# Install the standalone `harbor-login` command straight from the repo script,
+# so the installed command and `bash scripts/harbor-login.sh` are byte-identical
+# (a `git pull` ships the same logic — no drift). The student types ONE word if a
+# push ever 401s; it's #!/bin/bash, so it runs the same from fish or bash.
+# Skipped when the sibling script isn't present (e.g. the instructor's
+# `just test-client`, which copies only setup-client.sh to /tmp).
+if [[ -f "$SCRIPT_DIR/harbor-login.sh" ]]; then
+    sudo install -m 0755 "$SCRIPT_DIR/harbor-login.sh" /usr/local/bin/harbor-login
+    echo "   ⚓ Installed the 'harbor-login' command (one-word re-auth if a push ever 401s)."
 fi
-chmod 600 "$cfg"
-echo "✅ Harbor ready — 'docker push $HOST/raft-fleet/<name>:v1' will work."
-HARBOREOF
-sudo chmod +x /usr/local/bin/harbor-login
 
 if [[ -n "${HARBOR_ROBOT_USER:-}" && -n "${HARBOR_ROBOT_SECRET:-}" ]]; then
     write_harbor_auth "${HARBOR_HOST}" "${HARBOR_ROBOT_USER}" "${HARBOR_ROBOT_SECRET}"

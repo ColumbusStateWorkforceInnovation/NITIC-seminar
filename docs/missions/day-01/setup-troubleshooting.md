@@ -112,7 +112,13 @@ bash scripts/setup-client.sh
 harbor-login
 ```
 
-`setup-client.sh` installs this command and writes the token at setup time, so a fresh VM needs nothing in class. `harbor-login` is only for re-auth after a token rotation. You should see `✅ Harbor ready…`; re-run your `docker push`.
+`setup-client.sh` installs this command and writes the token at setup time, so a fresh VM needs nothing in class. If a student pulled the repo but hasn't re-run setup (so the command isn't on their PATH yet), the same script runs straight from the checkout:
+
+```bash
+git pull && bash scripts/harbor-login.sh
+```
+
+You should see `✅ Harbor ready…`; re-run your `docker push`.
 
 ### `git clone` or `apt` fails — network / proxy
 
