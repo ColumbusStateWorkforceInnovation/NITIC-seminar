@@ -44,13 +44,40 @@ ingress:
 additionalTrustedCAs: false
 
 # Single-node resource limits
+# HANDOFF NOTE (2026-06-02): raised memory 1Gi->3Gi (req 512Mi->1Gi) and cpu
+# limit 1->2 after Rancher crashlooped for ~2 days. Root cause was a stale
+# v1.ext.cattle.io APIService stalling startup discovery, but the TIGHT 1Gi limit
+# + 5s liveness probe (below) turned that transient into a death spiral: a
+# briefly-slow /healthz tripped the probe and the kubelet killed a Rancher that
+# was actually coming up. Rancher v2.14 wants ~2Gi+ headroom on this shared
+# 4-vCPU control-plane node. See the rancher-no-available-server runbook.
 resources:
   requests:
-    cpu: 250m
-    memory: 512Mi
-  limits:
-    cpu: "1"
+    cpu: 500m
     memory: 1Gi
+  limits:
+    cpu: "2"
+    memory: 3Gi
+
+# ── Probe tolerance (HANDOFF NOTE 2026-06-02) ─────────────────
+# The default liveness probe (timeout 5s, failureThreshold 5) kills Rancher if
+# /healthz is slow to answer for ~2.5 min — which is exactly what happened during
+# the stale-discovery stall, producing a 100-restart crashloop nobody noticed for
+# 2 days. These overrides give a slow-but-recovering Rancher room to breathe
+# instead of being executed: longer timeouts, more failures tolerated, and a
+# startup window stretched to ~4.5 min. All three keys are chart-supported.
+startupProbe:
+  timeoutSeconds: 15
+  periodSeconds: 15
+  failureThreshold: 18   # ~4.5 min to finish starting before liveness takes over
+livenessProbe:
+  timeoutSeconds: 15
+  periodSeconds: 30
+  failureThreshold: 8    # ~4 min of slow /healthz tolerated before a restart
+readinessProbe:
+  timeoutSeconds: 15
+  periodSeconds: 30
+  failureThreshold: 8    # don't flap out of Service endpoints under class load
 
 # ── SSO via Dex (OIDC) — UI / AuthConfig STEP ─────────────────
 # Rancher auth providers are NOT configurable through Helm values. After

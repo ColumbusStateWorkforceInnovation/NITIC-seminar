@@ -78,6 +78,10 @@ PASSWORD_PREFIX := env_var_or_default("PASSWORD_PREFIX", "AdmiralBash")
 
 RANCHER_URL    := "https://rancher." + LAB_DOMAIN
 RANCHER_TOKEN  := env_var_or_default("RANCHER_TOKEN",  "")
+# Pin the Rancher chart version so `deploy-rancher` can't silently jump to a newer
+# release mid-course (HANDOFF NOTE 2026-06-02: live cluster runs 2.14.1; stable repo
+# already has 2.14.2). Bump deliberately, off-class-days, then re-run deploy-rancher.
+RANCHER_VERSION := env_var_or_default("RANCHER_VERSION", "2.14.1")
 
 LAB_ADMIN_EMAIL := env_var_or_default("LAB_ADMIN_EMAIL", "admin@" + LAB_DOMAIN)
 
@@ -563,7 +567,7 @@ deploy-rancher: (_require "RANCHER_BOOTSTRAP_PASSWORD" RANCHER_BOOTSTRAP_PASSWOR
     {{SSH}} "helm repo add rancher-stable https://releases.rancher.com/server-charts/stable && helm repo update"
     LAB_DOMAIN={{LAB_DOMAIN}} LAB_ADMIN_EMAIL={{LAB_ADMIN_EMAIL}} RANCHER_BOOTSTRAP_PASSWORD='{{RANCHER_BOOTSTRAP_PASSWORD}}' \
       envsubst < k8s/rancher/rancher-values.yaml \
-      | {{SSH}} "helm upgrade --install rancher rancher-stable/rancher -n cattle-system --create-namespace -f -"
+      | {{SSH}} "helm upgrade --install rancher rancher-stable/rancher --version {{RANCHER_VERSION}} -n cattle-system --create-namespace -f -"
 
 # Deploy the NVIDIA device plugin so pods can request nvidia.com/gpu
 deploy-gpu-plugin:
