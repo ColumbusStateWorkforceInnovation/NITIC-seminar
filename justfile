@@ -851,6 +851,60 @@ grant-gateway:
     done
     echo "✅ Done. Verify:  just check-access <student>  (create httproutes should be yes)"
 
+# Grant the cohort-wide "boarding rights" for Day 3 Lab 02 Step 4 (The Raid).
+# Students delete/scale/patch a CREWMATE's Deployments + Services and watch that
+# crewmate's ArgoCD app self-heal. Rancher's project-member role is namespace-
+# scoped, so without this the raid 403s. Applies the student-raider-editor
+# ClusterRole, then binds it per student namespace to the system:authenticated
+# GROUP — so EVERY student can raid EVERY other student, but the binding never
+# lands in admin-tools / argocd / kube-system (admin boundary stays intact).
+# Self-Heal must be on for every student Application so the sabotage reverts.
+# Idempotent; honors LOCAL/REMOTE. Run after `provision`; revoke with
+# `just revoke-raider` once Day 3 is done.
+grant-raider:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    echo "🏴‍☠️  Granting cohort-wide raid rights (delete/patch deploy+svc in student namespaces)..."
+    cat k8s/rbac/student-raider.yaml | {{SSH}} "kubectl apply -f -"
+    for NS in $({{SSH}} "kubectl get ns -o name" | sed 's#namespace/##' | grep -E '^student-'); do
+        {{SSH}} "kubectl create rolebinding student-raider --clusterrole=student-raider-editor --group=system:authenticated -n $NS --dry-run=client -o yaml | kubectl apply -f -" >/dev/null
+        echo "  ✅ $NS → raidable by the cohort"
+    done
+    echo "✅ Done. Verify: a student token gets 'yes' on  kubectl auth can-i delete deployment -n student-<someone-else>"
+
+# Revoke the Day 3 raid rights (run after Day 3). Removes the per-namespace
+# RoleBindings; leaves the ClusterRole definition in place (harmless unbound).
+revoke-raider:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    echo "🧹 Revoking cohort-wide raid rights..."
+    for NS in $({{SSH}} "kubectl get ns -o name" | sed 's#namespace/##' | grep -E '^student-'); do
+        {{SSH}} "kubectl delete rolebinding student-raider -n $NS --ignore-not-found" >/dev/null
+        echo "  ✅ $NS → raid rights removed"
+    done
+    echo "✅ Done. Per-namespace confinement restored."
+
+# Clear the decks — delete leftover student WORKLOADS so each namespace starts
+# Day 3 with its full CPU budget. Every student-<name> namespace has a 500m CPU
+# ResourceQuota (≈5 pods at the 100m LimitRange default). Day 2's hand-built
+# fleets are still running and eat 200–500m of that, so a fresh Lab 01
+# `helm install` (a 3-tier stack, +300m) instantly exceeds quota and pods sit
+# Pending — which a novice reads as "I broke it." This deletes Deployments /
+# StatefulSets / DaemonSets / ReplicaSets / Pods / Services / HTTPRoutes in every
+# student-* namespace. It does NOT touch the namespace, the quota, the
+# LimitRange, RoleBindings (incl. student-raider), or secrets. DESTRUCTIVE to
+# Day 2 work — that is the intent. Idempotent; honors LOCAL/REMOTE. Run the night
+# before Day 3.
+clear-decks:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    echo "🧹 Clearing the decks (deleting leftover workloads in student namespaces)..."
+    for NS in $({{SSH}} "kubectl get ns -o name" | sed 's#namespace/##' | grep -E '^student-'); do
+        {{SSH}} "kubectl delete deploy,statefulset,daemonset,replicaset,pod,service,httproute --all -n $NS --ignore-not-found" >/dev/null 2>&1
+        echo "  ✅ $NS cleared"
+    done
+    echo "✅ Decks cleared. Verify free quota:  kubectl get quota -A | grep student-"
+
 # Verify a student's access boundary BEFORE class. Impersonates the Rancher user
 # found in their namespace's RoleBindings, then confirms they are DENIED on the
 # admin namespaces (secrets + pod-create, the two ways to reach a secret) and

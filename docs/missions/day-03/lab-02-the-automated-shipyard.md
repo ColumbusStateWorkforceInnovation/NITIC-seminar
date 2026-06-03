@@ -20,18 +20,23 @@ ArgoCD has exactly one job: notice when the Crew's Actions disagree with the Cap
 
 The island has its own private Git server — **Gitea** — so nothing ever has to leave the cluster.
 
-1. Open `gitea.{{ lab_domain }}` in your browser and log in with the account the Admiral issued you.
+1. Open `gitea.{{ lab_domain }}` in your browser and log in with the account the Admiral issued you (the same island single-sign-on you've used all week).
 2. Click **+ → New Repository**. Name it `island-stack`. Leave it **public** (the shipyard reads it anonymously) and create it.
-3. Back on your client VM, go into the chart folder from Lab 01 and commit it:
+3. **Mint a push token.** Because you sign in to Gitea through single-sign-on, your account has **no Git password** — so an HTTPS `git push` has nothing to authenticate with. Create a Personal Access Token to use as your password instead:
+    - Click your avatar (top-right) → **Settings → Applications**.
+    - Under **Manage Access Tokens**, name it (e.g. `client-vm`), expand **Select permissions**, and set **`repository` → Read and Write**.
+    - Click **Generate Token** and **copy it now** — Gitea shows it only once. This string *is* your push password.
+4. Back on your client VM, go into the chart folder from Lab 01 and commit it:
    ```bash
    cd island-stack
    git init -b maindeck
    git add .
    git commit -m "Draft the island-stack blueprint"
-   git remote add origin https://gitea.{{ lab_domain }}/<your-username>/island-stack.git
+   git remote add origin https://gitea.{{ lab_domain }}/<name>/island-stack.git
    git push -u origin maindeck
    ```
-4. Refresh Gitea — your blueprint is now the official Captain's Log.
+   When `git push` prompts you, enter your **Gitea username** and paste the **token** as the password (not your SSO password — there isn't one).
+5. Refresh Gitea — your blueprint is now the official Captain's Log.
 
 !!! note "Why `maindeck`?"
     On this island the trunk branch is `maindeck`, not `main`. Nautical
@@ -39,17 +44,36 @@ The island has its own private Git server — **Gitea** — so nothing ever has 
 
 ## Step 2: Open the Shipyard (Create an ArgoCD Application)
 
-1. Open `argocd.{{ lab_domain }}` and log in. (Your instructor will hand out the admin password, or you will get a personal account.)
+!!! warning "Scrap your manual release first"
+    In Lab 01 you ran `helm install my-stack`. The shipyard is about to manage
+    the **same** ships in the **same** namespace — and two captains fighting over
+    one fleet means name collisions and double the pods (your namespace has a
+    small CPU budget). Hand the helm over cleanly first:
+    ```bash
+    helm uninstall my-stack -n student-<name>
+    ```
+    From here on, the **only** way you launch ships is through Git.
+
+1. Open `argocd.{{ lab_domain }}` and log in **as the `admin` account** — your instructor will read out the password. Everyone uses the same `admin` login today: the per-person SSO logins are **read-only** (they can watch apps but can't create them), so `admin` is how you create an Application.
 2. Click **+ NEW APP** and fill in:
-   - **Application Name:** `<your-name>-stack`
+   - **Application Name:** `<name>-stack`
    - **Project:** `default`
    - **Sync Policy:** `Automatic` — tick **Prune Resources** and **Self Heal**
-   - **Repository URL:** `http://gitea-http.admin-tools.svc.cluster.local:3000/<your-username>/island-stack.git`
+   - **Repository URL:** `http://gitea-http.admin-tools.svc.cluster.local:3000/<name>/island-stack.git`
    - **Revision:** `maindeck`
    - **Path:** `.`
    - **Cluster:** `https://kubernetes.default.svc`
-   - **Namespace:** `<your-name>`
+   - **Namespace:** `student-<name>`
 3. Click **CREATE**.
+
+!!! note "Two URLs — don't swap them"
+    You `git push`ed to **`https://gitea.{{ lab_domain }}/...`** (the front door,
+    from your client VM). But ArgoCD reads the repo from *inside* the cluster, so
+    its **Repository URL** is the internal address
+    **`http://gitea-http.admin-tools.svc.cluster.local:3000/...`** — `http`, not
+    `https`, and a `.svc.cluster.local` host. Paste the **internal** one into the
+    form. If ArgoCD says *"failed to resolve"* or *"repository not found"*, this
+    is almost always the URL (or a repo you left **private** — it must be public).
 
 That form just wrote an `Application` object. This is what it looks like as YAML — the shipyard is itself just Kubernetes:
 
@@ -67,7 +91,7 @@ spec:
     path: .
   destination:
     server: https://kubernetes.default.svc
-    namespace: blackbeard
+    namespace: student-blackbeard
   syncPolicy:
     automated:
       prune: true      # delete objects removed from Git
@@ -81,22 +105,52 @@ Watch the ArgoCD UI. Within seconds it reads your log, finds your Helm chart, an
 Now prove the shipyard actually fights for you.
 
 1. On your client VM, manually scale a deployment *behind the shipyard's back*:
-   `kubectl scale deployment <your-name>-cache --replicas=10 -n <your-name>`
+   `kubectl scale deployment <name>-cache --replicas=10 -n student-<name>`
 2. Flip to the ArgoCD UI. The application card flips to **OutOfSync** — the shipyard sees the Crew's Actions (10 replicas) disagree with the Captain's Log (1 replica).
 3. Because you enabled **Self Heal**, watch ArgoCD *mercilessly* scale you back down to 1 — the number written in Git. The mutiny is over.
-4. Try again: `kubectl delete deployment <your-name>-cache -n <your-name>`. The shipyard rebuilds it from the log within seconds.
+4. Try again: `kubectl delete deployment <name>-cache -n student-<name>`. The shipyard rebuilds it from the log within seconds.
 
 **Lesson learned:** You can no longer break your environment by fat-fingering `kubectl`. The only way to change the fleet is to change the log.
 
-## 🧑‍🏫 Instructor Demo: The Live Classroom (JupyterLab via GitOps)
+## Step 4: Raid a Neighbor (Collaborative Sabotage)
 
-*Run this from the podium — it is the headline Instructor Superpower of the week.*
+You've proven the shipyard fights for *you*. Now prove it fights for **everyone** — by attacking someone else's fleet.
 
-1. The instructor has an ArgoCD app watching a chart that deploys **JupyterLab**.
-2. Edit the chart's `requirements.txt` — add a single line: `pandas`.
-3. Commit and push to Gitea.
-4. ArgoCD spots the change and re-syncs **every student's** Jupyter environment.
-5. **The "Aha":** No student typed `pip install`. You distributed a heavy data-science library to the entire class by editing one file and pushing it. *You just shipped a lab over a URL.*
+The Admiral has granted you boarding rights across the cohort. Pick a crewmate whose app is **Healthy / Synced**, and try to sink it:
+
+1. Delete one of *their* deployments:
+   `kubectl delete deployment <their-name>-cache -n student-<their-name>`
+2. Watch **their** ArgoCD card flip to **OutOfSync** — then heal right back. Their Captain's Log won. You cannot board a ship whose log you don't hold.
+3. Try scaling it, patching the image, deleting a Service — *anything* live. It all heals away. Live edits are **graffiti.**
+
+!!! warning "One action in the UI does NOT heal — don't touch app cards"
+    Everything above heals because the **Application** still exists — ArgoCD keeps
+    reconciling it. The one thing that does **not** heal is deleting the
+    **Application itself** (its card in the ArgoCD UI). Because the whole room is on
+    the shared **`admin`** login today, you *can* click **Delete** on a neighbour's
+    card — **don't.** With **Prune** on, deleting an Application tears down its
+    entire stack, and it will **not** come back on its own — someone has to recreate
+    the app. **Rule of thumb: raid with `kubectl` on a *deployment* (it heals);
+    never click Delete on an *Application* card — yours or anyone else's.**
+
+> ### So how *do* you change a crewmate's fleet?
+> You don't touch their cluster — you change their **law.** Open a **pull request**
+> against their Gitea repo (a healthcheck, an extra replica, a fixed label). When
+> *they* merge it, ArgoCD ships it, and it **sticks.** That is the only raid that lasts.
+
+**Lesson learned:** `kubectl` is a suggestion; **Git is the law.** Broad rights are safe *because* every fleet self-heals to its log — the only durable way to change anything is through a commit someone accepted.
+
+!!! note "Instructor setup — broadened rights required"
+    Step 4 only works if students have been granted rights to reach across the
+    cohort: cluster-wide **read** (already granted by `just grant-explorer`) plus
+    **delete/patch** on the other student namespaces. Run **`just grant-raider`**
+    before class — it binds delete/patch on Deployments + Services into every
+    `student-<name>` namespace (never the admin namespaces, never secrets). This
+    is **not** the default per-namespace confinement; it is a deliberate, scoped
+    grant for this lab, and it's safe **because** every fleet self-heals — keep
+    **Self-Heal on** for every student `Application`. Tear it down afterward with
+    `just revoke-raider`. If you skip the grant, run Step 4 as a paired demo (two
+    volunteers, one screen) instead.
 
 ## 🏁 Stretch Goal: Close the CI Loop (Gitea Actions)
 

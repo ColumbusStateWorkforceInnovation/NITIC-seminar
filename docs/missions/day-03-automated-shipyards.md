@@ -3,15 +3,14 @@
 **Date**: June 3, 2026
 **Theme**: Transitioning from manual steering to mass production and automated shipping with Hazel (Helm), GitOps (ArgoCD), and in-cluster CI (Gitea Actions).
 
-## 🌅 Morning: CI to Image, then Meet Hazel
+## 🌅 Morning: The Finished Vessel, then Meet Hazel
 
-Day 3 opens with the **build half** of CI/CD — the 30-min Gitea Actions demo that closes the gap between "code edit" and "image in the registry." Then Hazel (Helm) takes the floor to template what we just learned to build.
+Day 3 opens by **finishing what Day 2 started**. The instructor walks the complete 3-tier app end to end — the build no alliance quite finished yesterday — so the room sees the whole machine working before they templatize it. Then Hazel (Helm) takes the floor to turn that hand-built stack into a reusable blueprint.
 
 ### Key Objectives
 
-- See a complete `git push → image in Harbor` loop running entirely inside the lab cluster.
-- Understand that **Gitea Actions** is byte-for-byte GitHub Actions YAML — the same workflow file runs on github.com unchanged.
-- Hear the names **Argo Workflows** and **Tekton** for when the room outgrows Gitea Actions.
+- See the complete 3-tier app working end to end: **3 namespaces, 3 services, 3 deployments, and a single Gateway API** serving the app live on `wagbiz.org`.
+- Understand *how the tiers connect* — frontend → backend → cache, routed through one Gateway — so the Helm chart they build next has a concrete target.
 - Understand the value of templating with Helm.
 - Package existing manifests into a reusable format.
 - Replace manual `kubectl apply` with Helm deployments.
@@ -19,11 +18,11 @@ Day 3 opens with the **build half** of CI/CD — the 30-min Gitea Actions demo t
 
 ### Activities & Missions
 
-1. **Gitea Actions (30-min opening demo)**
-   - (Reference: [`demo-gitea-actions.md`](day-03/demo-gitea-actions.md), slides at [`slides/day-03/gitea-actions.md`](../../slides/day-03/gitea-actions.md), example workflow at [`gitea-actions-demo/.gitea/workflows/ci.yaml`](day-03/gitea-actions-demo/.gitea/workflows/ci.yaml).)
-   - Instructor pushes a one-character change to a Gitea repo; the room watches the **act_runner** pod pick up the workflow, build the image, and push a new tag to Harbor — under 60 seconds. ArgoCD picks up this image in the afternoon as a callback.
-   - **🧑‍🏫 Instructor Superpower (One YAML, Two Homes)**: the same `.gitea/workflows/ci.yaml` that ran in our cluster runs unchanged on `github.com` under `.github/workflows/`. Teach the syntax once; it ports.
-   - **Sidebar slides** for Argo Workflows and Tekton are part of the deck — name them, don't demo them. The decision matrix lives on slide 11.
+1. **The Finished Vessel (30-min opening demo)**
+   - Instructor-led walkthrough, no student keyboards. Show the completed 3-tier app as one connected system: the **three namespaces**, the **three Deployments** (frontend, backend, cache), the **three Services** wiring them together, and the **single Gateway API** that exposes the whole thing at `wagbiz.org`.
+   - Trace a request out loud: browser → Gateway → frontend Service → backend Service → cache. Open the live URL so they see it actually serving.
+   - **The point:** this is the exact stack they will templatize in Lab 01. *"You hand-built these pieces yesterday. This morning you see them connected. After the break, you stamp the whole thing from one blueprint."* — same app, one level up.
+   - *(The in-cluster CI story — Gitea Actions, `git push → image in Harbor` — is no longer the opener. Mention it in one line if asked; it lives on as the Lab 02 stretch goal.)*
 2. **The Problem with Raw YAML** (Hazel takes the floor, 60 min)
    - (Optional Reference: Helm Overview slides.)
    - Open with the callback to Tuesday's Kustomize demo: *operator vs. publisher, different jobs.*
@@ -54,30 +53,38 @@ No more manual deployments to the cluster. We are turning our Helm blueprints ov
    - **Group Activity**: **Stand up your own Infrastructure!** Every student receives and configures their own isolated ArgoCD instance to orchestrate their namespace.
    - Stop using `helm install` manually! Commit your Helm chart to your local Gitea repository, and wire your ArgoCD application to listen to that Gitea instance.
    - Watch changes automatically sync whenever you push to Gitea.
-   - **🧑‍🏫 Instructor Superpower (The Live Classroom Demo)**: Deliver the "JupyterLab GitOps" demo! Have the instructor (or a brave student) commit a Helm chart containing a **JupyterLab** deployment to the local Gitea instance. ArgoCD spots it and deploys the data science environment. The "Aha!" Moment: Prove to instructors that by adding `pandas` to a `requirements.txt` and pushing to Git, ArgoCD instantly sinks the new Python library to every student's Jupyter environment without them ever having to type `pip install` locally! You just distributed a heavy data science lab via a URL.
+   - **🧑‍🏫 Instructor Superpower (Self-Healing Infrastructure)**: With Self-Heal on, broad rights are *safe*. Have students raid a crewmate's fleet — `kubectl delete` a neighbor's deployment — and watch ArgoCD rebuild it from the Captain's Log within seconds. The "Aha!" Moment: the only durable way to change a fleet is a **pull request** someone merges. `kubectl` is a suggestion; **Git is the law.**
 
 ## 🪢 Late Afternoon Callback: Close the Loop
 
-Around 16:00, after the ArgoCD lab, run a 2-minute callback to the morning's Gitea Actions demo: *"Remember the tag we pushed to Harbor at 09:15? Watch."* ArgoCD syncs, the image rolls out, the live URL shows the morning's edit. That's the moment students see the full `git push → live app` story land in their cluster.
+After the ArgoCD lab, run a 2-minute callback: *"Edit your chart, push to Gitea, and watch."* ArgoCD syncs, the new version rolls out, and the live URL shows the change — no `kubectl apply`, no `helm upgrade` by hand. That's the moment students see the full `git push → live app` story land in their own cluster.
 
-## 🌉 Late Afternoon: Wiring the Archipelago (Network as Code)
+## 🧭 Late Afternoon Lecture: The Quartermaster's Manifest
 
-While deploying apps via GitOps is great, true production environments need deep-sea networking. Standard web pods aren't rugged enough for routing.
+The labs are done. Now lift their eyes to the horizon — a ~30-minute closing lecture that does two things: shows the room **everything they could teach** on a platform like this, and gives them the name for what they've been building all week — **platform engineering**.
 
-### Key Objectives
+- (Reference: slides at [`slides/day-03/the-quartermasters-manifest.md`](../slides/day-03-the-quartermasters-manifest.html).)
 
-- Use Custom Resource Definitions (CRDs) to deploy heavy network structures natively inside Kubernetes.
-- Prove that "Network as Code" works the exact same way as "App as Code".
+### Part I — The Hold (the menu, ~10 min)
 
-### Activities & Missions
+- Kubernetes is mis-filed as "DevOps." It is really a **lab-delivery platform** for *any* subject.
+- Walk the shelf by discipline so every instructor sees their own course on it: **Python/data science** (JupyterHub, Binder, Spark/Ray), **AI/ML** (Ollama, Kubeflow, KServe, GPU sharing), **web/JS** (code-server, preview envs), **systems/C/C++** (toolchain containers, KubeVirt VMs), **networking** (Clabernetes, Cilium, service mesh), **DevOps/SRE** (ArgoCD, Prometheus, Chaos Mesh), **databases & security** (CloudNativePG, Falco, Kyverno, Vault).
+- **This is where Clabernetes now lives** — *one item on a long shelf*, named as the EVE-NG/GNS3 replacement for the networking faculty, not run as a hands-on lab. Same for vCluster and KubeVirt, which get the deep-dive treatment tomorrow morning.
+- The five subject-independent superpowers: one URL = identical env, push-to-Git distributes a lab, isolated & disposable, self-hosted & private, the system state *is* the grade.
 
-1. **The Ghost Fleet Appears (Clabernetes)**
-   - **Mission**: Have ArgoCD deploy a full-blown commercial router topology so the islands can communicate on a lower level.
-   - Using GitOps, we inject a Clabernetes `Topology` manifest instead of a standard `Deployment`. This manifest summons two distinct Cisco or Nokia router nodes (`router-port` and `router-starboard`).
-2. **Establishing the Trade Route**
-   - Students leverage `kubectl exec` to bypass standard K8s shells and drop directly into the commercial router's interactive CLI (e.g., Nokia SR Linux).
-   - They configure a basic static route or BGP peering between the two islands. When `router-port` can `ping` the loopback IP of `router-starboard`, the deep-sea cable is active!
-   - **🧑‍🏫 Instructor Superpower (Replacing the Hardware Lab)**: This is arguably the heaviest anchor we can drop on traditional IT networking education. Teaching BGP, OSPF, and EVPN historically requires massive VM overhead (GNS3, EVE-NG) or expensive proprietary physical hardware labs. With Clabernetes + ArgoCD, a faculty member can provision a complete, isolated multi-router lab for every single student just by applying a few lines of K8s YAML! No heavy VMs; just pure Containerlab power scaled via Kubernetes GitOps.
+### Part II — The Idea Underneath: Platform Engineering (~20 min)
+
+- **The reveal:** an instructor running 30 reproducible environments *is* a platform team. Students are the "developers"; the lab is the **Internal Developer Platform (IDP)**.
+- The arc — sysadmin → DevOps → platform engineering — and why it maps to teaching: *"set up your own environment"* is the cognitive overload; **the lab is the paved road.**
+- The vocabulary to send them home with: **IDP**, **golden path / paved road** (Spotify / Netflix), **platform-as-a-product**, **reduce cognitive load** (Team Topologies), and the **CNCF maturity ladder** (Provisional → Operational → Scalable → Optimizing — most college labs sit at Level 1; Level 2 is a solo-achievable leap).
+- **Actionable close:** the four-question pocket test (self-service? golden path? fast reset? distribution?) and the Monday-morning first step — *don't build Backstage; containerize one painful environment and deliver it over a URL.*
+- **🧑‍🏫 Instructor Superpower (You Are the Platform Team)**: framed as agency — the environments an educator can choose to support have radically expanded, and they now have both the tools and the vocabulary to build them on purpose.
+
+> Tees up Day 4: tomorrow morning the menu narrows to three deep dives — vCluster, KubeVirt, Chaos — then the Pirate strikes.
+
+## 🏁 Closing the Day: The Flash Poll
+
+End the day with the Quizler flash poll (`poll.{{ lab_domain }}`, `quiz-content.quizler`) — the Helm + GitOps/ArgoCD round. Because the room has now *done* the Helm lab and the ArgoCD self-heal lab, every question is earned. Run it as the day's closing beat. *(Logistics for any end-of-day recognition are the instructor's to run, off-script.)*
 
 ---
 

@@ -1,0 +1,52 @@
+# TIER 1 — The Storehouse (Redis cache).
+# Deployment + Service together: the exact shape Day 3's Helm lab pastes into
+# templates/cache.yaml and templatizes. Nothing points *out* of this tier — it
+# just waits to be called by the Ledger.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache
+  namespace: fleet-storehouse
+  labels:
+    app: cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      labels:
+        app: cache
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.2-alpine
+        ports:
+        - containerPort: 6379
+        readinessProbe:
+          tcpSocket:
+            port: 6379
+          initialDelaySeconds: 2
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache
+  namespace: fleet-storehouse
+spec:
+  type: ClusterIP
+  selector:
+    app: cache            # matches the Pod labels above — that is the whole wiring
+  ports:
+  - port: 6379            # the Service listens here
+    targetPort: 6379      # forwarded to the Pod here
+# DNS name other tiers use:  cache.fleet-storehouse.svc.cluster.local:6379

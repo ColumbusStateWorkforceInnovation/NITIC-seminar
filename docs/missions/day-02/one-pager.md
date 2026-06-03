@@ -10,6 +10,7 @@
 *Expanding our view. Meeting Captain Kube, organizing the cluster, and connecting our fleet with internal Services.*
 
 ## 🕘 The Schedule
+
 - **09:00 - 09:10** | 📖 Storytime + Day 1 Quiz warm-up
 - **09:10 - 09:40** | 🚨 Day 1 Catch-Up: Harbor push, kubectl/kubeconfig, Ghost Ship, Treasure Hunt
 - **09:40 - 09:50** | Demo: Kustomize (the operator's tool)
@@ -27,6 +28,7 @@
 ## ⚓ The Radar Room Cheat Sheet
 
 ### `k9s` Keyboard Shortcuts
+
 * **Start k9s:** `k9s` (or `k9s -n <your-namespace>`)
 * **Change Namespace:** Type `0` for all namespaces, or type `:` then `ns` and hit enter to select yours.
 * **Search / Filter:** Type `/` and type the name of the resource you are looking for.
@@ -36,10 +38,12 @@
 * **Delete Resource:** Highlight a resource and press `Ctrl-d`.
 
 ### Declarative Deployments
+
 * **Generate Deployment YAML:** `kubectl create deployment my-ship --image=nginx --dry-run=client -o yaml > deploy.yaml`
 * **Scale Deployment:** `kubectl scale deployment my-ship --replicas=3`
 
 ### Internal Networking (Services)
+
 * **Generate Service YAML:** `kubectl expose deployment my-ship --port=80 --target-port=8080 --type=ClusterIP --dry-run=client -o yaml > svc.yaml`
 * **Internal DNS Format:** `http://<service-name>.<namespace>.svc.cluster.local:<port>`
 

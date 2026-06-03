@@ -7,11 +7,13 @@
 Admiral Bash washes ashore after a devastating pirate attack. The mainframe is gone. Before the Admiral can learn *anything*, there must be a ship to stand on — so the entire morning is spent forging one: a Linux virtual machine, identical for every sailor in the crew.
 
 ### Key Objectives
+
 - Build an Ubuntu VM from scratch in VirtualBox (pre-installed on the classroom desktops).
 - Run a single bootstrap script that installs the whole DevOps toolkit.
 - Verify the vessel is seaworthy before the labs begin.
 
 ### Activities & Missions
+
 1. **Welcome & Setting the Stage**
    * *Note for Instructor*: Keep this loose, but set the tone. Ask: "How much time do you lose debugging individual student environments?"
 2. **Lab 00 — Building Your Vessel**
@@ -23,11 +25,13 @@ Admiral Bash washes ashore after a devastating pirate attack. The mainframe is g
 The fleet is built. Now the crew learns the raw elements of the new world — containers — and then paddles out into the ocean of Kubernetes.
 
 ### Key Objectives
+
 - Understand the difference between a raw Container and a Kubernetes Pod.
 - Build, tag, and push a container image to the island's registry.
 - Generate declarative manifests and learn manual Kubernetes diagnostics (logs, exec).
 
 ### Activities & Missions
+
 1. **The First Raft (Lab 01)**
    * Brief lecture: Linux kernel vs. user space, and how containers share the host kernel.
    * **Mission**: Write a basic `Dockerfile` for a web server, inject a custom `index.html` "Ship's Flag," build it, and push it to the internal cluster registry (Harbor).

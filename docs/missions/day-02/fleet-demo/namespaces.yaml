@@ -1,0 +1,27 @@
+# Fleet Logistics demo — three role-named namespaces.
+# These mirror Lab 03's three student tiers (Storehouse / Ledger / Radar) so the
+# cross-namespace DNS lesson is real, but live in their own `fleet-*` namespaces
+# instead of student-<name> namespaces (so the demo never disturbs the room).
+#
+#   fleet-storehouse → the cache    (Redis)
+#   fleet-ledger     → the backend  (podinfo Go API)
+#   fleet-radar      → the frontend (hello-kubernetes web UI)
+#
+# Every namespace carries the auto label `kubernetes.io/metadata.name` (added by
+# Kubernetes since 1.21) — the blockade allow-rules select on it, so no extra
+# labels are needed here.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fleet-storehouse
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fleet-ledger
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fleet-radar

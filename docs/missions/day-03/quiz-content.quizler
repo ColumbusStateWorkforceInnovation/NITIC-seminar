@@ -1,6 +1,6 @@
 {
   "name": "Day 3: Automated Shipyards",
-  "text": "Flash Poll quiz testing Helm charts and templating, the GitOps mental model, and ArgoCD sync and self-healing behavior.",
+  "text": "Flash Poll quiz testing Helm charts and templating, the GitOps mental model, ArgoCD sync and self-healing behavior, and the big idea underneath it all — platform engineering.",
   "max_players": 50,
   "filtering": "None",
   "questions": [
@@ -92,6 +92,24 @@
         { "id": 18, "value": "The Git server has lost its internet connection.", "correct": false },
         { "id": 19, "value": "The Helm chart has a YAML syntax error.", "correct": false },
         { "id": 20, "value": "The cluster clock is set to the wrong time zone.", "correct": false }
+      ]
+    },
+    {
+      "text": "All week you handed 30 students an identical environment over a URL — zero local setup, self-service, disposable. What is the name for the discipline of building that kind of platform?",
+      "image": null,
+      "answer_time": 30000,
+      "bonus_score_time": 15000,
+      "scoring": {
+        "min_score": 500,
+        "max_score": 1000,
+        "bonus_score": 200
+      },
+      "ty": "Single",
+      "answers": [
+        { "id": 21, "value": "Platform engineering — building a self-service platform so users get what they need without fighting the infrastructure.", "correct": true },
+        { "id": 22, "value": "Quality assurance — testing the software before it ships.", "correct": false },
+        { "id": 23, "value": "Help desk — answering tickets when a student's setup breaks.", "correct": false },
+        { "id": 24, "value": "Database administration — keeping the data tier healthy.", "correct": false }
       ]
     }
   ],

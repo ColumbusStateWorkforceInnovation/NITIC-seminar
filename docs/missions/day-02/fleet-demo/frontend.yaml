@@ -1,0 +1,94 @@
+# TIER 3 — The Radar (hello-kubernetes web UI) + its front door.
+#
+# Three objects in one file:
+#   1. Deployment  — the web UI pod, pointed at the Ledger via BACKEND_URL.
+#   2. Service     — ClusterIP (internal only — the browser never hits this).
+#   3. HTTPRoute   — the Gateway API object that opens this tier to the browser.
+#
+# NOTE on the domain: the HTTPRoute hostname below is literal `fleet.wagbiz.org`.
+# If your LAB_DOMAIN is not wagbiz.org, change the hostname here AND the matching
+# /etc/hosts line that scripts/fleet-demo-setup.sh adds.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: fleet-radar
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: hello-kubernetes
+        image: paulbouwer/hello-kubernetes:1.10
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MESSAGE
+          value: "⚓ The Radar is live — wired through the fleet via Service DNS."
+        # THE CONNECTION to the Ledger. (The hello-kubernetes image doesn't render
+        # this — it's the same teaching device as the lab; the real proof is the
+        # in-pod `wget backend.fleet-ledger...:9898/version` during the demo.)
+        - name: BACKEND_URL
+          value: http://backend.fleet-ledger.svc.cluster.local:9898
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 2
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: fleet-radar
+spec:
+  type: ClusterIP          # internal-only — the Gateway is the front door, not this
+  selector:
+    app: frontend
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+# THE FRONT DOOR — a Gateway API HTTPRoute.
+# This is the object the furthest teams got stuck on. Four fields do all the work:
+#   parentRefs   → which Gateway to attach to (lives in admin-tools, owned by "IT")
+#   hostnames    → which URL the browser uses
+#   rules.matches→ which paths
+#   rules.backendRefs → which ClusterIP Service + port to forward to (this tier's)
+# It attaches across namespaces only because main-gateway's listeners declare
+# allowedRoutes.namespaces.from: All — the Gateway opted in to accepting our route.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: fleet-radar
+  namespace: fleet-radar
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: admin-tools
+  hostnames:
+  - "fleet.wagbiz.org"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: frontend
+      port: 8080

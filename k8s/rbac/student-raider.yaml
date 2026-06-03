@@ -1,0 +1,40 @@
+# student-raider-editor — lets students sabotage EACH OTHER's fleets (Lab 02, Step 4).
+#
+# WHY THIS EXISTS:
+#   Day 3 Lab 02 "The Raid" (Step 4) has students delete/scale/patch a CREWMATE's
+#   workloads and watch that crewmate's ArgoCD app self-heal — proving the lesson
+#   "kubectl is a suggestion; Git is the law." Rancher's project-member / edit
+#   role is namespace-scoped: a student has full control of their OWN
+#   student-<name> namespace but ZERO write in anyone else's, so the raid returns
+#   `Forbidden` and Step 4 fails. (Verified: a real student token gets `no` on
+#   `kubectl auth can-i delete deployment -n student-<someone-else>`.)
+#
+# WHAT IT GRANTS (and DOESN'T):
+#   delete/patch/update (plus read) on Deployments (incl. /scale) and Services.
+#   That is exactly the raid surface — delete a deployment, scale it, patch its
+#   image, delete a Service. It grants NO secrets, NO pods/exec, NO write to any
+#   other resource. Self-Heal on every student Application reverts the sabotage
+#   within seconds, which is the whole point.
+#
+# SCOPE (deliberately NOT cluster-wide):
+#   This ClusterRole only DEFINES the verbs. `just grant-raider` binds it with a
+#   per-namespace RoleBinding into each student-<name> namespace, scoped to the
+#   `system:authenticated` GROUP — so every student can raid every OTHER student,
+#   but the binding never lands in admin-tools / argocd / kube-system. The admin
+#   boundary asserted by `just check-access` (no secrets/pod-create in admin
+#   namespaces) stays intact. Remove the grant after Day 3 with:
+#     kubectl get ns -o name | sed 's#namespace/##' | grep '^student-' \
+#       | xargs -I{} kubectl delete rolebinding student-raider -n {} --ignore-not-found
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: student-raider-editor
+  labels:
+    app.kubernetes.io/part-of: admiral-bash-lab
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale"]
+    verbs: ["get", "list", "watch", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "update", "patch", "delete"]

@@ -524,22 +524,6 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 
 ## Instructor Superpower
 
-#### The Live Classroom Demo
-
-- You have an ArgoCD app watching a JupyterLab chart in Gitea.
-- Edit the chart's `requirements.txt` — add one line: `pandas`.
-- Commit and push to Gitea.
-- ArgoCD re-syncs every student's Jupyter environment.
-- **No student typed `pip install`.** You distributed a heavy data-science library to the entire class by editing one file.
-
-*You just shipped a lab with a Git commit.*
-
-<!-- This is the headline demo of the week. Run it from the podium after Lab 02 is underway. The impact lands because the students are already in Jupyter — they see the library appear without doing anything. -->
-
----
-
-## Instructor Superpower
-
 #### Replacing the Hardware Lab
 
 - Teaching BGP, OSPF, or EVPN has historically required:
@@ -572,7 +556,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 - Push your Helm chart from Lab 01 to a Gitea repo.
 - Create an ArgoCD Application watching that repo.
 - Trigger The Mutiny — manually scale a Deployment, watch ArgoCD self-heal.
-- Observe the Live Classroom Demo from the podium.
+- Raid a crewmate's fleet — and watch their Captain's Log win.
 
 **Lab 03 — Wiring the Archipelago** (hands-on or instructor demo, depending on pace)
 

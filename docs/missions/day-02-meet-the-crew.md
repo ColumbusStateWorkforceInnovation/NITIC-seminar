@@ -7,6 +7,7 @@
 Bash meets Captain Kube, who keeps the island organized. If we are going to rule the waves, we have to understand how to monitor them.
 
 ### Key Objectives
+
 - Understand Kubernetes architecture (Deployments, Pods, ConfigMaps).
 - Navigate the cluster seamlessly.
 - Transition from basic Pods to resilient Deployments using manual `kubectl`.
@@ -14,6 +15,7 @@ Bash meets Captain Kube, who keeps the island organized. If we are going to rule
 
 
 ### Activities & Missions
+
 1. **Kustomize (10-min opening demo)**
    * (Reference: [`demo-kustomize.md`](day-02/demo-kustomize.md), slides at [`slides/day-02/kustomize.md`](../slides/day-02-kustomize.html), manifests in [`day-02/kustomize-demo/`](day-02/kustomize-demo/).)
    * The instructor uses one Kustomize overlay to bump every student's Day 1 raft Pod from `:v1` to `:v2` overnight (or live in front of the room). Students walk in to a changed Pod and learn the word "overlay."
@@ -32,11 +34,13 @@ Bash meets Captain Kube, who keeps the island organized. If we are going to rule
 No ship sails alone. It's time to meet Services and establish interconnectivity across student boundaries.
 
 ### Key Objectives
+
 - Understand internal Services (ClusterIP, NodePort) for routing traffic.
 - Experience group collaboration via cross-namespace dependencies.
 - Map the architecture using D2 diagram-as-code.
 
 ### Activities & Missions
+
 1. **Meet the Service (Kubernetes Services)**
    * (Optional Reference: Kubernetes Objects/Services slides).
    * Discuss how pods are ephemeral and how Services provide a stable anchor.

@@ -12,20 +12,23 @@
 *The final day. The Pirate boards the cluster, the fleet endures the chaos, and the crew proves they are ready to sail alone.*
 
 ## 🕘 The Schedule
-- **09:00 - 10:30** | Lecture & Demo: Cloud-Native Classrooms (vCluster, KubeVirt, Chaos)
-- **10:30 - 10:45** | ☕ Break
-- **10:45 - 12:00** | Lab / Game: The Pirate Strikes! (Survive the Chaos)
+
+- **09:00 - 09:25** | Make It Your Own: fork & reuse this repo at your college
+- **09:25 - 10:10** | Lecture & Demo: Cloud-Native Classrooms (vCluster, KubeVirt, Chaos)
+- **10:10 - 10:25** | ☕ Break
+- **10:25 - 12:00** | Lab / Game: The Pirate Strikes! (Survive the Chaos)
 - **12:00 - 01:00** | 🥪 Lunch
-- **01:00 - 02:30** | AI Connect: The Paradigm Shift (The Incident Commander)
-- **02:30 - 02:45** | ☕ Break
-- **02:45 - 04:15** | Discussion: The Educator's Strategic Roundtable
-- **04:15 - 05:00** | Wrap-Up: Trivia & Send-Off
+- **01:00 - 02:15** | Discussion: The Educator's Strategic Roundtable (Start / Stop / Continue)
+- **02:15 - 02:30** | Wrap-Up: Trivia & Send-Off
+
+> *Ends 14:30 for airport logistics. The Incident Commander persona shift now happens **inside** the Pirate Strikes lab, not as a separate block.*
 
 ---
 
 ## ⚓ The Incident Responder's Cheat Sheet
 
 ### Triage Under Fire
+
 * **Watch the fleet live:** `k9s`
 * **Read the incident report:** `kubectl get events -n <ns> --sort-by=.lastTimestamp`
 * **Find the saboteur:** `kubectl get podchaos,networkchaos -A`
@@ -33,6 +36,7 @@
 * **Probe a service in a loop:** `while true; do curl -s -o /dev/null -w "%{http_code}\n" <url>; sleep 1; done`
 
 ### Defend the Namespace
+
 * **NetworkPolicy:** allow ingress only from your alliance — deny everything else.
 * **Ship it the GitOps way:** commit the policy, let ArgoCD sync it.
 * **Let the automation work:** Deployments respawn killed pods; ArgoCD self-heals drift.

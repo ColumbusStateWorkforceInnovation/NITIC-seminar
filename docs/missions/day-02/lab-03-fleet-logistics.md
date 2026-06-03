@@ -19,6 +19,7 @@ Open `~/lab/AGENTS.md` and append this new rule. Then `.exit` your current `boat
 ## Step 1: Form Your Alliance
 
 Group up into teams of 3. Decide who will take which role:
+
 * **Student A: The Storehouse (Database)** - You will deploy a Redis cache.
 * **Student B: The Ledger (Backend API)** - You will deploy a Go API (`podinfo`) and point it at the Storehouse.
 * **Student C: The Radar (Frontend UI)** - You will deploy a web UI and point it at the Ledger.
@@ -30,12 +31,14 @@ Group up into teams of 3. Decide who will take which role:
 *Important: Do not use raw Pods. You must write a `Deployment` and a `Service` for your tier.*
 
 ### Student A (The Storehouse)
+
 1. Write a Deployment using the `redis:7.2-alpine` image. Expose port `6379`.
 2. Generate a Service of type `ClusterIP` pointing to your Deployment.
 3. Feed your YAML to `hail` and ask the Code Reviewer for a critique.
 4. Apply your manifests.
 
 ### Student B (The Ledger)
+
 1. Write a Deployment using the `stefanprodan/podinfo:6.7.0` image. `podinfo` listens on port `9898`.
 2. **The Connection:** You must inject an environment variable named `CACHE_URL`. Its value must be the internal DNS name of Student A's Redis service.
    *(Format: `tcp://<service-name>.<student-a-namespace>.svc.cluster.local:6379`)*
@@ -47,6 +50,7 @@ Group up into teams of 3. Decide who will take which role:
    A failure here while your pod still shows green is the silent break in action — hunt down the typo.
 
 ### Student C (The Radar)
+
 1. Write a Deployment using the `paulbouwer/hello-kubernetes:1.10` image. The image serves HTTP on port `8080`.
 2. **The Connection:** You must inject an environment variable named `BACKEND_URL`. Its value must be the internal DNS name of Student B's Service.
    *(Format: `http://<service-name>.<student-b-namespace>.svc.cluster.local:9898`)*
@@ -76,6 +80,7 @@ Suddenly, everyone's UI will break. The Backend can no longer talk to the Storeh
 
 **Your Stretch Goal Mission:**
 You cannot delete the Admiral's blockade. You must adapt to it. Remember: NetworkPolicies are *additive* — you don't remove the blockade, you add allow-rules alongside it. Each tier only needs to open the door to the tier that calls it.
+
 1. Open `aichat` and ask the Boatswain: *"What is a Kubernetes NetworkPolicy, and how do I write one to allow ingress traffic from a specific namespace?"*
 2. **Student A** must write a NetworkPolicy allowing ingress from Student B's namespace (so the Ledger can reach the Storehouse).
 3. **Student B** must write a NetworkPolicy allowing ingress from Student C's namespace (so the Radar can reach the Ledger).

@@ -29,6 +29,7 @@ Hardcoding configuration into your container images is a bad practice. If you wa
 ## Step 3: Injecting the ConfigMap
 
 Now we need to wire the ConfigMap into our Deployment.
+
 1. Open your `deployment.yaml` file.
 2. Under the `containers` section, you need to add an `env` array to map the ConfigMap key to an environment variable inside the container.
 3. If you don't know the exact syntax, ask the Boatswain: *"How do I inject a ConfigMap value as an environment variable in my Deployment YAML?"*
@@ -39,6 +40,7 @@ Now we need to wire the ConfigMap into our Deployment.
 ## Step 4: Verifying the Injection
 
 Did the configuration actually make it into the ship? Let's check.
+
 1. Use `k9s` to exec (shell) into one of your newly running pods (highlight the pod and press `s`).
 2. Run the command `env | grep MESSAGE` inside the pod.
 3. You should see `MESSAGE_OF_THE_DAY=Beware the Kraken!` printed on the screen.

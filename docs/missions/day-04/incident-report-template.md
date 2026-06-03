@@ -7,6 +7,7 @@
 **Namespaces:** _e.g. blackbeard, annebonny, calicojack_
 
 **Roles on the alliance:** _name + tier_
+
 - Frontend:
 - Backend:
 - Database:

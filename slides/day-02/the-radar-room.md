@@ -148,7 +148,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
   +-------------------------------+
   |         WORKER NODE           |
   |                               |
-  |   kubelet   (the bosun)       |
+  |   kubelet   (the boatswain)   |
   |   kube-proxy (signal flags)   |
   |   Container Runtime (Docker)  |
   |                               |
@@ -157,21 +157,21 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 ```
 
 - Each worker node is a machine (physical or virtual) that runs Pods.
-- The **kubelet** is the bosun on each ship: it receives orders from the control plane and carries them out.
+- The **kubelet** is the boatswain on each ship: it receives orders from the control plane and carries them out.
 - Every node reports its health back to the API Server continuously.
 
 <!-- In your classroom: every student's workload lands on one of these nodes. The cluster has several; the scheduler decides which one. -->
 
 ---
 
-## The kubelet — the bosun on deck
+## The kubelet — the boatswain on deck
 
 - The kubelet runs on every worker node. It does not run on the control plane.
 - Its job: watch for Pods assigned to its node, start them, and keep them running.
 - If a container crashes, the kubelet restarts it — immediately, without being asked.
 - It reports the Pod's status back to the API Server so etcd stays current.
 
-*The bosun doesn't question orders. A Pod is assigned — it runs it. A container dies — it restarts it.*
+*The boatswain doesn't question orders. A Pod is assigned — it runs it. A container dies — it restarts it.*
 
 <!-- Contrast with the scheduler (which assigns berths) and the controller manager (which watches the whole fleet). The kubelet watches only its own ship. -->
 

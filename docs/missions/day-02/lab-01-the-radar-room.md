@@ -19,6 +19,7 @@ In this lab, you will learn how to use `k9s`, a Terminal UI (TUI) that gives you
 A rogue wave has hit the fleet — the Admiral just deployed a broken component into every student's namespace.
 
 **Your Mission:**
+
 1. Use `k9s` to find the broken pod in your namespace. It will have a status of `CrashLoopBackOff` or `Error`.
 2. Highlight the broken pod.
 3. Press `l` (lowercase L) to view the live logs of that pod.
@@ -30,6 +31,7 @@ A rogue wave has hit the fleet — the Admiral just deployed a broken component 
 ## Step 3: The Pod That Won't Die
 
 Now that you've diagnosed the issue, let's try to clear the debris.
+
 1. Press `Esc` to go back to the Pod view in `k9s`.
 2. Highlight the broken pod.
 3. Press `Ctrl-d` to delete it. A confirmation dialog will appear. Press Enter to confirm.
@@ -40,6 +42,7 @@ What happened? The `leaky-ship` isn't a lone Pod — it's managed by a **Deploym
 ## Step 4: Scuttling the Whole Ship
 
 To truly clear the wreckage, delete the **Deployment**, not the Pod.
+
 1. Press `:` to open the command prompt, type `deploy`, and hit Enter. You are now in the Deployments view.
 2. Highlight `leaky-ship`.
 3. Press `Ctrl-d` and confirm. Now the Deployment *and* its pod are gone for good.

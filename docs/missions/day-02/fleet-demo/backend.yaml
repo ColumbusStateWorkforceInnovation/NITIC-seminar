@@ -1,0 +1,64 @@
+# TIER 2 — The Ledger (podinfo Go API).
+# Points at the Storehouse via CACHE_URL. The value below is CORRECT.
+#
+# ⚠️  THE SILENT BREAK (demo beat): podinfo boots green whether or not CACHE_URL
+# resolves — a wrong namespace here does NOT crash the pod, the link just dies
+# quietly. In the demo we break it live to prove it:
+#     kubectl set env deploy/backend -n fleet-ledger \
+#       CACHE_URL=tcp://cache.fleet-storehousE.svc.cluster.local:6379   # typo
+#     # pod stays Running/green — but nc/nslookup from inside it now fail
+#     kubectl set env deploy/backend -n fleet-ledger \
+#       CACHE_URL=tcp://cache.fleet-storehouse.svc.cluster.local:6379   # fixed
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: fleet-ledger
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: podinfo
+        image: stefanprodan/podinfo:6.7.0
+        ports:
+        - containerPort: 9898
+        env:
+        # THE CONNECTION: an internal Service DNS name, never a hardcoded IP.
+        - name: CACHE_URL
+          value: tcp://cache.fleet-storehouse.svc.cluster.local:6379
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 9898
+          initialDelaySeconds: 2
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: fleet-ledger
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+  - port: 9898
+    targetPort: 9898
+# DNS name the frontend uses:  backend.fleet-ledger.svc.cluster.local:9898

@@ -99,5 +99,7 @@ nav:
       - "Lab 01 - The Pirate Strikes": missions/day-04/lab-01-the-pirate-strikes.md
       - "Salvage Report Template + Rubric": missions/day-04/incident-report-template.md
       - "One-Pager": missions/day-04/one-pager.md
+      - "Repo Cheat Sheet": missions/day-04/repo-cheatsheet.md
     - "Expanded Labs": missions/expanded-labs.md
+  - "Make It Your Own": make-it-your-own.md
   - "Slide Decks": slides/index.md

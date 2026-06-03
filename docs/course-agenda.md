@@ -53,7 +53,7 @@
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
 | **1:00 - 2:30** | Lecture | Introduction to GitOps (ArgoCD & Gitea). "Git is truth" mentality. |
 | **2:30 - 2:45** | Break | *15 Minute Afternoon Break* |
-| **2:45 - 4:15** | Lab & Demo | **Mission:** Stand up ArgoCD & Wiring the Archipelago (Clabernetes). **Demo:** JupyterLab deployment. **Closing-loop callback:** ArgoCD picks up the morning's Gitea-Actions-built image — under 60 seconds. |
+| **2:45 - 4:15** | Lab | **Mission:** Stand up ArgoCD (GitOps self-heal + the Raid). **Closing-loop callback:** ArgoCD picks up the morning's Gitea-Actions-built image — under 60 seconds. |
 | **4:15 - 5:00** | AI Connect | **Curiosity Side-Quest:** Update `AGENTS.md` rules for GitOps/Helm; kubectl-delete-pod game; storytime close. |
 
 ---
@@ -62,9 +62,10 @@
 
 | Time | Type | Topic & Activity |
 | :--- | :--- | :--- |
-| **09:00 - 10:00** | Lecture & Demo | **Cloud-Native Classrooms**: vCluster (5-min named demo), KubeVirt (5-min named demo), Chaos Engineering theory (~50 min). |
-| **10:00 - 10:15** | Break | *15 Minute Morning Break (instructor installs Chaos Mesh + applies experiments)* |
-| **10:15 - 12:00** | Lab / Game | **Capstone:** The Pirate Strikes! Chaos Mesh is injected. Instructor calls the **Incident Commander persona shift** ~30 min in, when packet loss is most painful. Last ~30 min is Salvage Report drafting with the new persona. Instructor runs `grade-cluster-recovery.sh` per alliance as they declare stability. |
+| **09:00 - 09:25** | Lecture & Demo | **Make It Your Own**: fork-and-reuse tour of the repo — `lab.env`, the `justfile`, the swappable toolbox, `docs/` (MkDocs), Marp slides, and the `AGENTS.md` persona. Hand out the Repo Cheat Sheet. Frames the morning: *here's what you take home*. |
+| **09:25 - 10:10** | Lecture & Demo | **Cloud-Native Classrooms** (The Admiral's Arsenal): vCluster + KubeVirt as named demos, Chaos Engineering theory (~30 min) — enough to seed and read the attack. |
+| **10:10 - 10:25** | Break | *15 Minute Morning Break (instructor installs Chaos Mesh + applies experiments)* |
+| **10:25 - 12:00** | Lab / Game | **Capstone:** The Pirate Strikes! Chaos Mesh is injected. Instructor calls the **Incident Commander persona shift** ~30 min in, when packet loss is most painful. Last ~30 min is Salvage Report drafting with the new persona. Instructor runs `grade-cluster-recovery.sh` per alliance as they declare stability. |
 | **12:00** | Submit | **Salvage Reports due** — verified against the rubric in `incident-report-template.md`. |
 | **12:00 - 1:00** | Lunch | *60 Minute Lunch Break* |
 | **1:00 - 2:15** | Discussion | **Educator's Strategic Roundtable:** "Start, Stop, Continue" Matrix exercise to map modern pedagogy. Includes the AI-context-for-urgency debrief from the morning's persona shift. (75 min — gets the time freed by the shorter trivia.) |

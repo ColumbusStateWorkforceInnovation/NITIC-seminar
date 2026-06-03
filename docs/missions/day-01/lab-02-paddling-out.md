@@ -40,6 +40,7 @@ Instead of looking up the exact YAML syntax for a Pod, we will ask Kubernetes to
 ## Step 3: The Ghost Ship (Immutability Demo)
 
 Let's prove why we use Dockerfiles. 
+
 1. Exec (SSH) directly into your running pod:
    `kubectl exec -it my-raft -- /bin/sh`
 2. You are now inside the container. Let's make a manual edit to your flag:
@@ -60,6 +61,7 @@ Let's prove why we use Dockerfiles.
 Somewhere out in the cluster, Admiral Bash has hidden a `treasure-chest` Pod in a random, secret namespace. That pod is continuously writing a secret, 6-character code to its standard output (logs).
 
 **Your Mission:**
+
 1. Find the pod. (Hint: `kubectl get pods -A` lists pods across *all* namespaces).
 2. Read the logs of that pod to extract the secret code.
 3. Share the code with the room.

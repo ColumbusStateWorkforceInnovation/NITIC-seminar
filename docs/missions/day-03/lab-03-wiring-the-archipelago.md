@@ -1,8 +1,12 @@
-# Lab 03: Wiring the Archipelago
+# Lab 03: Wiring the Archipelago *(optional / reference)*
 
-> **Difficulty: Advanced.** Depending on the room's pace, your instructor may
-> run this as a guided demo rather than a solo lab. Either way — watch closely.
-> This is the heaviest anchor Admiral Bash drops all week.
+> **Not in the main Day 3 flow.** Clabernetes is now introduced as *one item on
+> the shelf* in the closing **Quartermaster's Manifest** lecture — named as the
+> EVE-NG/GNS3 replacement for the networking faculty, not run hands-on. This lab
+> is kept as an optional deep-dive for a fast room, a networking-heavy cohort, or
+> a curious student after hours.
+>
+> **Difficulty: Advanced.** This is the heaviest anchor Admiral Bash drops all week.
 
 GitOps can deploy web apps. Big deal. Can it deploy a **commercial router**?
 

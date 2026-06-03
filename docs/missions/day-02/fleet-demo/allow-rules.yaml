@@ -1,0 +1,60 @@
+# RECOVERING FROM THE BLOCKADE.
+# NetworkPolicies are ADDITIVE — you don't delete the Admiral's blockade, you add
+# allow-rules alongside it. Each tier opens its door only to the tier that calls it.
+# Namespaces are selected by their built-in `kubernetes.io/metadata.name` label.
+---
+# Storehouse allows ingress from the Ledger (so the backend can reach Redis).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-ledger
+  namespace: fleet-storehouse
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: fleet-ledger
+---
+# Ledger allows ingress from the Radar (so the frontend can reach the backend).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-radar
+  namespace: fleet-ledger
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: fleet-radar
+---
+# Radar is special: its visitors arrive through main-gateway, and Traefik rewrites
+# that traffic to look like it comes from the admin-tools namespace — NOT from a
+# teammate's namespace. So we allow ingress from admin-tools (Traefik's home).
+#
+# SIMPLER, MORE PERMISSIVE ALTERNATIVE (lab's Student-C hint): drop the `from:`
+# block entirely and just name the web port, opening 8080 to any source:
+#   ingress:
+#   - ports:
+#     - port: 8080
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-gateway
+  namespace: fleet-radar
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: admin-tools

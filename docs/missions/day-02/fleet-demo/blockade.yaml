@@ -1,0 +1,39 @@
+# THE NETWORK BLOCKADE (demo finale).
+# A default-deny-ingress NetworkPolicy in each of the three fleet namespaces.
+# Same shape as scripts/day-02-network-blockade.sh — but scoped to the fleet-*
+# demo namespaces (that script only targets student-* namespaces).
+#
+# An empty podSelector ({}) selects EVERY pod in the namespace; listing Ingress
+# in policyTypes with no `ingress:` rules means "deny all incoming." Pods stay
+# green and healthy — only the cross-namespace links die. Apply this and the
+# whole 3-tier chain goes dark. Recover with allow-rules.yaml.
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admiral-blockade
+  namespace: fleet-storehouse
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admiral-blockade
+  namespace: fleet-ledger
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: admiral-blockade
+  namespace: fleet-radar
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress

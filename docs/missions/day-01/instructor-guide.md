@@ -7,6 +7,7 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 
 ## 09:00 - 09:15 | Welcome & Storytime
 **Goal:** Settle the class and frame the day.
+
 - **Action (Storytime, ~2 min):** Project the *Admiral Bash's Island Adventure* PDF on the room screen and read **pp. 1–3** aloud — the opening spread through "To the lifeboats!". This frames the whole week: the monolith mainframe sinks, and the crew has to rebuild on the island. Linger on the illustration of the SS Legacy going down.
 - **Action:** Distribute the printed `one-pager.md`.
 - **Talking Point:** Set expectations — "The whole morning is building your ship. It feels slow, but by lunch every one of you is on an identical, fully-loaded Linux environment. That is the instructor superpower we're modeling: you debug the *setup script* once, not thirty laptops forever."
@@ -14,6 +15,7 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 
 ## 09:15 - 12:00 | Lab 00: Building Your Vessel (Setup)
 **Goal:** Every student ends with a working Ubuntu VM that passes `verify-client.sh`.
+
 - **Action:** Have students open `lab-00-building-your-vessel.md` and run it **as a class** — demo each Part on the projector, then let the room catch up before moving on. Do not let fast students sprint ahead; pace to the middle of the room.
 - **Pt 0 (≈09:15):** **Everyone starts the Ubuntu ISO download right away** — `releases.ubuntu.com/24.04/` → `ubuntu-24.04.4-desktop-amd64.iso`. The 6 GB file downloads in the background while you walk Part 1. Watch the projector for any student whose browser can't reach `releases.ubuntu.com`.
 - **Pt 1 (≈09:20–10:30):** Launch VirtualBox (pre-installed on the desktops), create the VM, start the Ubuntu installer. The installer itself runs 10–20 min — kick it off *before* the 10:30 break so it installs while everyone is out.
@@ -26,11 +28,13 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 
 ## 01:00 - 01:45 | The Wreckage (Lecture)
 **Goal:** Explain what they just built.
+
 - **Lecture:** Linux Kernel vs. User Space, and how Containers share the host Kernel. Tie it back to the VM they just installed — "you now have a Linux kernel; containers are just isolated user space on top of it."
 - **Talking Point:** Reinforce the Standardized Deck superpower — one bootstrap script gave the whole room the same Fish shell, Starship prompt, and tool versions, eliminating OS support tickets.
 
 ## 01:45 - 03:00 | Lab 01: The First Raft
 **Goal:** Students build and push their first Docker image.
+
 - **Action:** Instruct students to open `lab-01-the-first-raft.md` on the MkDocs site (`docs.{{ lab_domain }}`).
 - **Action (The Trap):** Let them struggle to figure out the `Dockerfile` syntax. Monitor the room.
 - **Action (The Save):** Interrupt and introduce the Socratic Boatswain. Have them edit `~/lab/AGENTS.md`, paste the Boatswain rules from the lab doc, then run `hail` to summon Silas (prompt should land on `boatswain>`). *(This is where the AI persona is introduced — there is no longer a standalone AI Connect block. `hail` is a wrapper around `aichat -r boatswain`; the role file is symlinked to `~/lab/AGENTS.md` by `setup-client.sh`.)*
@@ -41,11 +45,13 @@ This guide provides the minute-by-minute cues for you to run the classroom effec
 
 ## 03:15 - 04:00 | Into the Deep (Lecture)
 **Goal:** Transition from pure Docker to Kubernetes Pods.
+
 - **Lecture:** Explain the "Pod" abstraction. Why do we need a pod? (Shared namespaces, networking, sidecars).
 - **Action (Flash Poll):** Open the Quiz App (`poll.{{ lab_domain }}`). Load the 5 questions from `quiz-content.quizler`. Walk the room through the questions; use the results to gauge comprehension before the afternoon lab.
 
 ## 04:00 - 05:00 | Lab 02: Paddling Out & Debrief
 **Goal:** Imperative generation (`--dry-run`), diagnostics (`logs`, `exec`), and close out the day.
+
 - **Action (Cluster onboarding — do this first):** Lab 02 is the first time students need live cluster access. Each student needs a **Rancher** login ready — have those accounts set up — then the lab's opening section walks them through copying their kubeconfig from the Rancher UI into `~/.kube/config`. Until they're in Rancher, `kubectl` has nothing to talk to.
 - **Action:** Have them follow `lab-02-paddling-out.md`.
 - **Action (The Ghost Ship Demo):** Early in the lab — around 16:10, once students have their kubeconfig pasted and have generated `pod.yaml` — stop the class and project your terminal. Exec into a running Nginx pod, change `index.html` manually, prove it stuck via `kubectl exec ... cat`, delete the pod, re-apply the manifest, then read the file one more time to show the hack is gone. *This visual permanently cements infrastructure immutability.*

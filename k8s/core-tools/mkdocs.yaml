@@ -73,8 +73,19 @@ spec:
             echo "📦 Installing MkDocs plugins from requirements.txt..."
             pip install --quiet -r /docs/repo/requirements.txt
             echo "📖 Starting MkDocs server..."
-            exec mkdocs serve -a 0.0.0.0:8000 -f /docs/repo/mkdocs.yml
-        workingDir: "/docs/repo"
+            # cd into the repo at RUNTIME (not via workingDir — see note below).
+            # pymdownx.snippets' base_path is ["."], resolved against the cwd, so
+            # the mkdocs process must run from /docs/repo or transcluded snippets
+            # like examples/agents-md/*.md aren't found and the build aborts.
+            cd /docs/repo
+            exec mkdocs serve -a 0.0.0.0:8000 -f mkdocs.yml
+        # Deliberately NO `workingDir: "/docs/repo"` here. git-sync owns
+        # /docs/repo as a symlink (GITSYNC_LINK=repo) and swaps it in atomically
+        # after each clone. If the kubelet pre-creates /docs/repo as a plain
+        # directory (which it does for workingDir), git-sync's swap fails
+        # ("readlink ...repo: invalid argument") and — because the emptyDir
+        # survives container restarts — CrashLoops forever. We get the same cwd
+        # via the `cd` above, which runs only AFTER git-sync populates the link.
         ports:
         - containerPort: 8000
         volumeMounts:

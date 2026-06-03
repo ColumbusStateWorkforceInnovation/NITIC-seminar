@@ -9,11 +9,13 @@
 Before the ultimate challenge begins, Admiral Bash shares some of the most advanced maneuvers in the fleet. This is a meta-lecture dedicated specifically towards Instructor Superpowers.
 
 ### Key Objectives
+
 - Understand how to scale the classroom securely.
 - Bridge the gap between legacy curriculum (VMs) and modern clusters (K8s).
 - Understand the theory of Chaos Engineering before it attacks us!
 
 ### Activities & Missions
+
 1. **Virtualizing the Classroom (`vCluster`)**
    - **Lecture**: Giving a student a Kubernetes namespace is like giving them a bunk on a ship—they are extremely restricted. Giving them `cluster-admin` risks sinking the entire host. 
    - **🧑‍🏫 Instructor Superpower**: `vCluster` deploys a *full, isolated Kubernetes API server* inside a single namespace. To the student, it looks and feels like an entire multi-node cluster where they have full `cluster-admin` privileges. It is the absolute best way to give 30 students "full" K8s clusters without actually buying/provisioning 30 independent clusters.
@@ -31,6 +33,7 @@ The theoretical discussions are interrupted. A Pirate has infiltrated the Git re
 This is the seminar's **gradable capstone**. Each alliance must produce **two** deliverables: a cluster that holds, and a written Salvage Report. Full rubric in [`incident-report-template.md`](day-04/incident-report-template.md).
 
 ### Activities & Missions
+
 1. **The Pirate Strikes! (Live Chaos Game)**
    - The instructor installs a CNCF Chaos Engineering platform (**Chaos Mesh**) into the cluster.
    - **The Game**: The Pirate deploys an active chaos experiment that randomly severs cross-namespace communication and kills web server pods within the 3-Tier alliances. The first alliance to trace the root cause, stabilize their pipeline, and clear the **grading script** ([`scripts/grade-cluster-recovery.sh`](../../scripts/grade-cluster-recovery.sh)) takes the Admiral's Challenge.
