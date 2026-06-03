@@ -15,7 +15,7 @@ Bash meets Captain Kube, who keeps the island organized. If we are going to rule
 
 ### Activities & Missions
 1. **Kustomize (10-min opening demo)**
-   * (Reference: [`demo-kustomize.md`](day-02/demo-kustomize.md), slides at [`slides/day-02/kustomize.md`](../../slides/day-02/kustomize.md), manifests in [`day-02/kustomize-demo/`](day-02/kustomize-demo/).)
+   * (Reference: [`demo-kustomize.md`](day-02/demo-kustomize.md), slides at [`slides/day-02/kustomize.md`](../slides/day-02-kustomize.html), manifests in [`day-02/kustomize-demo/`](day-02/kustomize-demo/).)
    * The instructor uses one Kustomize overlay to bump every student's Day 1 raft Pod from `:v1` to `:v2` overnight (or live in front of the room). Students walk in to a changed Pod and learn the word "overlay."
    * **🧑‍🏫 Instructor Superpower (Operate vs. Publish)**: Kustomize is the operator's tool — same shape, many copies. Helm (tomorrow) is the publisher's tool. Plant the distinction here so Hazel's lecture lands with somewhere to put her.
 2. **The Radar Room**

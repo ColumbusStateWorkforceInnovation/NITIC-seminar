@@ -3,7 +3,7 @@
 > **Slot:** Day 2, 09:10 – 09:20 (10 min, between storytime and the K8s architecture lecture)
 > **Audience:** mixed students + faculty
 > **Mode:** instructor-led demo, no student keyboards
-> **Slides:** [`slides/day-02/kustomize.md`](../../../slides/day-02/kustomize.md)
+> **Slides:** [`slides/day-02/kustomize.md`](../../slides/day-02-kustomize.html)
 > **Manifests:** [`kustomize-demo/`](kustomize-demo/)
 
 This is **not a lab**. It is a 10-minute demo whose only job is to land one

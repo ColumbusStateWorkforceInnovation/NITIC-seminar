@@ -30,8 +30,10 @@ k8s/core-tools/dex.yaml
 certs/*.key
 certs/*.srl
 
-# Rendered slide decks — build artifacts from `just slides`.
-# Deck SOURCES (slides/**/*.md, slides/themes/, slides/.marprc.yml) ARE committed.
+# Rendered slide decks now build into docs/slides/ (committed, so the MkDocs
+# pod serves them on the site via git-sync). Deck SOURCES live in slides/**/*.md,
+# slides/themes/, slides/.marprc.yml. The old slides/build/ path stays ignored in
+# case a local `just slides` from before this change left artifacts behind.
 slides/build/
 
 # macOS artifacts

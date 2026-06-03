@@ -79,6 +79,7 @@ nav:
       - "Instructor Guide": missions/day-02/instructor-guide.md
       - "Groups & Namespace Sweep": missions/day-02/groups-and-sweep.md
       - "Demo - Kustomize (operator's tool)": missions/day-02/demo-kustomize.md
+      - "Demo - Fleet Logistics (3-tier walkthrough)": missions/day-02/demo-fleet-logistics.md
       - "Lab 01 - The Radar Room": missions/day-02/lab-01-the-radar-room.md
       - "Lab 02 - Deploying the Fleet": missions/day-02/lab-02-deploying-the-fleet.md
       - "Lab 03 - Fleet Logistics": missions/day-02/lab-03-fleet-logistics.md
@@ -99,3 +100,4 @@ nav:
       - "Salvage Report Template + Rubric": missions/day-04/incident-report-template.md
       - "One-Pager": missions/day-04/one-pager.md
     - "Expanded Labs": missions/expanded-labs.md
+  - "Slide Decks": slides/index.md

@@ -3,7 +3,7 @@
 > **Slot:** Day 3, 09:00 – 09:30 (30 min, opens the day)
 > **Audience:** mixed students + faculty
 > **Mode:** instructor-led demo, no student keyboards
-> **Slides:** [`slides/day-03/gitea-actions.md`](../../../slides/day-03/gitea-actions.md)
+> **Slides:** [`slides/day-03/gitea-actions.md`](../../slides/day-03-gitea-actions.html)
 > **Workflow:** [`gitea-actions-demo/.gitea/workflows/ci.yaml`](gitea-actions-demo/.gitea/workflows/ci.yaml)
 
 This demo opens Day 3 with the **build half** of CI/CD. The submitted course
