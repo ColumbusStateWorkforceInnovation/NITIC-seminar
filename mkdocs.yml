@@ -25,6 +25,7 @@ theme:
     - navigation.tabs
     - navigation.indexes
     - toc.integrate
+    - content.code.copy
 
 # Standard tech-writing extensions
 markdown_extensions:
@@ -73,7 +74,6 @@ nav:
       - "Lab 01 - The First Raft": missions/day-01/lab-01-the-first-raft.md
       - "Lab 02 - Paddling Out": missions/day-01/lab-02-paddling-out.md
       - "One-Pager": missions/day-01/one-pager.md
-      - "Quiz Content": missions/day-01/quiz-content.md
     - "Day 2 - Meet the Crew":
       - "Briefing": missions/day-02-meet-the-crew.md
       - "Instructor Guide": missions/day-02/instructor-guide.md
