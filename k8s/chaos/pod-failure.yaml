@@ -11,14 +11,14 @@ metadata:
   name: kraken-pod-failure-${TARGET_NS}
   namespace: chaos
 spec:
-  schedule: "@every 40s"
+  schedule: "@every 50s"
   concurrencyPolicy: Forbid
   historyLimit: 2
   type: PodChaos
   podChaos:
     action: pod-failure
     mode: one
-    duration: "20s"
+    duration: "12s"
     selector:
       namespaces:
         - "${TARGET_NS}"

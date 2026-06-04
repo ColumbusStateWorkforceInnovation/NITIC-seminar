@@ -9,7 +9,7 @@ metadata:
   name: kraken-pod-kill-${TARGET_NS}
   namespace: chaos
 spec:
-  schedule: "@every 60s"
+  schedule: "@every 75s"
   concurrencyPolicy: Forbid
   historyLimit: 2
   type: PodChaos
