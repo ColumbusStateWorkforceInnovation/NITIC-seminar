@@ -140,13 +140,14 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Master Blueprint"
 ---
 
 ## A Chart is a package
+<!-- _class: code-sm -->
 
 - The unit of work in Helm is a **Chart** — a directory with a specific layout.
 - A chart packages **everything** an application needs: templates, defaults, metadata.
 - You install a chart into a cluster → Helm renders the templates → the resources appear.
 - One chart can deploy to **any** namespace, any cluster — just change the values.
 
-```text
+```bash
   helm create island-stack      <-- generate a fresh chart skeleton
   helm install  my-stack ./island-stack   <-- stamp it out
   helm upgrade  my-stack ./island-stack   <-- update it
@@ -194,6 +195,7 @@ version: 0.1.0
 ---
 
 ## `values.yaml` — the blueprint's dials
+<!-- _class: code-xxs -->
 
 ```yaml
 studentName: blackbeard
@@ -272,6 +274,7 @@ frontend:
 ---
 
 ## Before: hardcoded YAML
+<!-- _class: code-xxs -->
 
 ```yaml
 apiVersion: apps/v1
@@ -300,6 +303,7 @@ spec:
 ---
 
 ## After: the same YAML, templated
+<!-- _class: code-xxs -->
 
 ```yaml
 apiVersion: apps/v1
@@ -356,7 +360,7 @@ spec:
 
 ## Rendering without installing
 
-```text
+```bash
 helm template ./island-stack
 ```
 
@@ -392,7 +396,7 @@ helm template ./island-stack
 
 ## `helm install` — the first launch
 
-```text
+```bash
 helm install my-stack ./island-stack -n blackbeard
 ```
 
@@ -430,7 +434,7 @@ After this command:
 
 ## `helm upgrade` — change the fleet
 
-```text
+```bash
 helm upgrade my-stack ./island-stack -n blackbeard
 ```
 
@@ -466,7 +470,7 @@ helm upgrade my-stack ./island-stack -n blackbeard
 
 ## `helm rollback` — reverse course
 
-```text
+```bash
 helm rollback my-stack 1 -n blackbeard
 ```
 
@@ -489,7 +493,7 @@ helm rollback my-stack 1 -n blackbeard
 
 ## `helm uninstall` — scrap the fleet
 
-```text
+```bash
 helm uninstall my-stack -n blackbeard
 ```
 

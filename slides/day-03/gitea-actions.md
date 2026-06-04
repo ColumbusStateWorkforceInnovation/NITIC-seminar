@@ -56,6 +56,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · Gitea Actions"
 ---
 
 ## What's actually running
+<!-- _class: diagram-sm -->
 
 ```text
   ┌──────────────────┐    push     ┌──────────────────┐
@@ -84,26 +85,24 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · Gitea Actions"
 ---
 
 ## The workflow file
+<!-- _class: code-tiny -->
 
 ```yaml
 # .gitea/workflows/ci.yaml
 name: build-and-push
 on:
   push: { branches: [main] }
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Log in to Harbor
         uses: docker/login-action@v3
         with:
           registry: harbor.${{ vars.LAB_DOMAIN }}
           username: ${{ secrets.HARBOR_ROBOT_USER }}
           password: ${{ secrets.HARBOR_ROBOT_SECRET }}
-
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -164,6 +163,7 @@ produce a tagged image in Harbor, with no human in the middle.
 ---
 
 ## Argo Workflows — the Argo family answer
+<!-- _class: code-sm -->
 
 - **CNCF graduated.** Same project family as ArgoCD.
 - Pipelines are CRDs — `Workflow`, `WorkflowTemplate`, `CronWorkflow`.
@@ -185,6 +185,7 @@ spec:
 ---
 
 ## Tekton — the industry-standard answer
+<!-- _class: code-sm -->
 
 - **CNCF graduated.** The reference Kubernetes-native CI engine.
 - Pipelines are CRDs — `Task`, `Pipeline`, `PipelineRun`, `TaskRun`.

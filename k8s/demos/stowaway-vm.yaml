@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────────────────────────────
+# 🫥 the-stowaway — a whole Linux VM smuggled aboard inside a pod
+#
+# A real virtual machine (its own kernel, its own /dev, its own SSH daemon)
+# running as a KubeVirt VirtualMachine in the `demos` namespace. The ah-ha:
+# `kubectl get pods -n demos` shows a `virt-launcher-stowaway-…` POD, and
+# inside that pod is QEMU running an actual VM you can SSH into and VNC to.
+#
+#   Image    : CirrOS  (tiny cloud-test distro — boots fast under emulation)
+#   Login    : cirros / treasure        (password set by the cloud-init below)
+#   Boot time: ~60-90s under software emulation (no KVM on these nodes)
+#
+# Driven by:  just stowaway-up | stowaway-ssh | stowaway-vnc | stowaway-down
+#
+# Why password and not an SSH key? CirrOS's minimal NoCloud datasource runs
+# *script* user-data (the `#!/bin/sh` below) but does NOT parse a #cloud-config
+# `ssh_authorized_keys:` block — so chpasswd is the reliable knob. `treasure`
+# is a throwaway demo password for an ephemeral VM, safe to commit.
+# ─────────────────────────────────────────────────────────────────────────
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: stowaway
+  namespace: demos
+  labels:
+    app: stowaway
+    demo: kubevirt
+spec:
+  runStrategy: Always           # keep it running; survives a node reboot
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: stowaway
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        resources:
+          requests:
+            memory: 512Mi       # CirrOS is happy in 256-512Mi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}     # NAT behind the pod IP; port-forward reaches it
+        # autoattachGraphicsDevice defaults true → there's a VGA framebuffer,
+        # which is what `virtctl vnc` (and `just stowaway-vnc`) connects to.
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: quay.io/kubevirt/cirros-container-disk-demo
+        - name: cloudinit
+          cloudInitNoCloud:
+            # CirrOS runs script-style user-data at first boot. Set a known
+            # password and a friendly hostname so the demo is deterministic.
+            userData: |-
+              #!/bin/sh
+              echo 'cirros:treasure' | sudo chpasswd
+              sudo hostname stowaway

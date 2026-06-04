@@ -52,6 +52,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Kustomize"
 ---
 
 ## The shape of what I ran
+<!-- _class: diagram-sm -->
 
 ```text
 kustomize-demo/
@@ -77,6 +78,7 @@ images:
 ---
 
 ## The loop I ran at 7am
+<!-- _class: code-sm -->
 
 ```bash
 for ns in $(kubectl get ns -l role=student -o name); do

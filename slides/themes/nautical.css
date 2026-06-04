@@ -1,5 +1,12 @@
 /* @theme nautical */
 
+/* Disable Marp Core's code auto-scaling (inherited from the `default` theme).
+ * It measures each code block in the browser and DOWNSCALES it to fit — which
+ * silently shrinks our deliberately-large projector fonts back down. We size
+ * code explicitly via the rules below plus the per-slide size classes, so the
+ * auto-fit must be off or it fights us. */
+/* @auto-scaling false */
+
 /*
  * Nautical — the shared Marp theme for "Admiral Bash's Island Adventure".
  * A weathered sea chart: deep ocean navy, brass fittings, parchment.
@@ -124,8 +131,10 @@ pre[is="marp-pre"] {
   text-align: left;
   box-shadow: 0 4px 14px rgba(12,39,51,0.28);
   /* Marp imports GitHub Primer's `pre { font-size: 12px }` — override it here
-   * so child <code> elements (which inherit at 100%) come out at our target. */
-  font-size: 24px !important;
+   * so child <code> elements (which inherit at 100%) come out at our target.
+   * Big for back-of-room projector legibility. Long lines WRAP (see below)
+   * instead of clipping, so width is no longer a hard cap. */
+  font-size: 36px !important;
   line-height: 1.4 !important;
 }
 pre code,
@@ -137,7 +146,37 @@ pre[is="marp-pre"] > code {
   font-size: 100% !important;
   line-height: inherit !important;
   text-align: left;
+  /* Real code (yaml/sh/bash): wrap overlong commands rather than clip them. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
+
+/* ASCII-art diagrams come in as ```text — they are pixel-aligned line-art,
+ * NOT code. They must never wrap, and 36px would burst them off the slide.
+ * Keep them near their original size and hard-wrap-off. Per-slide overrides
+ * (diagram-sm / diagram-xs) handle the few tall ones. */
+pre code.language-text,
+pre[is="marp-pre"] > code.language-text {
+  white-space: pre;
+  overflow-wrap: normal;
+  font-size: 24px !important;
+}
+pre:has(> code.language-text) { font-size: 24px !important; }
+section.diagram-sm pre, section.diagram-sm pre[is="marp-pre"],
+section.diagram-sm pre > code.language-text { font-size: 20px !important; }
+section.diagram-xs pre, section.diagram-xs pre[is="marp-pre"],
+section.diagram-xs pre > code.language-text { font-size: 17px !important; }
+
+/* Escape hatch for dense REAL-code blocks — add `<!-- _class: code-sm -->`
+ * (or code-xs) to a slide whose code is too tall to fit at 36px. */
+section.code-sm pre,
+section.code-sm pre[is="marp-pre"] { font-size: 26px !important; }
+section.code-xs pre,
+section.code-xs pre[is="marp-pre"] { font-size: 22px !important; }
+section.code-xxs pre,
+section.code-xxs pre[is="marp-pre"] { font-size: 18px !important; }
+section.code-tiny pre,
+section.code-tiny pre[is="marp-pre"] { font-size: 16px !important; }
 
 /* Defeat Marp's "downscale-only" auto-shrink on code blocks — it kicks in
  * even on short snippets and crushes them below our 24px target. */
@@ -147,6 +186,47 @@ pre[is="marp-pre"] {
 pre[is="marp-pre"] > code {
   transform: none !important;
 }
+
+/* ---------------------------------------------------------------- */
+/*  Syntax highlighting — bright tokens for the dark ship's-log     */
+/*  Marp's default highlight.js palette is built for white pages;   */
+/*  on our ocean-deep background those dark blues/greens vanish.    */
+/*  These overrides are tuned for high contrast on a projector.     */
+/* ---------------------------------------------------------------- */
+pre code.hljs            { color: var(--foam); }            /* base text   */
+.hljs-comment,
+.hljs-quote              { color: #8fb0ba; font-style: italic; } /* muted but legible */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-name,
+.hljs-built_in,
+.hljs-type               { color: #6fd0e8; }                /* bright cyan */
+.hljs-attr,
+.hljs-attribute,
+.hljs-meta-keyword,
+.hljs-selector-attr,
+.hljs-selector-pseudo    { color: #f0bb52; }                /* brass — yaml keys, flags */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition,
+.hljs-template-tag,
+.hljs-template-variable  { color: #aede7a; }                /* light green — values, strings */
+.hljs-number,
+.hljs-variable,
+.hljs-regexp,
+.hljs-link               { color: #ff9f6e; }                /* coral — numbers, vars */
+.hljs-title,
+.hljs-class .hljs-title,
+.hljs-function .hljs-title,
+.hljs-doctag             { color: #ffd479; font-weight: 600; } /* function/class names */
+.hljs-meta,
+.hljs-meta .hljs-string  { color: #c0a8e0; }                /* shebangs, prompts */
+.hljs-deletion           { color: #ff7b72; }
+.hljs-emphasis           { font-style: italic; }
+.hljs-strong             { font-weight: 700; }
 
 /* ---------------------------------------------------------------- */
 /*  Blockquote — the Boatswain pipes up                             */
@@ -263,4 +343,9 @@ section.lead pre code, section.chapter pre code {
   background: transparent;
   font-size: 18px;
   line-height: 1.3;
+  /* ASCII art must NOT wrap or hang-indent — keep it pixel-aligned. */
+  white-space: pre;
+  overflow-wrap: normal;
+  padding-left: 0;
+  text-indent: 0;
 }

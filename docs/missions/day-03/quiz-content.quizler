@@ -1,6 +1,6 @@
 {
   "name": "Day 3: Automated Shipyards",
-  "text": "Flash Poll quiz testing Helm charts and templating, the GitOps mental model, ArgoCD sync and self-healing behavior, and the big idea underneath it all — platform engineering.",
+  "text": "Flash Poll quiz on Helm templating, the GitOps mental model, ArgoCD sync and self-healing, and the big idea underneath it all: platform engineering.",
   "max_players": 50,
   "filtering": "None",
   "questions": [

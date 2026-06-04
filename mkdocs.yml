@@ -92,6 +92,7 @@ nav:
       - "Lab 02 - The Automated Shipyard": missions/day-03/lab-02-the-automated-shipyard.md
       - "Lab 03 - Wiring the Archipelago": missions/day-03/lab-03-wiring-the-archipelago.md
       - "Demo - Gitea Actions (in-cluster CI)": missions/day-03/demo-gitea-actions.md
+      - "Demo - vcluster + KubeVirt": missions/day-03/demo-vcluster-kubevirt.md
       - "One-Pager": missions/day-03/one-pager.md
     - "Day 4 - The Admiral's Challenge":
       - "Briefing": missions/day-04-admirals-challenge.md

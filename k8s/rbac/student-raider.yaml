@@ -10,11 +10,13 @@
 #   `kubectl auth can-i delete deployment -n student-<someone-else>`.)
 #
 # WHAT IT GRANTS (and DOESN'T):
-#   delete/patch/update (plus read) on Deployments (incl. /scale) and Services.
-#   That is exactly the raid surface — delete a deployment, scale it, patch its
-#   image, delete a Service. It grants NO secrets, NO pods/exec, NO write to any
+#   delete/patch/update (plus read) on Deployments (incl. /scale) and Services,
+#   plus delete (+ read) on Pods. That is exactly the raid surface — delete a
+#   deployment, scale it, patch its image, delete a Service, or kill a running
+#   Pod. It grants NO secrets, NO pods/exec, NO pods/portforward, NO write to any
 #   other resource. Self-Heal on every student Application reverts the sabotage
-#   within seconds, which is the whole point.
+#   within seconds, which is the whole point. (A killed Pod is recreated by its
+#   ReplicaSet; deleting the Deployment is what demonstrates ArgoCD self-heal.)
 #
 # SCOPE (deliberately NOT cluster-wide):
 #   This ClusterRole only DEFINES the verbs. `just grant-raider` binds it with a
@@ -38,3 +40,10 @@ rules:
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get", "list", "watch", "update", "patch", "delete"]
+  # Pods: delete (+ read) only — so a raider can `kubectl delete pod` a crewmate's
+  # running pod, not just the Deployment. A bare pod is recreated by its own
+  # ReplicaSet (Kubernetes), while deleting the Deployment is what ArgoCD self-heals.
+  # NO pods/exec, NO pods/portforward — deletion is the whole raid surface.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]

@@ -1,0 +1,27 @@
+# ─────────────────────────────────────────────────────────────────────────
+# KubeVirt configuration — "run a real VM as a pod" demo (Day 3 side-quest)
+#
+# These Azure nodes have NO hardware virtualization (no /dev/kvm, no vmx/svm
+# CPU flags — they are themselves VMs and Azure isn't exposing nested virt).
+# So KubeVirt MUST fall back to QEMU software emulation (TCG):
+#       developerConfiguration.useEmulation: true
+# Emulation is slow but perfectly fine for a tiny VM like CirrOS. It is the
+# reason the demo VM is CirrOS (a ~50MB kernel that boots in ~60-90s emulated)
+# and NOT a full Fedora/Ubuntu desktop (those crawl / hang under pure TCG).
+#
+# Applied by `just kubevirt-install` AFTER the operator manifest. Idempotent.
+# ─────────────────────────────────────────────────────────────────────────
+apiVersion: kubevirt.io/v1
+kind: KubeVirt
+metadata:
+  name: kubevirt
+  namespace: kubevirt
+spec:
+  certificateRotateStrategy: {}
+  imagePullPolicy: IfNotPresent
+  workloadUpdateStrategy: {}
+  configuration:
+    developerConfiguration:
+      # No KVM on these nodes → emulate in software. Without this, every VM
+      # stays Scheduling/Pending with "no /dev/kvm" on the virt-launcher pod.
+      useEmulation: true

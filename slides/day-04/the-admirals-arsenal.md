@@ -314,6 +314,7 @@ All are scoped with a **selector**: target by namespace, label, or Pod name.
 ---
 
 ## What a chaos manifest looks like
+<!-- _class: code-xxs -->
 
 ```yaml
 apiVersion: chaos-mesh.org/v1alpha1

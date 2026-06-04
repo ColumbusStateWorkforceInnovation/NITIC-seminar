@@ -74,6 +74,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 ---
 
 ## The Captain's Log
+<!-- _class: diagram-sm -->
 
 ```text
   +-------------------------------+
@@ -207,6 +208,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 ---
 
 ## The CI pipeline: code in, image out
+<!-- _class: diagram-sm -->
 
 ```text
   Developer
@@ -307,6 +309,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 ---
 
 ## The ArgoCD Application object
+<!-- _class: diagram-xs -->
 
 ```text
   apiVersion: argoproj.io/v1alpha1
@@ -397,6 +400,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 ---
 
 ## The full GitOps loop — assembled
+<!-- _class: diagram-sm -->
 
 ```text
   [you edit values.yaml]
@@ -468,6 +472,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 3 · The Captain's Log"
 ---
 
 ## The Topology manifest
+<!-- _class: diagram-xs -->
 
 ```text
   apiVersion: clabernetes.containerlab.dev/v1alpha1

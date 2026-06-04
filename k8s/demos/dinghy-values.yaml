@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────────────────
+# 🚣 the-dinghy — a small Kubernetes cluster carried aboard the big one
+#
+# A vcluster: a fully-working "cluster" (its own API server, its own kube-system,
+# its own namespaces, you're cluster-admin) that is actually just a StatefulSet
+# of pods living inside ONE namespace (vcluster-dinghy) of the host cluster.
+#
+# The ah-ha (`just dinghy-demo`): create a namespace + deployment inside the
+# dinghy, then look at the HOST — the namespace is invisible (it's virtual),
+# and the pod shows up translated as `<name>-x-<ns>-x-dinghy` in the single
+# vcluster-dinghy namespace. A whole cluster, confined to one namespace.
+#
+# vcluster's defaults are already tiny; this file mostly exists so you can SHOW
+# the class the knobs. Helm release `dinghy`, chart loft-sh/vcluster.
+# ─────────────────────────────────────────────────────────────────────────
+sync:
+  toHost:
+    serviceAccounts:
+      # Sync ServiceAccounts down to the host so in-dinghy workloads that use
+      # the default SA (most do) schedule cleanly.
+      enabled: true

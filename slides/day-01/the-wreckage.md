@@ -238,6 +238,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
 ---
 
 ## First instinct: give every app its own ship
+<!-- _class: diagram-sm -->
 
 ```text
    +------+  +------+  +------+
@@ -263,6 +264,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · The Wreckage"
 ---
 
 ## The insight: share the hull
+<!-- _class: diagram-sm -->
 
 ```text
    +------+  +------+  +------+

@@ -376,14 +376,14 @@ Named, not taught — your map for after the seminar:
 
 ## Instructor Superpower
 
-#### You are the platform team for your students
+#### You've had a job title all week — now you know its name
 
-- All week you learned the platform. **Platform engineering is the discipline of building it on purpose.**
+- All week you *did* platform engineering. Tonight you leave with the **word for it** — and a literature, a maturity model, and a career path standing behind that word.
+- A platform team builds a self-service environment so others can work without fighting infrastructure. Swap "developers" for "students" and that has been your role all along.
 - Every hour you spend paving a road is an hour *thirty* students don't spend lost in setup.
-- You don't wait for IT to offer a capability — you have just seen that you can **build the environment yourself**, for a lesson, a course, or a whole program.
-- The job was never "teach Kubernetes." The job is **clearing the path to the thing you actually teach.**
+- The job was never "teach Kubernetes." The job is **clearing the path to the thing you actually teach** — and now you can name the discipline that does it.
 
-<!-- The destination slide. Agency, not grievance: the environments an educator can choose to support have radically expanded, and they now have both the tools and the vocabulary to build them deliberately. Land it slow. Then hand off to Day 4. -->
+<!-- The destination slide for Day 3, and it owns the *identity/vocabulary* note: the souvenir is the word. Agency, not grievance — they came to learn Kubernetes and leave knowing they've been platform engineers all week. Land it slow. Keep the "build it yourself / don't wait for IT" capability beat OUT of here — that is Day 4's closer. Then hand off to Day 4. -->
 
 ---
 

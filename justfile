@@ -1157,17 +1157,19 @@ dinghy-connect:
     # Decode on the server (Linux base64 -d) to avoid macOS base64 flag differences.
     ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} \
       "kubectl -n vcluster-dinghy get secret vc-dinghy -o jsonpath='{.data.config}' | base64 -d" > .kube/dinghy.kconfig
-    echo "   ✓ wrote .kube/dinghy.kconfig (server: https://127.0.0.1:8443)"
+    echo "   ✓ wrote $(pwd)/.kube/dinghy.kconfig (server: https://127.0.0.1:8443)"
     echo ""
-    echo "   ▶ In ANOTHER terminal:"
-    echo "       export KUBECONFIG=\$PWD/.kube/dinghy.kconfig"
+    echo "   ▶ In ANOTHER terminal (absolute path — works from any directory):"
+    echo "       export KUBECONFIG=$(pwd)/.kube/dinghy.kconfig"
     echo "       kubectl get ns          # a pristine, brand-new 'cluster'"
     echo "       kubectl get nodes       # the dinghy's own (synced) node"
     echo ""
     echo "   Keep THIS terminal open — it holds the tunnel (Ctrl-C to disconnect)."
+    # Free a lingering server-side forwarder from a previous run. We target it by
+    # PORT (fuser -k 8443/tcp), NOT by command string — a string match would also
+    # match this very command and self-kill the shell. Harmless if nothing's bound.
+    ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} "fuser -k 8443/tcp 2>/dev/null; sleep 1; true" >/dev/null 2>&1 || true
     # Mac:8443 → server → svc/dinghy:443. Remote port-forward stays foreground.
-    # (If :8443 is already in use, a previous dinghy-connect is still running —
-    #  close that terminal first; we can't pre-kill it without self-matching.)
     ssh -t -L 8443:127.0.0.1:8443 -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} \
       "kubectl -n vcluster-dinghy port-forward svc/dinghy 8443:443"
 
@@ -1245,6 +1247,8 @@ stowaway-ssh:
     [ -n '{{SERVER_IP}}' ] || { echo "❌ SERVER_IP unset — this demo targets the remote cluster."; exit 1; }
     echo "🔑 SSH into the stowaway — when prompted, the password is:  treasure"
     echo "   (try: uname -a   |   cat /etc/os-release   |   exit to leave)"
+    # Free a lingering forwarder on :2222 by PORT (no command-string self-match).
+    ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} "fuser -k 2222/tcp 2>/dev/null; sleep 1; true" >/dev/null 2>&1 || true
     # Single-quoted remote string → $! / $PF expand on the SERVER. The remote
     # command runs as an argument (NOT piped on stdin), so the PTY from -t flows
     # to the inner ssh and the interactive password prompt works.
@@ -1257,6 +1261,8 @@ stowaway-vnc:
     set -euo pipefail
     [ -n '{{SERVER_IP}}' ] || { echo "❌ SERVER_IP unset — this demo targets the remote cluster."; exit 1; }
     echo "🖥️  Opening a VNC tunnel to the stowaway's console (Ctrl-C here to disconnect)..."
+    # Free a lingering proxy on :5901 by PORT (no command-string self-match).
+    ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} "fuser -k 5901/tcp 2>/dev/null; sleep 1; true" >/dev/null 2>&1 || true
     # Fire the local VNC viewer once the tunnel is up; ssh -L holds it open.
     ( sleep 6; open vnc://127.0.0.1:5901 >/dev/null 2>&1 || echo "   → open vnc://localhost:5901 in your VNC client" ) &
     ssh -t -L 5901:127.0.0.1:5901 -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} \

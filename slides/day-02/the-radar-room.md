@@ -178,6 +178,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 ---
 
 ## The reconcile loop — tied back to Day 1
+<!-- _class: diagram-xs -->
 
 ```text
   You run: kubectl apply -f pod.yaml
@@ -280,7 +281,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 - Within seconds, a new Pod is scheduled and started.
 - You didn't do anything. The reconcile loop did.
 
-```text
+```bash
   kubectl delete pod my-fleet-abc123   <- you delete one
   # 5 seconds later...
   kubectl get pods                     <- three are running again
@@ -294,7 +295,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · The Radar Room"
 
 - Need more ships? Change one number.
 
-```text
+```bash
   kubectl scale deployment my-fleet --replicas=5
 ```
 

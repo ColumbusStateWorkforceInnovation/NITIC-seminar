@@ -238,6 +238,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 2 · Drawing the Fleet"
 ---
 
 ## A minimal Service manifest
+<!-- _class: diagram-sm -->
 
 ```text
 apiVersion: v1
@@ -287,7 +288,7 @@ spec:
 - No configuration needed — it is always on.
 - Any Pod can resolve the Service by name.
 
-```text
+```bash
   curl http://backend-svc:8080
 ```
 
@@ -337,8 +338,9 @@ spec:
 ---
 
 ## Verifying DNS from inside a Pod
+<!-- _class: code-sm -->
 
-```text
+```bash
   kubectl exec -it <pod> -- sh
 
   # then inside:

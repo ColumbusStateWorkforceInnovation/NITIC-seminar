@@ -238,7 +238,7 @@ footer: "Admiral Bash's Island Adventure  ·  Day 1 · Into the Deep"
 
 ## Generate, don't memorise
 
-```text
+```bash
 kubectl run my-raft \
   --image=harbor.wagbiz.org/raft-fleet/<your-name>:v1 \
   --dry-run=client -o yaml > pod.yaml
@@ -275,7 +275,7 @@ kubectl run my-raft \
 - One cluster. Around **thirty** sailors sharing it.
 - A **Namespace** is your own patch of ocean — your work, walled off from everyone else's.
 
-```text
+```bash
 kubectl create namespace <your-name>
 kubectl config set-context --current --namespace=<your-name>
 ```
@@ -355,7 +355,7 @@ kubectl config set-context --current --namespace=<your-name>
 
 When a Pod misbehaves, three commands tell you almost everything:
 
-```text
+```bash
 kubectl get pods              is it running? what's its status?
 kubectl logs <pod>            what did the container print?
 kubectl exec -it <pod> -- sh  board the Pod and look around

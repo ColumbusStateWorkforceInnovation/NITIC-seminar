@@ -280,12 +280,64 @@ piece is just files in a folder:
 - **The whole seminar** — fork, set `lab.env`, and `just` your way to a running
   classroom.
 
+## Let an AI agent help you remix it
+
+You do not have to read this whole repo by hand to figure out what to take. It is
+deliberately **agent-legible** — the curriculum is markdown, the operations are a
+self-documenting `justfile`, and the AI persona is a plain `AGENTS.md`. Point an
+agent at it and ask it to do the mapping for you. Open the repo in an agentic IDE
+(**Google Antigravity**, Claude Code, Cursor), or just paste the public GitHub
+URL into Claude or Gemini and let it read.
+
+A reusable prompt — fill in the angle-bracket parts:
+
+```text
+Read this repository — start with README.md, docs/make-it-your-own.md, the
+justfile, and docs/missions/. It is a complete, forkable DevOps seminar:
+slides, hands-on labs, a Kubernetes lab cluster, and an AI teaching persona.
+
+I want to teach <FORMAT, e.g. a 10-week course / a 2-day workshop> on <TOPIC>
+for <AUDIENCE>. Help me reuse it:
+  1. Which labs, slides, and tools here map to my topic — what can I take as-is?
+  2. What should I cut or simplify to fit my scope and audience?
+  3. What is missing that I would need to add, and where would it slot in?
+Give me a session-by-session outline, citing the specific repo files for each session.
+```
+
+Sample questions that work well as a starting point:
+
+- *"I want to teach a DevOps class focused on **GitOps** — what could I use from this repo?"*
+- *"Build a 3-week **container fundamentals** unit from the Day 1–2 material only — no Kubernetes."*
+- *"I have laptops, **no GPU and no cloud budget**. Which parts run locally, and what do I change in `lab.env`?"*
+- *"Turn the Day 4 **chaos capstone** into a standalone graded assignment for my existing SRE course."*
+- *"Rewrite the **`AGENTS.md`** persona into a strict syllabus enforcer for my class rules."*
+
+The agent reads faster than you do and already knows the file layout from this
+guide — treat its outline as a first draft to react to, not gospel. You own the
+final curriculum; the agent just gets you to a working draft in minutes.
+
 ## The fork workflow, end to end
 
+**Fork it — don't just clone it.** A *clone* is only a local copy with no home of
+its own on GitHub: fine for a quick look, but there is nowhere of *yours* to push
+your customizations, and no clean way to pull in improvements later. A **fork** is
+your own copy of the repo under your account or organization — your changes live
+there, and you can pull updates from the original whenever the seminar improves.
+
+!!! tip "Forking is how you get updates"
+    The seminar keeps evolving — new labs, fixes, better slides. Add the original
+    repo as an `upstream` remote once, then `git fetch upstream` and merge
+    whenever you want the latest. Your `lab.env`, your rosters, and your edits
+    stay yours (they're gitignored or on your own branch), so updates don't
+    clobber your institution's setup.
+
 ```sh
-# 1. Fork on GitHub, then clone your fork
+# 1. Fork on GitHub (the "Fork" button, top-right), then clone YOUR fork
 git clone https://github.com/<you>/NITIC-seminar.git
 cd NITIC-seminar
+
+# 1b. Point "upstream" at the original — once — so you can pull updates later
+git remote add upstream https://github.com/ColumbusStateWorkforceInnovation/NITIC-seminar.git
 
 # 2. Configure your institution
 cp lab.env.example lab.env          # edit domain, passwords, AI key
@@ -300,6 +352,10 @@ just init
 just bootstrap-k3d
 just deploy-core
 just provision                      # preview first: just provision-dry
+
+# 5. Later: pull in upstream improvements (do this periodically)
+git fetch upstream
+git merge upstream/main             # review, resolve conflicts, commit
 ```
 
 Both roster files are gitignored because they hold student names and emails —
