@@ -1042,6 +1042,24 @@ teardown-chaos-mesh: chaos-calm
     -{{SSH}} "kubectl delete namespace chaos chaos-mesh --ignore-not-found"
     @echo "✅ Chaos Mesh removed."
 
+# Grade a crew's recovery against the RIGHT cluster. The grading script uses
+# plain `kubectl`, so a bare `./scripts/grade-cluster-recovery.sh` runs against
+# whatever your LAPTOP's kubeconfig points at (often the local k3d) — not the
+# class server, which silently reports "namespace not found". This recipe runs
+# it locally in LOCAL mode, or copies it to + runs it ON the server in REMOTE
+# mode, so it always hits the live cluster. Accepts a bare handle or the full
+# namespace.  Usage:  just grade eric   (or  just grade student-eric)
+grade CREW:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    RAW="{{CREW}}"; NS="student-${RAW#student-}"
+    if [[ "{{LOCAL}}" == "1" ]]; then
+        bash scripts/grade-cluster-recovery.sh "$NS"
+    else
+        {{SCP}} scripts/grade-cluster-recovery.sh {{SERVER_USER}}@{{SERVER_IP}}:/tmp/grade-cluster-recovery.sh >/dev/null
+        {{SSH}} "bash /tmp/grade-cluster-recovery.sh $NS"
+    fi
+
 # Verify a student's access boundary BEFORE class. Impersonates the Rancher user
 # found in their namespace's RoleBindings, then confirms they are DENIED on the
 # admin namespaces (secrets + pod-create, the two ways to reach a secret) and
@@ -1108,6 +1126,163 @@ check-access USERNAME:
         echo "    (Day 1 Lab 02 'get ns' + Day 2 Lab 01 k9s will break). Fix before class."
         exit 1
     fi
+
+# ============================================================
+# 🧪 DAY 3 SIDE-QUEST DEMOS — vcluster (dinghy) + KubeVirt (stowaway)
+# ============================================================
+# Two ~5-minute "whoa" demos you drive from this justfile in front of the room.
+# Both target the REMOTE cluster (these Azure nodes have no KVM, so the VM runs
+# in software emulation — that's why the VM is tiny CirrOS, not a full desktop).
+#
+#   vcluster:  just dinghy-up   → dinghy-connect / dinghy-demo → dinghy-down
+#   KubeVirt:  just kubevirt-install (ONCE, before class)
+#              just stowaway-up → stowaway-ssh / stowaway-vnc → stowaway-down
+# See docs/missions/day-03/demos-vcluster-and-kubevirt.md for the run-of-show.
+
+# 🚣 [vcluster] Launch "the dinghy" — a full virtual cluster living inside ONE host namespace (~60s)
+dinghy-up:
+    @echo "🚣 Launching the dinghy (vcluster '0.34.1' → namespace vcluster-dinghy)..."
+    @cat k8s/demos/dinghy-values.yaml | {{SSH}} "helm upgrade --install dinghy vcluster --repo https://charts.loft.sh --version 0.34.1 -n vcluster-dinghy --create-namespace -f - --wait --timeout 5m"
+    @echo "✅ The dinghy is afloat."
+    @echo "   kubectl to it :  just dinghy-connect   (kubeconfig + tunnel for your laptop)"
+    @echo "   the ah-ha     :  just dinghy-demo       (isolation, scripted)"
+
+# 🚣 [vcluster] Fetch the dinghy's kubeconfig to .kube/dinghy.kconfig and hold a tunnel so you can kubectl to it
+dinghy-connect:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [ -n '{{SERVER_IP}}' ] || { echo "❌ SERVER_IP unset — this demo targets the remote cluster."; exit 1; }
+    mkdir -p .kube
+    echo "🚣 Fetching the dinghy's kubeconfig..."
+    # Decode on the server (Linux base64 -d) to avoid macOS base64 flag differences.
+    ssh -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} \
+      "kubectl -n vcluster-dinghy get secret vc-dinghy -o jsonpath='{.data.config}' | base64 -d" > .kube/dinghy.kconfig
+    echo "   ✓ wrote .kube/dinghy.kconfig (server: https://127.0.0.1:8443)"
+    echo ""
+    echo "   ▶ In ANOTHER terminal:"
+    echo "       export KUBECONFIG=\$PWD/.kube/dinghy.kconfig"
+    echo "       kubectl get ns          # a pristine, brand-new 'cluster'"
+    echo "       kubectl get nodes       # the dinghy's own (synced) node"
+    echo ""
+    echo "   Keep THIS terminal open — it holds the tunnel (Ctrl-C to disconnect)."
+    # Mac:8443 → server → svc/dinghy:443. Remote port-forward stays foreground.
+    # (If :8443 is already in use, a previous dinghy-connect is still running —
+    #  close that terminal first; we can't pre-kill it without self-matching.)
+    ssh -t -L 8443:127.0.0.1:8443 -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} \
+      "kubectl -n vcluster-dinghy port-forward svc/dinghy 8443:443"
+
+# 🚣 [vcluster] The ah-ha — create a namespace+deployment INSIDE the dinghy, then show the host can't see it (scripted)
+dinghy-demo:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    echo "🚣 Ah-ha: a whole cluster confined to a single host namespace"
+    {{SSH}} 'bash -s' <<"SCRIPT"
+    set +e
+    # Use a dedicated local port (18443) and rewrite the kubeconfig to match, so
+    # this never collides with a `dinghy-connect` tunnel (which holds 8443).
+    kubectl -n vcluster-dinghy get secret vc-dinghy -o jsonpath="{.data.config}" | base64 -d | sed 's#https://localhost:8443#https://127.0.0.1:18443#' > /tmp/dinghy.kconfig
+    pkill -f "port-forward svc/dinghy 18443" 2>/dev/null; sleep 1
+    kubectl -n vcluster-dinghy port-forward svc/dinghy 18443:443 >/tmp/dinghy-pf.log 2>&1 &
+    PF=$!; trap "kill $PF 2>/dev/null" EXIT
+    sleep 5
+    export KUBECONFIG=/tmp/dinghy.kconfig
+    for i in $(seq 1 12); do kubectl get ns >/dev/null 2>&1 && break; sleep 2; done
+    echo; echo "### INSIDE the dinghy — looks like its own fresh cluster ###"
+    kubectl get ns
+    echo; echo "### Create a namespace + deployment INSIDE the dinghy ###"
+    kubectl create namespace treasure-island 2>/dev/null
+    kubectl -n treasure-island create deployment grog --image=nginx 2>/dev/null
+    sleep 4
+    kubectl get ns | grep -E "NAME|treasure-island"
+    kubectl -n treasure-island get pods
+    unset KUBECONFIG
+    echo; echo "### Now look at the HOST cluster ###"
+    echo "-- host namespaces: there is NO 'treasure-island' (it's virtual) --"
+    kubectl get ns | grep -i treasure-island || echo "   (none on the host ✔)"
+    echo "-- the dinghy + EVERYTHING in it is just pods in one namespace --"
+    kubectl -n vcluster-dinghy get pods
+    SCRIPT
+    echo "✅ A full cluster — its nodes, namespaces, workloads — lived inside ONE host namespace."
+
+# 🚣 [vcluster] Scuttle the dinghy (helm uninstall + drop the namespace)
+dinghy-down:
+    @echo "🧹 Scuttling the dinghy..."
+    -@{{SSH}} "helm uninstall dinghy -n vcluster-dinghy"
+    -@{{SSH}} "kubectl delete namespace vcluster-dinghy --ignore-not-found --wait=false"
+    @echo "✅ Dinghy gone."
+
+# 🧬 [KubeVirt] ONE-TIME prep (run before class, ~4 min): install KubeVirt in emulation mode + virtctl + 'demos' ns
+kubevirt-install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VER=v1.8.3
+    echo "🧬 Installing KubeVirt $VER (software-emulation mode — these nodes have no KVM)..."
+    {{SSH}} "kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/$VER/kubevirt-operator.yaml"
+    cat k8s/demos/kubevirt-cr.yaml | {{SSH}} "kubectl apply -f -"
+    echo "⏳ Waiting for KubeVirt to become Available (a few minutes)..."
+    {{SSH}} "kubectl -n kubevirt wait kv/kubevirt --for=condition=Available --timeout=420s"
+    echo "🔧 Ensuring virtctl is on the server (used by stowaway-ssh / stowaway-vnc)..."
+    {{SSH}} "command -v virtctl >/dev/null || { sudo curl -fsSL -o /usr/local/bin/virtctl https://github.com/kubevirt/kubevirt/releases/download/$VER/virtctl-$VER-linux-amd64 && sudo chmod +x /usr/local/bin/virtctl; }"
+    {{SSH}} "kubectl create namespace demos --dry-run=client -o yaml | kubectl apply -f -"
+    echo "✅ KubeVirt ready. Boot the demo VM live with:  just stowaway-up"
+
+# 🫥 [KubeVirt] Boot "the stowaway" — a real CirrOS VM running as a pod (~60-90s to log in)
+stowaway-up:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "🫥 Smuggling the stowaway aboard (CirrOS VM under software emulation)..."
+    {{SSH}} "kubectl create namespace demos --dry-run=client -o yaml | kubectl apply -f -"
+    cat k8s/demos/stowaway-vm.yaml | {{SSH}} "kubectl apply -f -"
+    echo "⏳ Waiting for the VM to reach Running (then ~60-90s more to finish booting)..."
+    {{SSH}} "for i in \$(seq 1 45); do [ \"\$(kubectl -n demos get vmi stowaway -o jsonpath='{.status.phase}' 2>/dev/null)\" = Running ] && break; sleep 4; done"
+    {{SSH}} "kubectl -n demos get vmi stowaway -o wide"
+    echo "✅ Stowaway is up.   SSH in:  just stowaway-ssh    |    Its screen (VNC):  just stowaway-vnc"
+
+# 🫥 [KubeVirt] SSH into the stowaway (password: treasure) — proves it's a real machine with its own kernel
+stowaway-ssh:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [ -n '{{SERVER_IP}}' ] || { echo "❌ SERVER_IP unset — this demo targets the remote cluster."; exit 1; }
+    echo "🔑 SSH into the stowaway — when prompted, the password is:  treasure"
+    echo "   (try: uname -a   |   cat /etc/os-release   |   exit to leave)"
+    # Single-quoted remote string → $! / $PF expand on the SERVER. The remote
+    # command runs as an argument (NOT piped on stdin), so the PTY from -t flows
+    # to the inner ssh and the interactive password prompt works.
+    REMOTE='virtctl port-forward vm/stowaway -n demos 2222:22 >/tmp/stowaway-pf.log 2>&1 & PF=$!; trap "kill $PF 2>/dev/null" EXIT; sleep 4; ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null cirros@127.0.0.1'
+    ssh -t -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} "$REMOTE"
+
+# 🫥 [KubeVirt] VNC to the stowaway's screen — opens macOS Screen Sharing on the VM's graphical console
+stowaway-vnc:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    [ -n '{{SERVER_IP}}' ] || { echo "❌ SERVER_IP unset — this demo targets the remote cluster."; exit 1; }
+    echo "🖥️  Opening a VNC tunnel to the stowaway's console (Ctrl-C here to disconnect)..."
+    # Fire the local VNC viewer once the tunnel is up; ssh -L holds it open.
+    ( sleep 6; open vnc://127.0.0.1:5901 >/dev/null 2>&1 || echo "   → open vnc://localhost:5901 in your VNC client" ) &
+    ssh -t -L 5901:127.0.0.1:5901 -i {{SERVER_SSH_KEY}} {{SERVER_USER}}@{{SERVER_IP}} \
+      "virtctl vnc stowaway -n demos --proxy-only --port 5901"
+
+# 🫥 [KubeVirt] Show the stowaway's VM / VMI / launcher-pod status
+stowaway-status:
+    @{{SSH}} "kubectl -n demos get vm,vmi -o wide; echo; kubectl -n demos get pods -l kubevirt.io/vm=stowaway -o wide"
+
+# 🫥 [KubeVirt] Send the stowaway overboard (delete the VM; leaves KubeVirt + the 'demos' ns in place)
+stowaway-down:
+    @echo "🧹 Sending the stowaway overboard..."
+    -@{{SSH}} "kubectl -n demos delete vm stowaway --ignore-not-found"
+    @echo "✅ Stowaway VM deleted. (Re-boot it any time with: just stowaway-up)"
+
+# 🧬 [KubeVirt] Remove KubeVirt entirely (after the seminar). Deletes the VM, the CR, then the operator.
+kubevirt-uninstall:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    VER=v1.8.3
+    echo "🧹 Removing KubeVirt..."
+    {{SSH}} "kubectl -n demos delete vm --all --ignore-not-found" 2>/dev/null || true
+    {{SSH}} "kubectl delete kubevirt kubevirt -n kubevirt --ignore-not-found --timeout=120s" 2>/dev/null || true
+    {{SSH}} "kubectl delete -f https://github.com/kubevirt/kubevirt/releases/download/$VER/kubevirt-operator.yaml --ignore-not-found" 2>/dev/null || true
+    {{SSH}} "kubectl delete namespace demos --ignore-not-found --wait=false" 2>/dev/null || true
+    echo "✅ KubeVirt removed (virtctl binary left on the server; harmless)."
 
 # ============================================================
 # 🎓 STUDENT CLIENT RECIPE

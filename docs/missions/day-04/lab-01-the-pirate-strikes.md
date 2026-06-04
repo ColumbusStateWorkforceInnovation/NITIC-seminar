@@ -110,7 +110,7 @@ You succeed when your 3-tier pipeline serves traffic **reliably** for 60 straigh
    ```
 2. When it holds steady, call your instructor. They will run:
    ```bash
-   ./scripts/grade-cluster-recovery.sh <your-namespace>
+   just grade <your-name>
    ```
    Pass = your alliance has cleared the cluster-recovery gate.
 3. **Hand in the Salvage Report by 12:00 sharp.** Use the template at [`incident-report-template.md`](incident-report-template.md). The Incident Commander AI persona — switched on by your instructor mid-lab — will draft most of it from your `k9s` logs. Your job is to verify, fill in § 5 (Prevention), and submit before lunch.
@@ -157,9 +157,9 @@ The AI is in-bounds — students use the Incident Commander to read events and d
 
 ### Running the grading script
 
-Once a team says they're stable, run (zero-config — it derives the names from the namespace):
+Once a team says they're stable, run (zero-config — it derives the names from the namespace, and runs on the server so it hits the real cluster):
 ```bash
-./scripts/grade-cluster-recovery.sh <namespace>     # e.g. student-blackbeard
+just grade <crew>     # e.g. just grade blackbeard
 ```
 The script (see `scripts/grade-cluster-recovery.sh`) verifies every Pod in the namespace is Ready (Gate 1), runs a 60-second curl loop against the crew's `<crew>-frontend` Service needing ≥95% 2xx (Gate 2), and verifies their `<crew>-stack` ArgoCD Application reports `Synced + Healthy` (Gate 3). It exits 0 on pass, non-zero on fail, and prints a structured summary you can paste into the team's report. (Tip: run it against a namespace mid-attack *before* the team hardens — it should FAIL Gate 2 — to calibrate.)
 

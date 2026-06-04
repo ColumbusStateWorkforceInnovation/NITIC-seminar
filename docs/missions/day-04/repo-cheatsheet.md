@@ -76,7 +76,7 @@
 * **Escalate one/all crews:** `just chaos-stress [name]` (CPU saturation)
 * **See what's running:** `just chaos-status`
 * **Kill switch / end the game:** `just chaos-calm`
-* **Grade a crew:** `./scripts/grade-cluster-recovery.sh student-<crew>`
+* **Grade a crew:** `just grade <crew>` (runs the grader on the server — a bare `./scripts/...` hits your laptop's cluster)
 * **After class:** `just teardown-chaos-mesh`
 
 ---
