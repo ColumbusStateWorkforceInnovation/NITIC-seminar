@@ -1,0 +1,29 @@
+# Recurring pod-failure against one crew's namespace. Every 60s it breaks one
+# pod for 20s — the pod stays "Running" but its container is wedged, so without
+# a readiness probe the Service keeps routing traffic into the dead pod.
+# Exposes WEAKNESS 2 (readinessProbe disabled). Fix = enable the readiness
+# probe so the Service drops the broken pod from its endpoints (and raise
+# replicas so a healthy pod is there to take over).
+# Rendered per namespace by `just chaos-strike` (envsubst ${TARGET_NS}).
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: kraken-pod-failure-${TARGET_NS}
+  namespace: chaos
+spec:
+  schedule: "@every 40s"
+  concurrencyPolicy: Forbid
+  historyLimit: 2
+  type: PodChaos
+  podChaos:
+    action: pod-failure
+    mode: one
+    duration: "20s"
+    selector:
+      namespaces:
+        - "${TARGET_NS}"
+      # Break a FRONTEND pod (the graded tier). Without a readiness probe the
+      # Service keeps routing into the broken pod and serves 502s. Scoping by
+      # label also spares stray pods (e.g. the grading probe).
+      labelSelectors:
+        tier: frontend

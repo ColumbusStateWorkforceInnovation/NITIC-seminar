@@ -14,10 +14,10 @@
 # Usage:
 #   ./scripts/grade-cluster-recovery.sh <namespace> [frontend-service-name]
 #
-# Defaults:
-#   - frontend-service-name defaults to "frontend"
-#   - the ArgoCD Application is assumed to be named after the namespace
-#     (override with GRADE_APP_NAME=<name>)
+# Defaults (match the Day-3 island-stack chart naming, "<crew>-<tier>"):
+#   - for namespace "student-<crew>", the frontend Service defaults to
+#     "<crew>-frontend" and the ArgoCD Application to "<crew>-stack"
+#   - override the service via the 2nd arg, the app via GRADE_APP_NAME=<name>
 #
 # Exit codes:
 #   0  — pass (all three gates green)
@@ -27,8 +27,12 @@
 set -uo pipefail
 
 NS="${1:-}"
-FRONTEND_SVC="${2:-frontend}"
-APP_NAME="${GRADE_APP_NAME:-$NS}"
+# Day-3 island-stack names every object "<crew>-<tier>" where <crew> is the
+# namespace minus the "student-" prefix. Derive the frontend Service and the
+# ArgoCD Application from that convention; both stay overridable.
+CREW="${NS#student-}"
+FRONTEND_SVC="${2:-${CREW}-frontend}"
+APP_NAME="${GRADE_APP_NAME:-${CREW}-stack}"
 DURATION="${GRADE_DURATION:-60}"     # seconds of curl-loop probing
 MIN_SUCCESS_PCT="${GRADE_MIN_SUCCESS_PCT:-95}"
 
@@ -139,6 +143,17 @@ if ! kubectl get application "$APP_NAME" -n argocd >/dev/null 2>&1; then
 else
   SYNC=$(kubectl get application "$APP_NAME" -n argocd -o jsonpath='{.status.sync.status}')
   HEALTH=$(kubectl get application "$APP_NAME" -n argocd -o jsonpath='{.status.health.status}')
+  # A pod-kill firing during the grade window briefly flips the app to
+  # Progressing. That's the chaos, not a real failure — give it up to 30s to
+  # settle back to Healthy before judging (avoids a spurious re-run).
+  if [[ "$SYNC" == "Synced" && "$HEALTH" == "Progressing" ]]; then
+    yellow "⏳ Application Progressing (chaos in flight) — waiting up to 30s to stabilize..."
+    for _ in $(seq 1 6); do
+      sleep 5
+      HEALTH=$(kubectl get application "$APP_NAME" -n argocd -o jsonpath='{.status.health.status}')
+      [[ "$HEALTH" == "Healthy" ]] && break
+    done
+  fi
   if [[ "$SYNC" == "Synced" && "$HEALTH" == "Healthy" ]]; then
     green "✓ Application $APP_NAME — Sync=$SYNC, Health=$HEALTH"
     RESULTS+=("Gate 3 (ArgoCD): PASS — Sync=$SYNC, Health=$HEALTH")

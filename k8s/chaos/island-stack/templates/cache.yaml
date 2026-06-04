@@ -1,0 +1,49 @@
+{{- $name := include "island-stack.name" (dict "ctx" . "tier" "cache") -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+    tier: cache
+spec:
+  replicas: {{ .Values.cache.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $name }}
+        tier: cache
+        app.kubernetes.io/part-of: island-stack
+    spec:
+      containers:
+        - name: redis
+          image: "{{ .Values.cache.image }}"
+          ports:
+            - containerPort: {{ .Values.cache.port }}
+          {{- if .Values.cache.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.cache.port }}
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          {{- end }}
+          resources:
+            {{- toYaml .Values.cache.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    app: {{ $name }}
+    tier: cache
+spec:
+  selector:
+    app: {{ $name }}
+  ports:
+    - name: redis
+      port: {{ .Values.cache.port }}
+      targetPort: {{ .Values.cache.port }}

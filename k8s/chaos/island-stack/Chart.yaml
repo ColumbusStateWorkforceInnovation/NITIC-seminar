@@ -1,0 +1,11 @@
+apiVersion: v2
+name: island-stack
+description: >-
+  The 3-tier "island stack" (cache → backend → frontend) students built on
+  Day 3. This canonical copy is what the Pirate force-pushes onto every crew's
+  maindeck branch at the start of the Day 4 capstone — deliberately FRAGILE
+  (1 replica, readiness probes off, CPU limits too tight) so the chaos attack
+  has something to expose. Students re-harden it by editing values.yaml.
+type: application
+version: 0.1.0
+appVersion: "1.0"

@@ -1,0 +1,26 @@
+# Recurring pod-kill against one crew's namespace. A Schedule (not a bare
+# PodChaos) so the kill RECURS for the whole lab — a lone PodChaos fires once.
+# Exposes WEAKNESS 1 (replicaCount: 1): kill the only pod and the tier is down
+# until it respawns. Fix = raise replicas so a survivor keeps serving.
+# Rendered per namespace by `just chaos-strike` (envsubst ${TARGET_NS}).
+apiVersion: chaos-mesh.org/v1alpha1
+kind: Schedule
+metadata:
+  name: kraken-pod-kill-${TARGET_NS}
+  namespace: chaos
+spec:
+  schedule: "@every 60s"
+  concurrencyPolicy: Forbid
+  historyLimit: 2
+  type: PodChaos
+  podChaos:
+    action: pod-kill
+    mode: one
+    selector:
+      namespaces:
+        - "${TARGET_NS}"
+      # Hammer the user-facing FRONTEND tier — the one the grading script
+      # measures. Scoping by label also spares stray pods (e.g. the grading
+      # probe). With one replica this is a full outage; with two it isn't.
+      labelSelectors:
+        tier: frontend

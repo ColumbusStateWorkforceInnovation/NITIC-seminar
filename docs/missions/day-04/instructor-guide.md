@@ -21,11 +21,18 @@ The final day. **Ends at 14:30** so the room can clear for the airport. The morn
 - **Lecture — Chaos Engineering (~30 min):** Introduce the theory. Real systems fail; SREs break things *on purpose* to prove resilience. Name the tools (Chaos Mesh, LitmusChaos). Walk what a `PodChaos` and a `NetworkChaos` resource actually look like (you'll need them to read the manifests in the lab). **Foreshadow hard:** "What you just saw is going to attack you right after the break."
 
 ## 10:10 - 10:25 | Break (instructor works the cluster)
-**This break is yours, not the students'.** During these 15 minutes:
+**This break is yours, not the students'.** The whole attack is three recipes — no hand-edited YAML. During these 15 minutes:
 
-- Install Chaos Mesh from `k8s/core-tools/chaos-mesh-values.yaml`.
-- Apply the two chaos experiments from `lab-01-the-pirate-strikes.md` → Instructor Playbook with `namespaces:` selectors edited to your real student roster.
-- Verify the attack is live: `kubectl get podchaos,networkchaos -A` shows both `Running`. Pods in the targeted namespaces start cycling.
+```bash
+just clear-decks          # optional — free namespace quota if Day-3 leftovers linger
+just deploy-chaos-mesh    # installs Chaos Mesh + the `chaos` namespace
+just normalize-repos      # Pirate force-pushes the FRAGILE island-stack to every crew's maindeck
+just chaos-strike         # recurring pod-kill + pod-failure on every student namespace
+```
+
+- `normalize-repos` resets every crew to one identical fragile baseline (1 replica, readiness off, tight CPU limit) and guarantees each has a self-healing `<crew>-stack` ArgoCD Application — so no team is stuck without an app, and grading is deterministic.
+- Verify the attack is live: `just chaos-status` shows the `kraken-pod-kill-*` and `kraken-pod-failure-*` Schedules `Running`. Pods in the targeted namespaces start cycling.
+- Kill switch, any time: `just chaos-calm`.
 
 ## 10:25 - 12:00 | Capstone: The Pirate Strikes! (Gradable Lab)
 **Goal:** Students survive a live chaos attack and produce two graded deliverables: a recovered cluster + a written Salvage Report. **95 minutes — protect the schedule.**
@@ -70,12 +77,14 @@ The "AI Connect" block that used to live at 13:00 is **gone** in the 14:30 sched
 ## 🧰 Pre-Flight Checklist (before class)
 
 - [ ] **Repo Cheat Sheet** (`repo-cheatsheet.md`) is printed for the room, and the **Make It Your Own** deck (`slides/day-04/make-it-your-own.md`) is rendered and open for the 09:00 opener.
-- [ ] **Chaos Mesh** install is staged and tested — it is *not* in `deploy-core` (see `k8s/core-tools/chaos-mesh-values.yaml`). Practice the install + the experiments once before class.
-- [ ] The 3-tier alliances from Day 2/3 are still deployed (the chaos targets them).
+- [ ] **Chaos Mesh + the attack recipes** are rehearsed once end-to-end (`just deploy-chaos-mesh` → `normalize-repos` → `chaos-strike` → `chaos-calm`). Chaos Mesh is *not* in `deploy-core`.
+- [ ] **`normalize-repos` works against your live Gitea** — it pushes over `https://gitea.{{ lab_domain }}` as admin and needs `GITEA_ADMIN_PASSWORD` in `lab.env`. Spot-check one crew afterward: `maindeck` shows the fragile chart and `<crew>-stack` is Synced + Healthy.
+- [ ] Each crew has an `island-stack` repo (Day-3 Lab-02); `normalize-repos` creates one for anyone who skipped it, so this is belt-and-suspenders.
+- [ ] **ArgoCD poll lag:** there's no Gitea→ArgoCD webhook, so a student's `git push` won't sync for up to ~3 min unless they hit **Refresh/Sync** in the ArgoCD UI (the lab tells them to). If you want the GitOps loop to feel instant, either add a Gitea push webhook to `https://argocd.{{ lab_domain }}/api/webhook` or lower ArgoCD's reconciliation timeout in `k8s/core-tools/argocd-values.yaml` and `just deploy-argocd` before class. Verified end-to-end on the remote server 2026-06-04 (the push→sync loop works; only the latency needs the Refresh click).
 - [ ] vCluster and KubeVirt demos are **already running** before 09:00 so the morning demos are show-and-tell, not live-build. 5 min each, that's it.
-- [ ] You have a clean way to **stop** the chaos fast if the room melts down: `kubectl delete podchaos,networkchaos --all -A`.
-- [ ] **Grading script is executable** and works against a healthy namespace: `./scripts/grade-cluster-recovery.sh <a-test-ns>` returns PASS before the attack. Re-test against the same namespace mid-attack to confirm it returns FAIL — that's the calibration.
+- [ ] You have a clean way to **stop** the chaos fast if the room melts down: `just chaos-calm`.
+- [ ] **Grading script is executable** and reconciled to the `<crew>-frontend` / `<crew>-stack` naming (zero-config: `./scripts/grade-cluster-recovery.sh student-<crew>`). Run it mid-attack on a normalized-but-unhardened namespace to confirm it returns **FAIL** on Gate 2 — that's the calibration — then on a hardened one to see PASS.
 - [ ] **Salvage Report rubric** is printed (or open in a tab) so you can grade in real time as teams hand in at 12:00.
-- [ ] **Default chaos mix** (recommended): PodChaos pod-kill + NetworkChaos 40% packet loss. For fast teams, the optional StressChaos CPU saturation stretch goal is in the gradability matrix.
+- [ ] **Default chaos mix** (`just chaos-strike`): recurring PodChaos pod-kill (exposes single replica) + pod-failure (exposes missing readiness probe). For fast/bored teams, the optional `just chaos-stress` CPU-saturation escalation (exposes the tight CPU limit).
 - [ ] **Incident Commander persona text** is in a paste buffer or shared link so the inline persona shift at ~10:45 is instant — don't lose 5 min hunting for the markdown.
 - [ ] **Submission target** for the Salvage Reports is decided (Gitea repo, email, printed, etc.) and on the lab's printed one-pager.

@@ -1,0 +1,68 @@
+# ──────────────────────────────────────────────────────────────────────────
+# island-stack — the FRAGILE baseline (the Pirate's sabotage)
+#
+# Every knob the Day 4 capstone asks you to turn lives in THIS file. The
+# attack out in the cluster is exposing three deliberate weaknesses below.
+# Re-harden the fleet by editing these values, commit, and `git push` —
+# ArgoCD self-heals your fix into the cluster while the storm is still raging.
+#
+#   WEAKNESS 1  replicaCount: 1        → one pod-kill = total outage.
+#               Fix: raise replicas (the graded `frontend` tier first).
+#   WEAKNESS 2  readinessProbe.enabled: false → a broken pod keeps taking
+#               traffic. Fix: flip it to true so the Service drops bad pods.
+#   WEAKNESS 3  resources.limits.cpu too tight → CPU stress starves the pod.
+#               Fix: right-size the limit.
+#
+# Quota reminder: your namespace caps at ~500m CPU (≈5 small pods). Keep the
+# hardened stack under budget — harden `frontend` (the graded tier) first,
+# then backend/cache as room allows.
+# ──────────────────────────────────────────────────────────────────────────
+
+# Your short handle — the deployment/service name prefix. The Pirate's ArgoCD
+# Application injects this per crew, so you normally don't touch it.
+studentName: crew
+
+cache:
+  replicaCount: 1
+  image: redis:7.2-alpine
+  port: 6379
+  readinessProbe:
+    enabled: false
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "32Mi"
+    # memory is comfortable on purpose — the deliberately-tight knob is cpu.
+    limits:
+      cpu: "50m"
+      memory: "64Mi"
+
+backend:
+  replicaCount: 1
+  image: stefanprodan/podinfo:6.7.0
+  port: 9898
+  readinessProbe:
+    enabled: false
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "32Mi"
+    limits:
+      cpu: "50m"
+      memory: "64Mi"
+
+frontend:
+  replicaCount: 1
+  # nginx-unprivileged: non-root, listens on 8080, serves 200 on / with no
+  # dependencies — a reliable target for the grading curl loop.
+  image: nginxinc/nginx-unprivileged:1.27-alpine
+  port: 8080
+  readinessProbe:
+    enabled: false
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "64Mi"
+    limits:
+      cpu: "50m"
+      memory: "128Mi"

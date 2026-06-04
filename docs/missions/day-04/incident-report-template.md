@@ -44,32 +44,30 @@
 *This is the runbook section. If a teammate had been out sick today, could they reproduce your fix from this section alone? If no, add detail.*
 
 ```bash
-# Step 1 (observation): the self-heal was already happening
-kubectl get pods -n <ns> -w
-# Watched Deployments respawn killed pods; ArgoCD held desired state.
+# Step 1 (diagnosis): found the Pirate's sabotage on our maindeck branch
+kubectl get deploy -n <ns>                      # every tier at replicas: 1
+kubectl describe deploy <crew>-frontend -n <ns> # no readinessProbe; cpu limit 50m
+# values.yaml on maindeck had replicaCount: 1, readinessProbe.enabled: false, tight cpu limit.
 ```
 
-```yaml
-# Step 2: NetworkPolicy committed to <repo>/<path>
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: alliance-only
-  namespace: <ns>
-spec:
-  podSelector: {}
-  policyTypes: [Ingress]
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              alliance: <alliance-label>
+```diff
+# Step 2: hardened values.yaml, committed to our island-stack repo (maindeck)
+ frontend:
+-  replicaCount: 1
++  replicaCount: 2                 # survive pod-kill — a survivor keeps serving
+   readinessProbe:
+-    enabled: false
++    enabled: true                 # drop pod-failure'd pods out of the Service
+   resources:
+     limits:
+-      cpu: "50m"
++      cpu: "100m"                 # right-size so CPU stress can't starve it
 ```
 
 ```bash
-# Step 3 (optional, if you used Gitea Actions): pushed the fix through CI
-git commit -am "harden: alliance-only ingress"
-git push   # Gitea Actions built + pushed; ArgoCD synced.
+# Step 3: shipped it the GitOps way — ArgoCD synced the fix under fire
+git commit -am "harden: replicas + readiness + cpu on the fleet"
+git push   # ArgoCD flipped OutOfSync -> Synced and rolled out the hardened stack.
 ```
 
 ---

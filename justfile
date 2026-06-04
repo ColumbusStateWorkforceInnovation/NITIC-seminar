@@ -430,9 +430,9 @@ seed-docs: (_require "GITEA_ADMIN_PASSWORD" GITEA_ADMIN_PASSWORD)
       -X POST "${BASE}/api/v1/user/repos" -H 'Content-Type: application/json' \
       -d '{"name":"nitic-seminar","private":false,"auto_init":false,"description":"MkDocs source for docs.{{LAB_DOMAIN}} (synced by git-sync)"}')
     case "$code" in
-      201) echo "   ✓ repo created" ;;
-      409) echo "   ✓ repo already exists" ;;
-      *)   echo "   ❌ repo create failed (HTTP $code)" >&2; exit 1 ;;
+      201)     echo "   ✓ repo created" ;;
+      409|500) echo "   ✓ repo already exists" ;;   # Gitea v1.x returns 500 on duplicate
+      *)       echo "   ❌ repo create failed (HTTP $code)" >&2; exit 1 ;;
     esac
     # 2. Push this repo's current commit to maindeck (creds scrubbed from output).
     EP=$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=""))' "$GP")
@@ -904,6 +904,143 @@ clear-decks:
         echo "  ✅ $NS cleared"
     done
     echo "✅ Decks cleared. Verify free quota:  kubectl get quota -A | grep student-"
+
+# ============================================================
+# 🔥 CHAOS ENGINEERING (DAY 4 — THE PIRATE STRIKES)
+# ============================================================
+# Day 4 flow (during the 10:10 break):
+#   just deploy-chaos-mesh   # once — installs the attack platform
+#   just normalize-repos     # Pirate reverts every crew to the FRAGILE baseline
+#   just chaos-strike        # recurring pod-kill + pod-failure on every crew
+#   just chaos-stress [ns]   # optional CPU-saturation escalation
+#   just chaos-status        # confirm experiments are Running
+#   just chaos-calm          # KILL SWITCH — stop everything
+#   just teardown-chaos-mesh # after class — remove the platform
+
+# Deploy Chaos Mesh via Helm — the Day 4 capstone attack platform. Deliberately
+# NOT part of deploy-core: install it during the Day 4 break so the cluster is
+# calm until the game starts. Creates the `chaos` namespace where the Pirate's
+# experiments live — students can READ them (to name their attacker) but the
+# admin boundary keeps them from deleting another namespace's chaos. Honors
+# LOCAL/REMOTE. The containerd socket path (k3s/k3d quirk) is in the values file.
+deploy-chaos-mesh:
+    @echo "🐙 Deploying Chaos Mesh (Day 4 capstone attack platform)..."
+    {{SSH}} "helm repo add chaos-mesh https://charts.chaos-mesh.org && helm repo update"
+    cat k8s/core-tools/chaos-mesh-values.yaml \
+      | {{SSH}} "helm upgrade --install chaos-mesh chaos-mesh/chaos-mesh -n chaos-mesh --create-namespace -f -"
+    {{SSH}} "kubectl create namespace chaos --dry-run=client -o yaml | kubectl apply -f -"
+    {{SSH}} "kubectl rollout status deploy/chaos-controller-manager -n chaos-mesh --timeout=180s"
+    @echo "✅ Chaos Mesh ready. Experiments live in the 'chaos' namespace. Next:  just normalize-repos"
+
+# Pirate sabotage — force-push the canonical FRAGILE island-stack chart onto
+# every crew's `maindeck` branch, then ensure each crew's ArgoCD Application
+# exists and self-heals. This resets the whole cohort to an identical, known-
+# fragile starting line (1 replica, readiness probes off, CPU limits too tight)
+# so the chaos attack has the same thing to expose for everyone — and so the
+# grading script is deterministic. Mirrors `seed-docs`: pushes over
+# https://gitea.{{LAB_DOMAIN}} as the Gitea admin (REMOTE-oriented — for a LOCAL
+# k3d test, port-forward Gitea and point BASE at it). Overwriting the crew's
+# Day-3 chart history is intentional — that's the sabotage, and they re-harden
+# their OWN repo to recover. Idempotent.
+normalize-repos: (_require "GITEA_ADMIN_PASSWORD" GITEA_ADMIN_PASSWORD)
+    #!/usr/bin/env bash
+    set -uo pipefail
+    GP=$(grep -E '^GITEA_ADMIN_PASSWORD=' lab.env | cut -d= -f2-)
+    EP=$(python3 -c 'import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1],safe=""))' "$GP")
+    BASE="https://gitea.{{LAB_DOMAIN}}"
+    echo "🏴‍☠️  Pirate sabotage — pushing the FRAGILE island-stack to every crew's maindeck..."
+    # Build the canonical fragile chart as a throwaway git tree ONCE, then push
+    # the same commit into each crew's repo.
+    TMP=$(mktemp -d)
+    cp -R k8s/chaos/island-stack/. "$TMP/"
+    git -C "$TMP" init -q
+    git -C "$TMP" add -A
+    git -C "$TMP" -c user.email=pirate@lab.local -c user.name=Pirate commit -qm "🏴‍☠️ sabotage: fragile island-stack baseline"
+    for NS in $({{SSH}} "kubectl get ns -o name" | sed 's#namespace/##' | grep -E '^student-'); do
+        NAME="${NS#student-}"
+        # 1. Ensure the repo exists (admin creates it FOR the user if absent).
+        code=$(curl -s -o /dev/null -w '%{http_code}' -u "admiral:${GP}" \
+          -X POST "${BASE}/api/v1/admin/users/${NAME}/repos" -H 'Content-Type: application/json' \
+          -d '{"name":"island-stack","private":false,"auto_init":false}')
+        case "$code" in
+          201)         echo "  ✓ ${NAME}: repo created" ;;
+          409|422|500) : ;;                               # already exists — fine (Gitea v1.x returns 500 on duplicate)
+          404)         echo "  ⚠️  ${NAME}: no such Gitea user — skipped"; continue ;;
+          *)           echo "  ⚠️  ${NAME}: repo ensure returned HTTP $code (continuing)" ;;
+        esac
+        # 2. Force-push the fragile chart onto maindeck (creds scrubbed from logs).
+        git -C "$TMP" push --force "https://admiral:${EP}@gitea.{{LAB_DOMAIN}}/${NAME}/island-stack.git" HEAD:refs/heads/maindeck \
+          2>&1 | sed -E 's#//admiral:[^@]*@#//admiral:***@#g'
+        # 3. Make maindeck the default branch (no-op if already set).
+        curl -s -o /dev/null -u "admiral:${GP}" -X PATCH "${BASE}/api/v1/repos/${NAME}/island-stack" \
+          -H 'Content-Type: application/json' -d '{"default_branch":"maindeck"}'
+        # 4. Ensure the crew's self-healing ArgoCD Application exists.
+        STUDENT="${NAME}" TARGET_NS="${NS}" envsubst < k8s/chaos/island-stack-app.yaml | {{SSH}} "kubectl apply -f -" >/dev/null
+        echo "  🏴‍☠️ ${NAME} sabotaged → fragile island-stack on maindeck; ${NAME}-stack syncing"
+    done
+    rm -rf "$TMP"
+    echo "✅ Sabotage complete. ArgoCD self-heals each crew to the fragile baseline within ~seconds."
+    echo "   Verify:  kubectl get applications -n argocd | grep -- -stack"
+
+# Launch the attack — recurring pod-kill + pod-failure against EVERY student
+# namespace (per-namespace fan-out, so every crew is hit equally). Both are
+# Chaos Mesh Schedules, so they recur for the whole lab until `just chaos-calm`
+# deletes them (a bare PodChaos fires only once). pod-kill exposes the single
+# replica; pod-failure exposes the missing readiness probe. Honors LOCAL/REMOTE.
+chaos-strike:
+    #!/usr/bin/env bash
+    set -uo pipefail
+    echo "☠️  The Pirate strikes — recurring pod-kill + pod-failure across the fleet..."
+    HIT=0
+    for NS in $({{SSH}} "kubectl get ns -o name" | sed 's#namespace/##' | grep -E '^student-'); do
+        TARGET_NS="$NS" envsubst < k8s/chaos/pod-kill.yaml    | {{SSH}} "kubectl apply -f -" >/dev/null
+        TARGET_NS="$NS" envsubst < k8s/chaos/pod-failure.yaml | {{SSH}} "kubectl apply -f -" >/dev/null
+        echo "  ☠️  $NS under attack"
+        HIT=$((HIT+1))
+    done
+    echo "✅ Attack live on $HIT crew(s). Watch:  just chaos-status   Stop:  just chaos-calm"
+
+# Optional CPU-saturation escalation (exposes the too-tight CPU limit). With no
+# argument it stresses every student namespace; pass a name (with or without the
+# `student-` prefix) to hit ONE crew — e.g. a team that grade-passed early and is
+# bored. DURATION sets how long the StressChaos runs (default 90m). Honors
+# LOCAL/REMOTE.  Usage:  just chaos-stress          (all crews)
+#                        just chaos-stress blackbeard 30m
+chaos-stress NS="" DURATION="90m":
+    #!/usr/bin/env bash
+    set -uo pipefail
+    if [[ -n "{{NS}}" ]]; then
+        RAW="{{NS}}"; TARGETS=("student-${RAW#student-}")
+    else
+        TARGETS=($({{SSH}} "kubectl get ns -o name" | sed 's#namespace/##' | grep -E '^student-'))
+    fi
+    echo "🔥 CPU stress (duration {{DURATION}}) on: ${TARGETS[*]}"
+    for NS in "${TARGETS[@]}"; do
+        TARGET_NS="$NS" DURATION="{{DURATION}}" envsubst < k8s/chaos/cpu-stress.yaml | {{SSH}} "kubectl apply -f -" >/dev/null
+        echo "  🔥 $NS stressed"
+    done
+    echo "✅ Stress applied. Stop:  just chaos-calm"
+
+# Show every active chaos experiment cluster-wide (Schedules + their children).
+chaos-status:
+    @echo "🔎 Active chaos experiments:"
+    @{{SSH}} "kubectl get schedule,podchaos,networkchaos,stresschaos -A"
+
+# KILL SWITCH — delete every chaos experiment everywhere. Deletes the Schedules
+# AND any PodChaos/NetworkChaos/StressChaos they spawned. Run this the instant
+# the room melts down, and at 12:00 to end the game. Idempotent.
+chaos-calm:
+    @echo "🕊️  Calming the seas — deleting all chaos experiments..."
+    @{{SSH}} "kubectl delete schedule,podchaos,networkchaos,stresschaos --all -A --ignore-not-found"
+    @echo "✅ All chaos stopped. Pods stabilize within ~a minute."
+
+# Remove Chaos Mesh entirely after class. Stops all chaos first, uninstalls the
+# Helm release, and drops the `chaos` namespace. Leaves the cluster as it was.
+teardown-chaos-mesh: chaos-calm
+    @echo "🧹 Uninstalling Chaos Mesh..."
+    -{{SSH}} "helm uninstall chaos-mesh -n chaos-mesh"
+    -{{SSH}} "kubectl delete namespace chaos chaos-mesh --ignore-not-found"
+    @echo "✅ Chaos Mesh removed."
 
 # Verify a student's access boundary BEFORE class. Impersonates the Rancher user
 # found in their namespace's RoleBindings, then confirms they are DENIED on the

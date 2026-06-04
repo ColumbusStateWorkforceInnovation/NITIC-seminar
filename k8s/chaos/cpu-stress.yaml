@@ -1,0 +1,26 @@
+# CPU saturation against one crew's namespace — the optional escalation.
+# StressChaos runs a continuous CPU hog inside every pod in the namespace. With
+# the fragile chart's too-tight CPU limit (50m), the app and the hog fight over
+# a sliver of CPU and requests time out. Exposes WEAKNESS 3 (limits.cpu too
+# tight). Fix = right-size the resource limit so the app keeps a fair share.
+# Released ad-hoc by `just chaos-stress [NS]` (envsubst ${TARGET_NS} ${DURATION}).
+apiVersion: chaos-mesh.org/v1alpha1
+kind: StressChaos
+metadata:
+  name: kraken-cpu-stress-${TARGET_NS}
+  namespace: chaos
+spec:
+  mode: all
+  duration: "${DURATION}"
+  selector:
+    namespaces:
+      - "${TARGET_NS}"
+    # Saturate the FRONTEND tier (the graded tier). With the fragile 50m CPU
+    # limit the app and the hog fight over a sliver and requests time out.
+    # Scoping by label also spares stray pods (e.g. the grading probe).
+    labelSelectors:
+      tier: frontend
+  stressors:
+    cpu:
+      workers: 2
+      load: 100

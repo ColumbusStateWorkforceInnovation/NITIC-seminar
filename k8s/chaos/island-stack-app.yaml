@@ -1,0 +1,32 @@
+# Per-crew ArgoCD Application for the Day 4 capstone. `just normalize-repos`
+# renders this with envsubst (${STUDENT}, ${TARGET_NS}) and applies it, so every
+# crew has an auto-syncing, self-healing app watching their island-stack repo —
+# whether or not they wired one up by hand on Day 3. Applying it idempotently
+# adopts a same-named app the student already created.
+#
+# studentName is injected as a Helm parameter (not baked into the repo) so the
+# canonical chart pushed to every repo stays byte-identical.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ${STUDENT}-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: http://gitea-http.admin-tools.svc.cluster.local:3000/${STUDENT}/island-stack.git
+    targetRevision: maindeck
+    path: .
+    helm:
+      parameters:
+        - name: studentName
+          value: "${STUDENT}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ${TARGET_NS}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
