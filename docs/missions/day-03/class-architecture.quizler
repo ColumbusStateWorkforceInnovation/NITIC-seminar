@@ -1,6 +1,6 @@
 {
   "name": "Charting the Island: The Lab Stack",
-  "text": "Orientation flash poll on the island's services — which tool is the registry, the Git server, the GitOps engine, and what holds the whole cluster up.",
+  "text": "Orientation flash poll on the island's services — which tool is the registry, the Git server, the GitOps engine, and what holds the cluster up.",
   "max_players": 50,
   "filtering": "None",
   "questions": [
