@@ -26,6 +26,11 @@ spec:
     namespace: ${TARGET_NS}
   syncPolicy:
     automated:
+      # Explicit `enabled: true` FORCES auto-sync on, overriding a crew whose
+      # Day-3 app had it toggled OFF (.automated.enabled: false). Without this,
+      # adopting that app via kubectl apply leaves auto-sync disabled (the merge
+      # keeps the old false), so it never self-heals — hit live on `asad`.
+      enabled: true
       prune: true
       selfHeal: true
     syncOptions:
